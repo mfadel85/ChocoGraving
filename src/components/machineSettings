@@ -1,0 +1,15 @@
+Filter Fill: black
+Filter Storke: null
+Direction : Conventional
+Tool Speed: 5000
+Rapid Z: 10 mm
+Start Z: 8 mmm
+End Z: 6 mm
+Pass Depth: 1
+Tool Diameter: 2 mm
+Segment: 2
+Plunge Rate: 2000 mm/min
+Cut RAte: 3000 mm/min
+Ramp Plunge: true
+Marcos : Pre OP GotoXY zero
+         Post Op: GotoXY Zero
