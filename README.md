@@ -1,9 +1,8 @@
-# LaserWeb (4.0.x)
+# CNC Chocolate Engraving
 
 This repository is a "development environment" - and no regular user would have to touch this at all (dont download the repo from here, use the Download links below)
 
-## Download
-Releases are made available on https://github.com/LaserWeb/LaserWeb4-Binaries/
+
 
 ## Documentation
 For more documentation, go to the [Wiki](https://github.com/LaserWeb/LaserWeb4/wiki) or our website https://laserweb.yurl.ch
