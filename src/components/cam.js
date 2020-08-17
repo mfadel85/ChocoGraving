@@ -677,6 +677,14 @@ class Cam extends React.Component {
             <button name="runJob" onClick={ this.runJob}>Run</button>
             <button name="textWrapping" onClick={ this.textWrapping}>Text Wrap</button>
             <button name="checkWrapping" onClick={ this.wordWrapped}>Check</button>
+            <div class="row">
+                <input type="radio" id="Oval" name="template" value="Oval"></input>
+                <label for="Oval">Oval</label><img src="oval.jpg" height="40px" width="80px" ></img><br></br>
+                <input type="radio" id="Oval" name="template" value="Oval"></input>
+                <label for="Rectangle">Rectangle</label><img src="rectangle.jpg" height="40px" width="80px" ></img><br></br>
+                <input type="radio" id="Square" name="template" value="Square"></input>
+                <label for="Square">Square</label><img src="oval.jpg" height="40px" width="80px" ></img><br></br>
+            </div>
         </div>);
     }
 };
