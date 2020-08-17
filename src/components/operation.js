@@ -171,11 +171,22 @@ export function Error(props) {
 Error = withStoredBounds(Error);
 
 function NoOperationsError(props) {
+    //console.log('NoOperationsError');
     let { documents, operations, operationsBounds } = props;
+    //console.log(props);
+
     if (documents.length && !operations.length)
+    {
+        //console.log('is it error');
         return <GetBounds Type="span"><Error operationsBounds={operationsBounds} message='Drag Documents(s) Here' /></GetBounds>;
-    else
+    }
+        
+    else{
+        //console.log('Nope isnt it error');
+        // can we generate GCode here :?
         return <span />;
+    }
+        
 }
 
 class Field extends React.Component {
@@ -259,6 +270,7 @@ class Doc extends React.Component {
     }
 
     render() {
+        //console.log('Doc render');
         let { op, documents, id } = this.props;
         return (
             <tr>
@@ -720,7 +732,7 @@ class Operation extends React.Component {
 
                         <div style={{ whiteSpace: 'nowrap' }}>
                             <select className="input-xs" value={op.type} onChange={this.setType}>{Object.keys(OPERATION_TYPES).map(type => <option key={type} disabled={!this.availableOps.includes(type)}>{type}</option>)}</select>
-                            <MaterialPickerButton className="btn btn-success btn-xs" onApplyPreset={this.preset} operation={op} types={this.availableOps}><i className="fa fa-magic"></i></MaterialPickerButton>
+                            <MaterialPickerButton className="btn btn-success btn-xs" onApplyPreset={this.preset} operation={op} documents ={documents} types={this.availableOps}><i className="fa fa-magic"></i></MaterialPickerButton>
                             <MaterialSaveButton className="btn btn-success btn-xs" onApplyPreset={this.preset} operation={op} types={this.availableOps}><i className="fa fa-floppy-o"></i></MaterialSaveButton>
                         </div>
                         <div className="btn-group">
@@ -856,8 +868,21 @@ class Operation extends React.Component {
 Operation = withStoredBounds(Operation);
 
 class Operations extends React.Component {
+    /*shouldComponentUpdate(nextProps) {
+        console.log('prev documents',this.props.documents);
+        console.log('next documents',nextProps.documents);
+        console.log('prev operations',this.props.operations);
+        console.log('next operations',nextProps.operations);
+        const documents = this.props.documents !== nextProps.documents;
+        const operations = this.props.operations !== nextProps.operations;
+        console.log('should update?',documents || operations);
+        return documents || operations;
+    }*/
     render() {
+        //console.log('Operations rendering : prpos',this.props);
         let { operations, currentOperation, documents, dispatch, bounds, settings } = this.props;
+        let genGCode = this.props.genGCode;
+        //genGCode();
         let fillColors = [];
         let strokeColors = [];
         let addColor = (colors, color) => {
@@ -880,9 +905,13 @@ class Operations extends React.Component {
         }
         return (
             <div style={this.props.style}>
-                <div style={{ backgroundColor: '#eee', padding: '20px', border: '3px dashed #ccc', marginBottom: 5 }} data-operation-id="new">
+                <div style={{ backgroundColor: '#888', padding: '20px', border: '3px dashed #ccc', marginBottom: 5 }} data-operation-id="new">
                     <b>Drag document(s) here to add</b>
-                    <NoOperationsError operationsBounds={bounds} documents={documents} operations={operations} />
+                    <NoOperationsError 
+                        operationsBounds={bounds} 
+                        documents={documents} 
+                        operations={operations} 
+                     />
                 </div>
                 <OperationToolbar />
                 <GetBounds Type={'div'} className="operations" style={{ height: "100%", overflowY: "auto" }} >

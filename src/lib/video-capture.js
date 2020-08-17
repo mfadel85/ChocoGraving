@@ -207,12 +207,12 @@ export class VideoCapture {
     }
 
     scan(deviceId, resolutionId, callback) {
-        console.log("scanning media devices")
+        //console.log("scanning media devices")
         this.isReady = false;
         this.getDevices((devices) => {
-            console.log("devices found:" + JSON.stringify(devices))
+            //console.log("devices found:" + JSON.stringify(devices))
             if (!deviceId) {
-                console.log("video disabled")
+                //console.log("video disabled")
                 this.data = { stream: undefined, deviceId: null, resolutionId: resolutionId || DEFAULT_VIDEO_RESOLUTION, resolutions: [], devices }
                 callback(this.data)
             } else if (deviceId && devices.map((device) => { return device.value }).includes(deviceId)) {

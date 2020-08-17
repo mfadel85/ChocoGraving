@@ -34,8 +34,10 @@ export const DOCUMENT_INITIALSTATE = {
 const documentBase = object('document', DOCUMENT_INITIALSTATE);
 
 export function document(state, action) {
+    //console.log("Action is ",action);
     switch (action.type) {
         case 'DOCUMENT_TRANSFORM2D_SELECTED':
+            console.log("now svg will be transformed !!");
             if (state.selected && state.transform2d)
                 return { ...state, transform2d: mat2d.multiply([], action.payload, state.transform2d) };
             else
@@ -56,6 +58,7 @@ export function document(state, action) {
             state.originalSize = state.originalSize || null;
             return documentBase(state, action);
         default:
+            //console.log('defult Document is returned');
             return documentBase(state, action);
     }
 }
@@ -63,6 +66,13 @@ export function document(state, action) {
 const documentsForest = forest('document', document);
 
 function loadSvg(state, settings, { file, content }, id = uuidv4()) {
+    console.log('settings',settings);
+    console.log('state',state);
+
+    /*  
+    console.log('LoadSVG File',file);
+    console.log('Content',content);
+    */    
     let { parser, tags, attrs = {} } = content;
     state = state.slice();
     let pxPerInch = (settings.pxPerInch) ? +settings.pxPerInch : 96;
@@ -99,7 +109,9 @@ function loadSvg(state, settings, { file, content }, id = uuidv4()) {
     }
 
     function addChildren(parent, tag, parentMat, precision = 0.1) {
+        //console.log(tag);
         for (let child of tag.children) {
+
             let localMat = mat2dFromSnap(Snap(child.element).transform().localMatrix);
             let combinedMat = mat2d.mul([], parentMat, localMat);
             let c = {
@@ -280,12 +292,14 @@ function loadDxf(state, settings, { file, content }, id = uuidv4()) {
 }
 
 export function documentsLoad(state, settings, action) {
+    console.log("documetsLoad Action is ",action);
     state = state.slice();
     let docId;
 
     if (action.payload.modifiers.shift) {
         CommandHistory.warn('Replacing occurrences of ' + action.payload.file.name)
         let doc = state.find((doc, index, docs) => doc.name === action.payload.file.name)
+
         if (doc) {
             docId = doc.id;
             let ids = getSubtreeIds(state, docId);
@@ -295,7 +309,9 @@ export function documentsLoad(state, settings, action) {
                 }));
         }
     }
+    console.log('documentsLoad doc: ',docId);
 
+    // we set them here :D
     if (action.payload.file.type === 'image/svg+xml')
         return loadSvg(state, settings, action.payload, docId);
     else if (action.payload.file.name.substr(-4).toLowerCase() === '.dxf')
@@ -336,6 +352,7 @@ export function documents(state, action) {
     state = documentsForest(state, action);
     switch (action.type) {
         case 'DOCUMENT_SELECT': {
+            console.log('DOCUMENT_SELECT',action.payload.id);
             let ids = getSubtreeIds(state, action.payload.id);
             return state.map(o => Object.assign({}, o, { selected: ids.includes(o.id) }));
 
@@ -353,9 +370,13 @@ export function documents(state, action) {
         }
 
         case 'DOCUMENT_SELECT_META': {
+            // can we get document id so we pass it addOpeationDispatcher here?
+            // I need document ID
+            console.log('DOCUMETN_SELECT_META',state[0].id);
             if (action.payload.meta===true || action.payload.meta===false){
                 return state.map((o)=>{ return Object.assign({},o,{selected: action.payload.meta})})
             }
+            // can we do something else ???? 
         }
         case 'DOCUMENT_TOGGLE_VISIBLE': {
             let parent = state.find(o => o.id === action.payload.id);

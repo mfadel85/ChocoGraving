@@ -18,12 +18,15 @@ import DxfParser from 'dxf-parser';
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { connect } from 'react-redux';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { loadDocument, setDocumentAttrs, cloneDocumentSelected, selectDocuments,colorDocumentSelected,removeDocumentSelected } from '../actions/document';
+import { runCommand, runJob, pauseJob, resumeJob, abortJob, clearAlarm, setZero, gotoZero, setPosition, home, probe, checkSize, laserTest, jog, jogTo, feedOverride, spindleOverride, resetMachine } from './com.js';
+import { removeOperation, moveOperation, setCurrentOperation, operationRemoveDocument, setOperationAttrs, clearOperations,addOperation, operationAddDocuments  } from '../actions/operation';
 
 import { setGcode, generatingGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
-import { Documents } from './document';
+import { Documents,selectedDocuments } from './document';
 import { withDocumentCache } from './document-cache'
 import { GetBounds, withGetBounds } from './get-bounds.js';
 import { Operations, Error } from './operation';
@@ -33,6 +36,7 @@ import { getGcode } from '../lib/cam-gcode';
 import { sendAsFile, appendExt, openDataWindow, captureConsole } from '../lib/helpers';
 import { ValidateSettings } from '../reducers/settings';
 import { ApplicationSnapshotToolbar } from './settings';
+import { GlobalStore } from '../index'
 
 import { Button, ButtonToolbar, ButtonGroup, ProgressBar, Alert } from 'react-bootstrap'
 import Icon from './font-awesome'
@@ -42,9 +46,18 @@ import CommandHistory from './command-history'
 import { FileField, Info, ColorPicker, SearchButton } from './forms'
 
 import { promisedImage, imageTagPromise } from './image-filters';
+import { cssNumber } from 'jquery';
+import { documents } from '../reducers/document';
+import { convertOutlineToThickLines } from '../draw-commands/thick-lines';
+//import { computeLayout } from 'opentype-layout';
+const opentype = require('opentype.js');
+const computeLayout = require('opentype-layout-improved');
 
+
+var playing = false;
+var paused = false;
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
-
+let myText = '';
 function NoDocumentsError(props) {
     let { settings, documents, operations, camBounds } = props;
     if (documents.length === 0 && (operations.length === 0 || !settings.toolCreateEmptyOps))
@@ -76,14 +89,49 @@ class Cam extends React.Component {
 
     constructor(props){
         super(props);
-        this.state={filter:null}
+        this.state={
+            filter:null,
+            content:"",
+            svg:"",
+            font:"font1",
+            width:0,
+            lineHeight:0,
+            fontSize : 25
+        }
+        this.handleChange = this.handleChange.bind(this);
+        this.handleFontChange = this.handleFontChange.bind(this);
+        this.handleSubmission = this.handleSubmission.bind(this);
+        this.generateGcode = this.generateGcode.bind(this);
+        this.docuementAdded = this.docuementAdded.bind(this);
+        this.loadMinE = this.loadMinE.bind(this);
+        this.textWrapping = this.textWrapping.bind(this);
+        this.runJob = this.runJob.bind(this);
+        this.wordWrapped = this.wordWrapped.bind(this);
     }
-
+    isEnglish(charCode){
+        return (charCode >= 97 && charCode <= 122) 
+               || (charCode>=65 && charCode<=90);
+     }
+     
+    isPersian(key){
+         var p = /^[\u0600-\u06FF\s]+$/;    
+         return p.test(key) && key!=' ';
+     }
+    handleInput(e){
+            console.log(e.Target);
+            if (this.isEnglish(e.Target.charCode))
+              console.log('English');
+            else if(this.isPersian(e.key))
+              console.log('Arabic');
+            else
+              console.log('Others')
+       
+    }
     componentWillMount() {
         let that = this
-        window.generateGcode = e => {
+        console.log('this',this);
+        window.generateGcode = () => {
             let { settings, documents, operations } = that.props;
-
             let percent = 0;
             __interval = setInterval(() => {
                 that.props.dispatch(generatingGcode(true, isNaN(percent) ? 0 : Number(percent)));
@@ -94,7 +142,10 @@ class Cam extends React.Component {
                 (gcode) => {
                     clearInterval(__interval)
                     that.props.dispatch(setGcode(gcode));
+                    console.log('gcode is ready');
                     that.props.dispatch(generatingGcode(false))
+                    //this.runJob();
+
                 },
                 (threads) => {
                     percent = ((Array.isArray(threads)) ? (threads.reduce((a, b) => a + b, 0) / threads.length) : threads).toFixed(2);
@@ -103,21 +154,30 @@ class Cam extends React.Component {
             return QE;
         }
 
-        this.generateGcode.bind(this)
-        this.stopGcode.bind(this)
-    }
+        this.generateGcode.bind(this);
+        this.stopGcode.bind(this);
 
-    generateGcode(e) {
-        this.QE = window.generateGcode(e);
+    }
+    handleChange (e)  {
+        this.setState({ content: e.target.value });
+        myText = e.target.value;
+    }
+    handleFontChange (e)  {
+        this.setState({ font: e.target.value });
+    }    
+    generateGcode() {
+        this.QE = window.generateGcode();
     }
 
     stopGcode(e) {
         if (this.QE) { this.QE.end(); }
     }
-
+    docuementAdded() {
+        console.log('Document Added');
+    }
     shouldComponentUpdate(nextProps, nextState) {
         return (
-            nextProps.documents !== this.props.documents ||
+            nextState.font !== this.state.font || /*nextState.fontSize !== this.state.fontSize || */ nextProps.documents !== this.props.documents ||
             nextProps.operations !== this.props.operations ||
             nextProps.currentOperation !== this.props.currentOperation ||
             nextProps.bounds !== this.props.bounds ||
@@ -128,14 +188,380 @@ class Cam extends React.Component {
         );
     }
 
-    
+    generateSVG(text){
+        e.preventDefault();
+        var makerjs = require('makerjs');
+        //console.log(e.target.content.value);
+        let output;
+        let that = this;
 
+        setTimeout(() => {opentype.load('ABeeZee-Regular.ttf', function (err, font) {
+            if (err) {
+                console.log('couldnot load the font.!!');
+            } else {       
+                var textModel = new makerjs.models.Text(font, text, 100);
+                output = makerjs.exporter.toSVG(textModel);
+            }
+            }); 
+        }, 3000);
+        return output;
+    }
+    runJob(){
+        let globalState = GlobalStore().getState(); 
+        console.log('globalState',globalState);
+        // you can't rely on globalstate
+        /*if(!globalState.com.serverConnected || !globalState.com.machineConnected){
+            console.log('server or machine is not connected');
+            alert('server is not server or machine is not connected');
+            return;
+        }*/
+            
+        // check if machine is connected first
+        if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
+            //console.log(this.props);
+            let cmd = this.props.gcode;
+            //console.log(cmd);
+            console.log('runJob(' + cmd.length + ')');
+            playing = true;
+
+            /*this.setState({
+                isPlaying: true,
+                liveJogging: {
+                    ... this.state.liveJogging, disabled: true, hasHomed: false
+                }
+            })*/
+
+            runJob(cmd);
+        } 
+    }
+
+    wordWrapped(e){
+        function validateWrapping(text,layout){
+            var words = text.split(' ');
+            if(layout.lines.length > words.length){
+                console.log('to be modified: layout lines bigger');
+                return 0;
+            }
+            words.forEach(function(word,i){
+                if(layout.lines[i].length < word.length){
+                    console.log('to be modified one word in two lines');
+                    return 0;
+                }  
+            })
+        }
+        var t0 = performance.now();
+        var words = myText.split(" ");
+        var fontSize;
+        var circleModel = {
+            maxHeight:28,
+            maxWidth:28,
+            maxLines:3,
+            maxWordsAr:4,
+            maxWordsEn:3,
+            depth:11// mm
+        };
+        if(words.length > circleModel.maxWordsEn)
+        {
+            alert(' Only max '+circleModel.maxWordsEn+' words is allowed.');
+            return;
+        }
+        console.log('Checking stared:');
+        var font = 'GreatVibes-Regular.otf';
+        switch(this.state.font){
+            case 'GreatVibes':
+                font = 'GreatVibes-Regular.otf';
+            break;
+            case 'chocolatePristina':
+                font = 'chocolatePristina.ttf';
+            break;
+            case 'ITCKRIST':
+                font = 'ITCKRIST.TTF';
+            break;
+            case 'TrajanPro-Bold':
+                font = 'TrajanPro-Bold.otf';
+            break;   
+            case 'TrajanPro-Regular':
+                font = 'TrajanPro-Regular.otf';
+            break;                       
+        }        
+        const computeLayout = require('opentype-layout');
+        var models2 = {};
+        console.log('font is',font);
+        opentype.load(font,function(err,font){
+            console.log('ZA font',font);
+            font.unitsPerEm = 50;
+            var scale = 0.012695775;
+            //var scale = 1 / font.unitsPerEm * fontSize; //0.012695775
+            fontSize = scale * font.unitsPerEm;
+            console.log('newFontSize',fontSize);
+            var lineHeight = 1.1 * font.unitsPerEm;
+            let finalWidth = circleModel.maxWidth*301;
+            var x = finalWidth * scale;
+            console.log('Units per EM ',font.unitsPerEm);
+            console.log('finalWidth ',finalWidth);
+            console.log('scale ',scale);
+            console.log('x ',x)
+            //let fontSize = finalWidth*font.unitsPerEm;
+            var layoutOptions = {
+                "align":"center",
+                lineHeight: lineHeight ,
+                width: finalWidth
+            };
+            var layout = computeLayout(font, myText, layoutOptions);
+            var validationResult = validateWrapping(myText,layout);
+            font.glyphs.glyphs.map(function(elem,i){
+                font.glyphs.glyphs[i].advanceWidth *= 0.3; 
+            })
+
+            console.log('ZA layout',layout);
+            /*layout.glyphs.forEach((glyph, i) => {
+                var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                character.origin = makerjs.point.scale(glyph.position, scale);
+                makerjs.model.addModel(models, character, i);
+            });*/
+        });
+        var t1 = performance.now();
+        console.log('exection time: ',t1-t0,'milli second');
+    }
+
+    textWrapping(e){    
+        function validateWrapping(text,layout){
+            var words = text.split(' ');
+            if(layout.lines.length > words.length){
+                console.log('to be modified: layout lines bigger');
+                return 0;
+            }
+            /*words.forEach(function(word,i){// later to be fixed
+                if(layout.lines[i].length < word.length){
+                    console.log('to be modified one word in two lines');
+                    return 0;
+                }  
+            })*/
+        }
+        var font = 'GreatVibes-Regular.otf';   
+        var words = myText.split(" ");
+        var fontSize;
+        var circleModel = {
+            maxHeight:28,
+            maxWidth:28,
+            maxLines:3,
+            maxWordsAr:4,
+            maxWordsEn:3
+        };
+        if(words.length > circleModel.maxWordsEn)
+        {
+            alert(' Only max '+circleModel.maxWordsEn+' words is allowed.');
+            return;
+        }
+        console.log('clean everything before you start again: delete documents,clean gcode');
+        this.props.dispatch(removeDocumentSelected());
+        this.props.dispatch(clearOperations());
+
+        var that = this;
+        let { settings, documents, operations } = that.props;
+        //if documents is not empty then cleant it dispatch remove documets
+        console.log('Text Wrapping started');
+        const release = captureConsole();
+        const parser = new Parser({});
+        var makerjs = require('makerjs');
+        ////// test
+        const file = {
+            name:"file.svg",
+            type: "image/svg+xml"
+        };
+        const modifiers = {};
+        const computeLayout = require('opentype-layout');
+        var models = {};
+        opentype.load('GreatVibes-Regular.otf', function (err, font) {
+            console.log(font);
+            var lineHeight = 1.1 * font.unitsPerEm;
+            var width = 115; 
+            var scale = 0.048695775;        
+            //scale = 0.009695775;
+            fontSize = scale * font.unitsPerEm;
+            console.log('fontsize',fontSize);
+            var finalWidth =width / scale;// should be maxMM * 301 (which is point in mm)
+            finalWidth = circleModel.maxWidth*301;
+            var layoutOptions = {
+                "align":"center",
+                lineHeight: lineHeight ,
+                width: finalWidth
+            };
+            console.log('origlayoutOptions ',layoutOptions);
+            console.log('line Height',lineHeight);
+            console.log('scale',scale);
+            console.log('finalWidth',finalWidth);
+
+            var layout = computeLayout(font, myText, layoutOptions);
+            console.log('layout',layout);
+            console.log('ZA layout lines',layout.lines);
+
+            if( layout.lines.length > circleModel.maxLines ){
+                console.log('lines now: ',layout.lines.length,' circleModel.maxLines: ',circleModel.maxLines);
+            }
+            var validationResult = validateWrapping(myText,layout);
+            if(!validationResult){
+                for(let j =0;j<font.glyphs.glyphs.length;j++){
+                    font.glyphs.glyphs[j].advanceWidth *= 0.5;
+                }
+                console.log('newfont',font);   
+                layout = computeLayout(font, myText, layoutOptions);
+                console.log('new layout',layout);
+            }
+                
+             console.log('newfont',font);   
+                    
+            var widthOperator = finalWidth * scale;
+            console.log('widthOperator : ',widthOperator);
+            layout.glyphs.forEach((glyph, i) => {
+                var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                character.origin = makerjs.point.scale(glyph.position, scale);
+                makerjs.model.addModel(models, character, i);
+            });
+            
+            console.log('modesl',models);
+            var output = makerjs.exporter.toSVG(models);
+            parser.parse(output).then((tags) => {
+                let captures = release(true);
+                let warns = captures.filter(i => i.method == 'warn')
+                let errors = captures.filter(i => i.method == 'errors')
+                
+                if (warns.length)
+                    CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                if (errors.length)
+                    CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+
+                imageTagPromise(tags).then((tags) => {
+                    //console.log('loadDocument: generatedID',generatedID);
+                    that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                    //console.log('!!!!* select document: dispatch :props:',that.props);
+                    that.props.dispatch(selectDocuments(true));
+                    let documents = that.props.documents.map(d => that.props.documents[0].id).slice(0, 1);
+                    console.log('DocId is:',documents);
+                    that.props.dispatch(addOperation({ documents}));
+                    console.log('Generateing GCode');
+                    that.generateGcode(e);
+                    console.log('done Generateing GCode');
+
+                    let globalState = GlobalStore().getState(); 
+                    console.log('that.propts',that.props.op,'state',globalState);
+                    that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id)) 
+                }).then( () => {
+                })
+            })
+        })
+
+    }
+    loadMinE(e){
+        console.log('clean everything before you start again: delete documents,clean gcode');
+        this.props.dispatch(removeDocumentSelected());
+        this.props.dispatch(clearOperations());
+        let that = this;
+        let { settings, documents, operations } = that.props;
+        //if documents is not empty then cleant it dispatch remove documets
+        console.log('1 you are gonna like it');
+        const release = captureConsole();
+        let parser = new Parser({});
+        var makerjs = require('makerjs');
+        //var text = state.myText;
+        var text = myText;
+        if(text == '')
+            text = 'NoText';
+        let output;
+        let file = '';
+        const modifiers = {};
+        file = {
+            name:"file.svg",
+            type: "image/svg+xml"
+        }
+        var font = 'GreatVibes-Regular.otf';
+        switch(this.state.font){
+            case 'GreatVibes':
+                font = 'GreatVibes-Regular.otf';
+            break;
+            case 'chocolatePristina':
+                font = 'chocolatePristina.ttf';
+            break;
+            case 'ITCKRIST':
+                font = 'ITCKRIST.TTF';
+            break;
+            case 'TrajanPro-Bold':
+                font = 'TrajanPro-Bold.otf';
+            break;   
+            case 'TrajanPro-Regular':
+                font = 'TrajanPro-Regular.otf';
+            break;                       
+        }
+        setTimeout(() => {opentype.load(font, function (err, font) {
+            if (err) {
+                console.log('could not load the font.!!');
+            } else {
+        
+                var textModel = new makerjs.models.Text(font, text, 120);
+                output = makerjs.exporter.toSVG(textModel);
+                //console.log("inside ");
+                //console.log(output);
+                parser.parse(output)
+                .then((tags) => {
+                    let captures = release(true);
+                    let warns = captures.filter(i => i.method == 'warn')
+                    let errors = captures.filter(i => i.method == 'errors')
+                    
+                    if (warns.length)
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                    if (errors.length)
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                    // not gonna be used
+                    //console.log("params",file,parser,tags,modifiers,this.props);
+
+                    imageTagPromise(tags).then((tags) => {
+                        //console.log('loadDocument: generatedID',generatedID);
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                        //console.log('!!!!* select document: dispatch :props:',that.props);
+                        that.props.dispatch(selectDocuments(true));
+                        let documents = that.props.documents.map(d => that.props.documents[0].id).slice(0, 1);
+
+                        console.log('DocId is:',documents);
+                        that.props.dispatch(addOperation({ documents}));
+                        console.log('Generateing GCode');
+                        that.generateGcode(e);
+                        console.log('done Generateing GCode');
+                        let globalState = GlobalStore().getState(); 
+
+                        console.log('that.propts',that.props.op,'state',globalState);
+                        that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
+
+                        
+                    }).then( () => {
+
+
+                    })
+                })
+                .catch((e) => {
+                    release(true);
+                    CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", String(e), 3)
+                    console.log(e)
+                })
+            }
+            }); 
+        }, 3000);     
+
+    }
+    handleSubmission(e) {
+        e.preventDefault();
+        var text = e.target.content.value;
+        myText = text;
+        console.log('started');
+        this.setState({
+            content:text
+        });
+    }
     render() {
-        let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument, bounds } = this.props;
+        //console.log('cam.js this.props: ',this.props);
+        let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument,loadMine,loadMinE, bounds } = this.props;
         let validator = ValidateSettings(false)
         let valid = validator.passes();
         let someSelected=documents.some((i)=>(i.selected));
-        
         return (
             <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div className="panel panel-danger" style={{ marginBottom: 0 }}>
@@ -166,9 +592,9 @@ class Cam extends React.Component {
                                         <label>Documents {Info(<small>Tip:  Hold <kbd>Ctrl</kbd> to click multiple documents</small>)}</label>
                                     </td>
                                     <td style={{display:"flex", justifyContent: "flex-end" }}>
-                                        
-                                        <FileField style={{   position: 'relative', cursor: 'pointer' }} onChange={loadDocument} accept={DOCUMENT_FILETYPES}>
-                                            <button title="Add a DXF/SVG/PNG/BMP/JPG document to the document tree" className="btn btn-xs btn-primary"><i className="fa fa-fw fa-folder-open" />Add Document</button>
+                                        <FileField style={{   position: 'relative', cursor: 'pointer' }} onChange={ loadDocument} accept={DOCUMENT_FILETYPES}>
+                                            <button title="Add a DXF/SVG/PNG/BMP/JPG document to the document tree" className="btn btn-xs btn-primary">
+                                                <i className="fa fa-fw fa-folder-open" />Add Document</button>
                                             {(this.props.panes.visible) ? <NoDocumentsError camBounds={bounds} settings={settings} documents={documents} operations={operations} /> : undefined}
                                         </FileField>&nbsp;
                                     </td>
@@ -219,15 +645,52 @@ class Cam extends React.Component {
                     </table>
                 </Alert>
                 <OperationDiagram {...{ operations, currentOperation }} />
-                <Operations style={{ flexGrow: 2, display: "flex", flexDirection: "column" }} />
-            </div>);
+                <Operations 
+                    style={{ flexGrow: 2, display: "flex", flexDirection: "column" }  } 
+                    /*genGCode = {this./*generateGcode*//*docuementAdded}*/
+                 />
+
+            <h3>String to Image</h3>
+        
+            <form onSubmit={ this.handleSubmission }>
+
+             Font: 
+            <select value={this.state.font} onChange={this.handleFontChange}>
+                <option value="GreatVibes">Great Vibes</option>
+                <option value="chocolatePristina">Pristina</option>
+                <option value="ITCKRIST">ITCKRIST</option>
+                <option value="TrajanPro-Bold">TrajanPro-B</option>
+                <option value="TrajanPro-Regular">TrajanPro-R</option>
+            </select><br />
+                Text: <br />
+                <textarea name="content"  id="content" ref = "content" /*onKeyDown={this.handleInput}*/ onChange={ this.handleChange } ></textarea><br />
+                <div id ="render-text">
+                
+                </div>
+            </form>
+            <button name="sendSVG" onClick={ this.loadMinE}>Generate Image</button>
+            <button name="runJob" onClick={ this.runJob}>Run</button>
+            <button name="textWrapping" onClick={ this.textWrapping}>Text Wrap</button>
+            <button name="checkWrapping" onClick={ this.wordWrapped}>Check</button>
+        </div>);
     }
 };
 
 Cam = connect(
     state => ({
-        settings: state.settings, documents: state.documents, operations: state.operations, currentOperation: state.currentOperation, gcode: state.gcode.content, gcoding: state.gcode.gcoding, dirty: state.gcode.dirty, panes: state.panes,
-        saveGcode: (e) => { prompt('Save as', 'gcode.gcode', (file) => { if (file !== null) sendAsFile(appendExt(file, '.gcode'), state.gcode.content) }, !e.shiftKey) },
+        myText:state.content,
+        settings: state.settings, 
+        documents: state.documents, 
+        operations: state.operations, 
+        currentOperation: state.currentOperation, 
+        gcode: state.gcode.content, 
+        gcoding: state.gcode.gcoding, 
+        dirty: state.gcode.dirty, 
+        panes: state.panes,
+        saveGcode: (e) => { 
+            prompt('Save as', 'gcode.gcode', (file) => { 
+                if (file !== null) sendAsFile(appendExt(file, '.gcode'), state.gcode.content) 
+            }, !e.shiftKey) },
         viewGcode: () => openDataWindow(state.gcode.content),
     }),
     dispatch => ({
@@ -238,6 +701,69 @@ Cam = connect(
         },
         resetWorkspace: () => {
             confirm("Are you sure?", (data) => { if (data) dispatch(resetWorkspace()); })
+        },
+        //loadMinE: this.loadMinE,
+        loadMine:(e, modifiers = {})   => {
+            let reader = new FileReader;
+            //reader.onload = () => {
+                console.log('1 you are gonna like it');
+                const release = captureConsole()
+
+                let parser = new Parser({});
+                var makerjs = require('makerjs');
+                var text = myText;
+                if(text == '')
+                    text = 'NoText';
+                let output;
+                let file = '';
+                file = {
+                    name:"file.svg",
+                    type: "image/svg+xml"
+                }
+                console.log('text is : ',text);
+                setTimeout(() => {opentype.load('ABeeZee-Regular.ttf', function (err, font) {
+                    if (err) {
+                        console.log('could not load the font.!!');
+                    } else {
+                
+                        var textModel = new makerjs.models.Text(font, text, 100);
+                        output = makerjs.exporter.toSVG(textModel);
+                        //console.log("inside ");
+                        //console.log(output);
+                        parser.parse(output)
+                        .then((tags) => {
+                            let captures = release(true);
+                            let warns = captures.filter(i => i.method == 'warn')
+                            let errors = captures.filter(i => i.method == 'errors')
+                            if (warns.length)
+                                CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                            if (errors.length)
+                                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                            // not gonna be used
+                            const generatedID = "c298057b-6925-47d5-bc62-bb564b8c9dba";
+
+                            imageTagPromise(tags).then((tags) => {
+                                //console.log('loadDocument: generatedID',generatedID);
+                                dispatch(loadDocument(file, { parser, tags }, modifiers));
+                                console.log('select document: dispatch modifiers',modifiers);
+                                dispatch(selectDocuments(true));
+                                //get documents
+                                
+                                console.log('this',this);
+                                // I need to access documetns to dispatch it
+                                //let documents = this.props.documents;
+                                //dispatch(addOperation(generatedID));
+                            })
+                        })
+                        .catch((e) => {
+                            release(true);
+                            CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", String(e), 3)
+                            console.error(e)
+                        })
+                    }
+                    }); 
+                }, 3000);                  
+
         },
         loadDocument: (e, modifiers = {}) => {
             // TODO: report errors
@@ -258,10 +784,10 @@ Cam = connect(
                                     CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2)
                                 if (errors.length)
                                     CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3)
-
                                 //onsole.log('loadDocument: imageTagPromise');
                                 imageTagPromise(tags).then((tags) => {
                                     console.log('loadDocument: dispatch');
+                                    let generatedID;
                                     dispatch(loadDocument(file, { parser, tags }, modifiers));
                                 })
                             })
@@ -274,14 +800,6 @@ Cam = connect(
 
                     }
                     //console.log('loadDocument: readAsText');
-                    reader.readAsText(file);
-                }
-                else if (file.name.substr(-4).toLowerCase() === '.dxf') {
-                    reader.onload = () => {
-                        var parser = new DxfParser();
-                        var dxfTree = parser.parseSync(reader.result);
-                        dispatch(loadDocument(file, dxfTree, modifiers));
-                    }
                     reader.readAsText(file);
                 }
                 else if (file.type.substring(0, 6) === 'image/') {

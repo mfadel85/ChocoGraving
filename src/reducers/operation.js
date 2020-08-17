@@ -128,6 +128,7 @@ export function operation(state, action) {
 }
 
 export const operations = (state, action) => {
+    //console.log('operations reducer is being called',state,action);
     state = objectArray('operation', operation)(state, action);
     switch (action.type) {
         case 'OPERATION_MOVE_CURRENT':
@@ -139,11 +140,14 @@ export const operations = (state, action) => {
                 newIndex = state.length - 1;
             return arrayMove(state.slice(), index, newIndex);
         case 'OPERATION_SET_ATTRS':
+            console.log('!! OPERATION_SET_ATTRS');
             if (action.payload.attrs.expanded)
                 state = state.map(op => ({ ...op, expanded: op.id === action.payload.id }));
             break;
         case 'OPERATION_ADD':
+            console.log('Operation is : OPERATION_ADD');
             state = state.map(op => ({ ...op, expanded: op.id === action.payload.attrs.id }));
+            console.log('state is :',state);
             break;
         case "OPERATION_SPREAD_FIELD":
             let op = state.find(o => o.id === action.payload.id)

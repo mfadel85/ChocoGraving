@@ -91,10 +91,21 @@ class DocumentLabel extends React.Component {
             elem = elem.parentElement;
         if (elem) {
             let documents = this.props.documents.filter(d => isSelected(this.props.documents, d)).map(d => d.id);
-            if (elem.dataset.operationId === 'new')
+            if (elem.dataset.operationId === 'new'){
+                console.log("I caught you this time no joke Documents",documents);
+                console.log("2 I caught you this time no joke props",this.props);
                 this.props.dispatch(addOperation({ documents }));
-            else
+                console.log("2 !!!!I caught you this time no joke",this.props);
+
+            }
+            else {
+                console.log("2 I caught you this time no joke props",this.props);
+
                 this.props.dispatch(operationAddDocuments(elem.dataset.operationId, elem.dataset.operationTabs, documents));
+                console.log("2 !!!!I caught you this time no joke",this.props);
+
+            }
+                
         }
     }
 

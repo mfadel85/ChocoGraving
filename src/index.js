@@ -8,6 +8,9 @@ import persistState, {mergePersistedState} from 'redux-localstorage'
 import adapter from 'redux-localstorage/lib/adapters/localStorage';
 import filter from 'redux-localstorage-filter';
 
+
+
+import { load } from 'opentype.js'
 export const LOCALSTORAGE_KEY = 'LaserWeb';
 export const DEBUG_KEY = "LaserwebDebug";
 
@@ -50,7 +53,7 @@ const middleware = compose(
   persistState(storage, LOCALSTORAGE_KEY),
 );
 
-const store = createStore(reducer, middleware);
+const store = createStore(reducer, middleware,window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
 // Bad bad bad
 export function GlobalStore()
@@ -71,6 +74,9 @@ function renderHot() {
     ), document.getElementById('laserweb'));
 }
 renderHot();
+
+
+
 
 if (module.hot) {
     module.hot.accept('./reducers', renderHot);

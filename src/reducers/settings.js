@@ -57,12 +57,12 @@ export const SETTINGS_INITIALSTATE = {
     __selectedProfile: null,
     __latestRelease: null,
 
-    showMachine: false,
-    machineWidth: 300,
+    showMachine: true,
+    machineWidth: 200,
     machineHeight: 200,
     machineBeamDiameter: 0.2,
-    machineBottomLeftX: 0,
-    machineBottomLeftY: 0,
+    machineBottomLeftX: 0,// maybe we can change this to set the text inside the chocolae template
+    machineBottomLeftY: 0,// maybe we can change this to set the text inside the chocolae template
 
     machineFeedRange: {
         XY: {min: 1, max:50000},
@@ -73,13 +73,13 @@ export const SETTINGS_INITIALSTATE = {
     
     machineXYProbeOffset: 0,
 
-    machineZEnabled: false,
+    machineZEnabled: true,
     machineZMatThickness: 0,
     machineZToolOffset: 0,
-    machineZStartHeight: '',
+    machineZStartHeight: '0',
     machineZProbeOffset: 0,
 
-    machineAEnabled: false,
+    machineAEnabled: true,
 
     machineBlowerEnabled: false,
     machineBlowerGcodeOn: '',
@@ -95,7 +95,7 @@ export const SETTINGS_INITIALSTATE = {
     toolGridMinorSpacing: 10,
     toolGridMajorSpacing: 50,
     toolSafetyLockDisabled: true,
-    toolCncMode: false,
+    toolCncMode: true,
     toolImagePosition: "BL",
     toolUseNumpad: false,
     toolDisplayCache: false,
@@ -117,8 +117,8 @@ export const SETTINGS_INITIALSTATE = {
     toolFeedUnits: 'mm/min',
     toolTestSValue: 1,
     toolTestDuration: 0,
-
-    gcodeStart: "G21         ; Set units to mm\r\nG90         ; Absolute positioning\r\n",
+/*  */
+    gcodeStart: "G21         ; Set units to mm\r\nG90         ; Absolute positioning\r\nM4 S0       ; Enable Laser/Spindle (0 power)\r\n",
     gcodeEnd: "M5          ; Switch tool offEnd\r\n",
     gcodeHoming: "",
     gcodeGenerator: "default",

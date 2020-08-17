@@ -62,6 +62,7 @@ export class OperationDiagram extends React.Component {
         fetch('cnctoolpath.svg')
             .then(resp => resp.text())
             .then(content => {
+                //console.log(content);
                 this.svg = Snap.parse(content).select('svg').node;
                 this.svg.style.width = '100%';
                 this.svg.style.height = 'inherit';

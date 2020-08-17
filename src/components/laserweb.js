@@ -26,6 +26,8 @@ import Workspace from './workspace'
 
 // Inner components
 import Com from './com'
+import Creator from './creator'
+
 import Jog from './jog'
 import Cam from './cam'
 import Quote from './quote'
@@ -184,6 +186,7 @@ class LaserWeb extends React.Component {
                     <div style={{ display: 'flex', flexDirection: 'row', height: '100%' }}>
                         <Sidebar ref="sidebar" style={{ flexGrow: 0, flexShrink: 0 }}>
                             <Cam id="cam" title="Files" icon="pencil-square-o" />
+                            <Creator id="creator" title="Creator" icon="pencil-square-o" />
                             <Com id="com" title="Comms" icon="plug" />
                             <Jog id="jog" title="Control" icon="arrows-alt" />
                             <Settings id="settings" title="Settings" icon="cogs" />

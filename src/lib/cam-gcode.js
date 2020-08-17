@@ -45,7 +45,8 @@ export const expandHookGCode = (operation) =>{
 
 export function getGcode(settings, documents, operations, documentCacheHolder, showAlert, done, progress) {
     "use strict";
-
+    console.log('operations',operations);
+    console.log('settings',settings);
     let starttime=new Date().getTime()
 
     const QE = new queue();
@@ -126,7 +127,7 @@ export function getGcode(settings, documents, operations, documentCacheHolder, s
         }
 
         if (op.enabled) QE.push((cb) => {
-            console.log(op.type + "->" + jobIndex)
+            console.log(op.type + " -> " + jobIndex)
             preflightPromise(settings, documents, opIndex, op, workers)
                 .then((preflight) => {
                     let { geometry, openGeometry, tabGeometry, filteredDocIds, docsWithImages } = preflight;

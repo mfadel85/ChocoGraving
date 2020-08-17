@@ -16,6 +16,7 @@ export function undoCombineReducers(reducers,
         [undoStateKey]: state[undoStateKey].slice(1)
       }
     } else {
+      //console.log(action.type);
       // Save a new undo unless the action is blacklisted
       const newHistory = shouldSaveUndo(action) ?
         [{

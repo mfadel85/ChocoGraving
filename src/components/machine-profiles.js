@@ -20,6 +20,7 @@ class MachineProfile extends React.Component {
     constructor(props)
     {
         super(props);
+
         this.handleApply.bind(this);
         this.handleSelect.bind(this);
         this.handleInput.bind(this);
@@ -27,7 +28,24 @@ class MachineProfile extends React.Component {
         
         let selected = this.props.settings.__selectedProfile || "";
         
-        this.state={selected: selected , newLabel: '', newSlug:''}
+        this.state={selected: '*gen_grbl' , newLabel: '', newSlug:''}
+        selected=this._getSelectedProfile()
+        let profileId = this.state.selected        
+        this.props.onApply({...selected.settings , __selectedProfile: profileId });
+        try {
+            let mdb = require('../data/lw.materials/materials/'+profileId.replace("*","")+".json")
+                if (validate(mdb)){
+                    if (mdb) {
+                        confirm(`A material database related with ${profileId} has been detected. Do you want to load it?`,(data)=>{
+                            if (data) this.props.dispatch(importMaterialDatabase(profileId,mdb));
+                        })
+                    }
+                } else {
+                    CommandHistory.dir(`Material database bundle ${profileId} found corrupt. Please open an issue.`,validate.errors, 2)
+                }
+        } catch(e) {
+
+        }
     }
     
     handleApply(e) {
@@ -56,6 +74,7 @@ class MachineProfile extends React.Component {
     }
     
     handleSelect(e){
+        console.log('a machine profile is selected',e.target.value);
         let value=e.target.value
         if (value) this.setState({selected: value});
         

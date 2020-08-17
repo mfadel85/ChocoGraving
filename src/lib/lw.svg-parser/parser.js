@@ -1,7 +1,7 @@
 // Imports
 import { Tag } from './tag'
 import { TagParser } from './tagparser'
-
+import { SVG } from '../example.svg'
 // SVG parser class
 class Parser {
     // Class constructor...
@@ -192,8 +192,12 @@ class Parser {
         this.document = null
         this.defs     = {}
         this.tags     = null
-
+        // MFH EDIT
+        //console.log(SVG);
         // Load input if provided
+        //console.log('here is the input of the parser');
+        //console.log(input);
+        // now if we imported the input from a file
         if (input) {
             return new Promise((resolve, reject) => {
                 this.load(input).then(() => {

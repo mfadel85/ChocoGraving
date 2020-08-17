@@ -55,6 +55,8 @@ export class GetBounds extends React.Component {
     }
 
     render() {
+        //console.log('GetBounds');
+        //console.log(this.props);
         let {Type, setBoundsProp, children, ...rest} = this.props;
         if (setBoundsProp)
             rest.bounds = this.state;
@@ -72,6 +74,7 @@ GetBounds.childContextTypes = {
 export function withGetBounds(Component) {
     class Wrapper extends React.Component {
         render() {
+            //console.log('withGetBounds');
             return (
                 <GetBounds {...this.props } Type={Component} setBoundsProp={true}>
                     {this.props.children}
@@ -85,6 +88,8 @@ export function withGetBounds(Component) {
 export function withStoredBounds(Component) {
     class Wrapper extends React.Component {
         render() {
+            //console.log('withStoredBounds');
+
             return <Component {...this.props} bounds={this.context.bounds} />;
         }
     };

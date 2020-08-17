@@ -19,6 +19,9 @@ import { deepMerge } from '../lib/helpers'
 const combined = undoCombineReducers({ camera, documents, operations, currentOperation, gcode, panes, settings, splitters, workspace, machineProfiles, materialDatabase, com }, {}, shouldSaveUndo);
 
 export default function reducer(state, action) {
+    //console.log("the action of the reducer is ",action);
+    //console.log("state before ",state);
+    
     switch (action.type) {
         case 'CAMERA_ZOOM_AREA':
             return { ...state, camera: zoomArea(state.camera, state.settings, state.workspace, action) };
@@ -27,8 +30,15 @@ export default function reducer(state, action) {
             state = combined(state, action);
             return { ...state, operations: fixupOperations(state.operations, state.documents) };
         case 'DOCUMENT_LOAD':
-            return { ...state, documents: documentsLoad(state.documents, state.settings, action) };
+            {
+                //console.log('documentsLoad is being called');
+                //console.log(state.settings);
+                // we could add action.generatedID
+                return { ...state, documents: documentsLoad(state.documents, state.settings, action) };
+            }
+            
         case 'OPERATION_ADD_DOCUMENTS':
+            console.log('operation add, OPERATION_ADD_DOCUMENTS');
             state = combined(state, action);
             return { ...state, operations: operationsAddDocuments(state.operations, state.documents, action) };
         case "SNAPSHOT_UPLOAD":
@@ -37,6 +47,11 @@ export default function reducer(state, action) {
                 newState = Object.assign({}, state, deepMerge(action.getState(), newState));
             return reducer(newState, { type: 'LOADED', payload: newState });
         default:
-            return combined(state, action);
+           // console.log(" Action here is: ",action.type);
+            //console.log('state now is ',state);
+            const combinedState = combined(state, action)
+            //console.log("state after ",state);
+
+            return combinedState;
     }
 }

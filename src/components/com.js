@@ -40,16 +40,36 @@ class Com extends React.Component {
     constructor(props) {
         super(props);
         let {comInterfaces, comPorts, comAccumulatedJobTime} = this.props.settings;
+        let {settings, dispatch} = this.props;
+
         accumulatedJobTime = comAccumulatedJobTime;
         this.state = {comInterfaces: comInterfaces, comPorts: comPorts};
+        $('#connectS').removeClass('disabled');
+        $('#disconnectS').addClass('disabled');
+        if (!socket && !serverConnected) {
+            this.handleConnectServer();
+            // MFH I added this
+            CommandHistory.write('Connecting Machine @ USB,/dev/ttyUSB0,115200baud', CommandHistory.INFO);
+            let server = settings.comServerIP;
+            socket = io('ws://' + server);
+            socket.emit('connectTo', 'USB' + ',' + '/dev/ttyUSB0' + ',' + '115200');       
+        }       
     }
 
     componentDidMount() {
+        let {settings, dispatch} = this.props;
+
         if (!serverConnected) {
             $('#connectS').removeClass('disabled');
             $('#disconnectS').addClass('disabled');
             if (!socket && !serverConnected) {
                 this.handleConnectServer();
+                // MFH I added this
+                CommandHistory.write('Main Test Connecting Machine @ USB,/dev/ttyUSB0,115200baud', CommandHistory.INFO);
+                console.log('Main Testler');
+                let server = settings.comServerIP;
+                socket = io('ws://' + server);
+                socket.emit('connectTo', 'USB' + ',' + '/dev/ttyUSB0' + ',' + '115200');       
             }
         } else {
             $('#connectS').addClass('disabled');
@@ -632,12 +652,14 @@ export function runCommand(gcode) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+
+        CommandHistory.error('2 Server is not connected!')
     }
     return false;
 }
 
 export function runJob(job) {
+
     if (serverConnected) {
         if (machineConnected){
             if (job.length > 0) {
@@ -655,7 +677,8 @@ export function runJob(job) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+
+        CommandHistory.error('Not gonna work, Server is not connected!')
     }
 }
 
@@ -672,7 +695,7 @@ export function pauseJob() {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('4 Server is not connected!')
     }
 }
 
@@ -690,7 +713,7 @@ export function resumeJob() {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('3 Server is not connected!')
     }
 }
 
@@ -710,7 +733,7 @@ export function abortJob() {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('5 Server is not connected!')
     }
 }
 
@@ -724,7 +747,7 @@ export function clearAlarm(method) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('6 Server is not connected!')
     }
 }
 
@@ -737,7 +760,7 @@ export function setZero(axis) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('7 Server is not connected!')
     }
 }
 
@@ -750,7 +773,7 @@ export function gotoZero(axis) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('8 Server is not connected!')
     }
 }
 
@@ -763,7 +786,7 @@ export function setPosition(data) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error(' 9 Server is not connected!')
     }
 }
 
@@ -776,7 +799,7 @@ export function home(axis) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('10 Server is not connected!')
     }
 }
 
@@ -789,7 +812,7 @@ export function probe(axis, offset) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('11 Server is not connected!')
     }
 }
 
@@ -802,7 +825,7 @@ export function laserTest(power, duration, maxS) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('12 Server is not connected!')
     }
 }
 
@@ -815,7 +838,7 @@ export function jog(axis, dist, feed) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('14 Server is not connected!')
     }
 }
 
@@ -828,7 +851,7 @@ export function jogTo(x, y, z, mode, feed) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('14 Server is not connected!')
     }
 }
 
@@ -841,7 +864,7 @@ export function feedOverride(step) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('15 Server is not connected!')
     }
 }
 
@@ -854,7 +877,7 @@ export function spindleOverride(step) {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('16 Server is not connected!')
     }
 }
 
@@ -867,7 +890,7 @@ export function resetMachine() {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('17 Server is not connected!')
     }
 }
 
@@ -908,7 +931,7 @@ export function playpauseMachine() {
             CommandHistory.error('Machine is not connected!')
         }
     } else {
-        CommandHistory.error('Server is not connected!')
+        CommandHistory.error('18 Server is not connected!')
     }
 }
 
