@@ -376,7 +376,7 @@ class Cam extends React.Component {
             console.log(font);
             var lineHeight = 1.1 * font.unitsPerEm;
             var width = 115; 
-            var scale = 0.048695775;        
+            var scale = 0.018695775;        
             //scale = 0.009695775;
             fontSize = scale * font.unitsPerEm;
             console.log('fontsize',fontSize);
@@ -421,6 +421,7 @@ class Cam extends React.Component {
             
             console.log('modesl',models);
             var output = makerjs.exporter.toSVG(models);
+            console.log('output svg', output);
             parser.parse(output).then((tags) => {
                 let captures = release(true);
                 let warns = captures.filter(i => i.method == 'warn')
@@ -439,6 +440,10 @@ class Cam extends React.Component {
                     let documents = that.props.documents.map(d => that.props.documents[0].id).slice(0, 1);
                     console.log('DocId is:',documents);
                     that.props.dispatch(addOperation({ documents}));
+                    // we have to set the parameters
+                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, v - this.bounds.y1]));
+                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, v - this.bounds.x1, 0]));
+
                     console.log('Generateing GCode');
                     that.generateGcode(e);
                     console.log('done Generateing GCode');
