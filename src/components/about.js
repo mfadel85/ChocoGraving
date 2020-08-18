@@ -6,7 +6,7 @@
 // React
 import React from 'react'
 import { connect } from 'react-redux';
-import { ButtonToolbar, Button } from 'react-bootstrap'
+import {  } from 'react-bootstrap'
 import Icon from './font-awesome'
 import marked from 'marked';
 import { version } from '../reducers/settings'

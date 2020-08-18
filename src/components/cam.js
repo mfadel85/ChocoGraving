@@ -12,6 +12,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import { ovalTemplate } from '../data/oval.svg';
 
 import Parser from '../lib/lw.svg-parser/parser';
 import DxfParser from 'dxf-parser';
@@ -20,7 +21,7 @@ import ReactDOM from 'react-dom'
 import { connect } from 'react-redux';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { loadDocument, setDocumentAttrs, cloneDocumentSelected, selectDocuments,colorDocumentSelected,removeDocumentSelected } from '../actions/document';
+import { loadDocument, setDocumentAttrs,transform2dSelectedDocuments, cloneDocumentSelected, selectDocuments,colorDocumentSelected,removeDocumentSelected } from '../actions/document';
 import { runCommand, runJob, pauseJob, resumeJob, abortJob, clearAlarm, setZero, gotoZero, setPosition, home, probe, checkSize, laserTest, jog, jogTo, feedOverride, spindleOverride, resetMachine } from './com.js';
 import { removeOperation, moveOperation, setCurrentOperation, operationRemoveDocument, setOperationAttrs, clearOperations,addOperation, operationAddDocuments  } from '../actions/operation';
 
@@ -38,7 +39,7 @@ import { ValidateSettings } from '../reducers/settings';
 import { ApplicationSnapshotToolbar } from './settings';
 import { GlobalStore } from '../index'
 
-import { Button, ButtonToolbar, ButtonGroup, ProgressBar, Alert } from 'react-bootstrap'
+import { Button, ButtonToolbar, ButtonGroup, ProgressBar, Alert,Form,FormControl,FormGroup,FormLabel,FormCheck,InputGroup ,InputGroupPrepend,InputGroupRadio  } from 'react-bootstrap'
 import Icon from './font-awesome'
 import { alert, prompt, confirm } from './laserweb'
 
@@ -49,7 +50,6 @@ import { promisedImage, imageTagPromise } from './image-filters';
 import { cssNumber } from 'jquery';
 import { documents } from '../reducers/document';
 import { convertOutlineToThickLines } from '../draw-commands/thick-lines';
-//import { computeLayout } from 'opentype-layout';
 const opentype = require('opentype.js');
 const computeLayout = require('opentype-layout-improved');
 
@@ -96,7 +96,10 @@ class Cam extends React.Component {
             font:"font1",
             width:0,
             lineHeight:0,
-            fontSize : 25
+            fontSize : 25,
+            activeTemplate:'',
+            marginX:0,
+            marginY:0
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
@@ -290,7 +293,7 @@ class Cam extends React.Component {
         opentype.load(font,function(err,font){
             console.log('ZA font',font);
             font.unitsPerEm = 50;
-            var scale = 0.012695775;
+            var scale = 0.032695775;
             //var scale = 1 / font.unitsPerEm * fontSize; //0.012695775
             fontSize = scale * font.unitsPerEm;
             console.log('newFontSize',fontSize);
@@ -341,6 +344,8 @@ class Cam extends React.Component {
         var font = 'GreatVibes-Regular.otf';   
         var words = myText.split(" ");
         var fontSize;
+        var chocoTemplates = require("../data/chocolateTemplates.json");
+        //circleModel = chocoTemplates.templates[0];
         var circleModel = {
             maxHeight:28,
             maxWidth:28,
@@ -356,7 +361,7 @@ class Cam extends React.Component {
         console.log('clean everything before you start again: delete documents,clean gcode');
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
-
+        var mainsvgID = '';
         var that = this;
         let { settings, documents, operations } = that.props;
         //if documents is not empty then cleant it dispatch remove documets
@@ -387,14 +392,8 @@ class Cam extends React.Component {
                 lineHeight: lineHeight ,
                 width: finalWidth
             };
-            console.log('origlayoutOptions ',layoutOptions);
-            console.log('line Height',lineHeight);
-            console.log('scale',scale);
-            console.log('finalWidth',finalWidth);
 
             var layout = computeLayout(font, myText, layoutOptions);
-            console.log('layout',layout);
-            console.log('ZA layout lines',layout.lines);
 
             if( layout.lines.length > circleModel.maxLines ){
                 console.log('lines now: ',layout.lines.length,' circleModel.maxLines: ',circleModel.maxLines);
@@ -404,12 +403,9 @@ class Cam extends React.Component {
                 for(let j =0;j<font.glyphs.glyphs.length;j++){
                     font.glyphs.glyphs[j].advanceWidth *= 0.5;
                 }
-                console.log('newfont',font);   
                 layout = computeLayout(font, myText, layoutOptions);
-                console.log('new layout',layout);
             }
                 
-             console.log('newfont',font);   
                     
             var widthOperator = finalWidth * scale;
             console.log('widthOperator : ',widthOperator);
@@ -419,9 +415,8 @@ class Cam extends React.Component {
                 makerjs.model.addModel(models, character, i);
             });
             
-            console.log('modesl',models);
-            var output = makerjs.exporter.toSVG(models);
-            console.log('output svg', output);
+
+            var output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
             parser.parse(output).then((tags) => {
                 let captures = release(true);
                 let warns = captures.filter(i => i.method == 'warn')
@@ -431,29 +426,47 @@ class Cam extends React.Component {
                     CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
                 if (errors.length)
                     CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-
+                
                 imageTagPromise(tags).then((tags) => {
                     //console.log('loadDocument: generatedID',generatedID);
                     that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                     //console.log('!!!!* select document: dispatch :props:',that.props);
                     that.props.dispatch(selectDocuments(true));
                     let documents = that.props.documents.map(d => that.props.documents[0].id).slice(0, 1);
+                    mainsvgID = documents;
                     console.log('DocId is:',documents);
                     that.props.dispatch(addOperation({ documents}));
-                    // we have to set the parameters
-                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, v - this.bounds.y1]));
-                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, v - this.bounds.x1, 0]));
-
-                    console.log('Generateing GCode');
+                    that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 12, 13]));
                     that.generateGcode(e);
-                    console.log('done Generateing GCode');
 
                     let globalState = GlobalStore().getState(); 
                     console.log('that.propts',that.props.op,'state',globalState);
                     that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id)) 
                 }).then( () => {
+                    // can we load the image file from the location
                 })
-            })
+            });
+            
+            fetch("../oval.svg")
+            .then(resp => resp.text())
+            .then(content => {
+                parser.parse(content).then((tags) => {
+                    let captures = release(true);
+                    let warns = captures.filter(i => i.method == 'warn')
+                    let errors = captures.filter(i => i.method == 'errors')
+                    
+                    if (warns.length)
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                    if (errors.length)
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                    imageTagPromise(tags).then((tags) => {
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                        that.props.dispatch(selectDocuments(mainsvgID));
+                    }).then( () => {
+                        // can we load the image file from the location
+                    })
+                });
+            });
         })
 
     }
@@ -657,7 +670,7 @@ class Cam extends React.Component {
 
             <h3>String to Image</h3>
         
-            <form onSubmit={ this.handleSubmission }>
+            <Form onSubmit={ this.handleSubmission }>
 
              Font: 
             <select value={this.state.font} onChange={this.handleFontChange}>
@@ -672,19 +685,21 @@ class Cam extends React.Component {
                 <div id ="render-text">
                 
                 </div>
-            </form>
+            </Form>
             <button name="sendSVG" onClick={ this.loadMinE}>Generate Image</button>
             <button name="runJob" onClick={ this.runJob}>Run</button>
             <button name="textWrapping" onClick={ this.textWrapping}>Text Wrap</button>
             <button name="checkWrapping" onClick={ this.wordWrapped}>Check</button>
-            <div class="row">
+            
+            <div >
                 <input type="radio" id="Oval" name="template" value="Oval"></input>
-                <label for="Oval">Oval</label><img src="oval.jpg" height="40px" width="80px" ></img><br></br>
+                <label for="Oval">Oval</label><img src="oval.jpg" height="40" width="80" /><br></br>
                 <input type="radio" id="Oval" name="template" value="Oval"></input>
-                <label for="Rectangle">Rectangle</label><img src="rectangle.jpg" height="40px" width="80px" ></img><br></br>
+                <label for="Rectangle">Rectangle</label><img src="rectangle.jpg" height="40" width="80" ></img><br></br>
                 <input type="radio" id="Square" name="template" value="Square"></input>
-                <label for="Square">Square</label><img src="oval.jpg" height="40px" width="80px" ></img><br></br>
+                <label for="Square">Square</label><img src="oval.jpg" height="40" width="80" ></img><br></br>
             </div>
+
         </div>);
     }
 };
@@ -788,6 +803,7 @@ Cam = connect(
 
                         //console.log('loadDocument: construct Parser');
                         let parser = new Parser({});
+                        console.log('result of loading svg file',reader.result);
                         parser.parse(reader.result)
                             .then((tags) => {
                                 let captures = release(true);
