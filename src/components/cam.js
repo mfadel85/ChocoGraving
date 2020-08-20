@@ -12,52 +12,37 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import { ovalTemplate } from '../data/oval.svg';
 
-import Parser from '../lib/lw.svg-parser/parser';
-import DxfParser from 'dxf-parser';
-import React from 'react'
-import ReactDOM from 'react-dom'
+import React from 'react';
+import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { renderToStaticMarkup } from 'react-dom/server';
-
-import { loadDocument, setDocumentAttrs,transform2dSelectedDocuments, cloneDocumentSelected, selectDocuments,colorDocumentSelected,removeDocumentSelected } from '../actions/document';
-import { runCommand, runJob, pauseJob, resumeJob, abortJob, clearAlarm, setZero, gotoZero, setPosition, home, probe, checkSize, laserTest, jog, jogTo, feedOverride, spindleOverride, resetMachine } from './com.js';
-import { removeOperation, moveOperation, setCurrentOperation, operationRemoveDocument, setOperationAttrs, clearOperations,addOperation, operationAddDocuments  } from '../actions/operation';
-
-import { setGcode, generatingGcode } from '../actions/gcode';
+import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments } from '../actions/document';
+import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
-import { Documents,selectedDocuments } from './document';
-import { withDocumentCache } from './document-cache'
-import { GetBounds, withGetBounds } from './get-bounds.js';
-import { Operations, Error } from './operation';
-import { OperationDiagram } from './operation-diagram';
-import Splitter from './splitter';
+import { addOperation, clearOperations, setOperationAttrs } from '../actions/operation';
+import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
-import { sendAsFile, appendExt, openDataWindow, captureConsole } from '../lib/helpers';
+import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
+import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
+import { runJob } from './com.js';
+import CommandHistory from './command-history';
+import { Documents } from './document';
+import { withDocumentCache } from './document-cache';
+import Icon from './font-awesome';
+import { ColorPicker, FileField, Info, SearchButton } from './forms';
+import { GetBounds, withGetBounds } from './get-bounds.js';
+import { imageTagPromise, promisedImage } from './image-filters';
+import { alert, confirm, prompt } from './laserweb';
+import { Error, Operations } from './operation';
+import { OperationDiagram } from './operation-diagram';
 import { ApplicationSnapshotToolbar } from './settings';
-import { GlobalStore } from '../index'
+import Splitter from './splitter';
 
-import { Button, ButtonToolbar, ButtonGroup, ProgressBar, Alert,Form,FormControl,FormGroup,FormLabel,FormCheck,InputGroup ,InputGroupPrepend,InputGroupRadio  } from 'react-bootstrap'
-import Icon from './font-awesome'
-import { alert, prompt, confirm } from './laserweb'
-
-import CommandHistory from './command-history'
-import { FileField, Info, ColorPicker, SearchButton } from './forms'
-
-import { promisedImage, imageTagPromise } from './image-filters';
-import { cssNumber } from 'jquery';
-import { documents } from '../reducers/document';
-import { convertOutlineToThickLines } from '../draw-commands/thick-lines';
 const opentype = require('opentype.js');
-const computeLayout = require('opentype-layout-improved');
-
-
 var playing = false;
 var paused = false;
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
-let myText = '';
 function NoDocumentsError(props) {
     let { settings, documents, operations, camBounds } = props;
     if (documents.length === 0 && (operations.length === 0 || !settings.toolCreateEmptyOps))
@@ -93,43 +78,45 @@ class Cam extends React.Component {
             filter:null,
             content:"",
             svg:"",
-            font:"font1",
+            font: 'GreatVibes-Regular.otf',
             width:0,
             lineHeight:0,
             fontSize : 25,
-            activeTemplate:'',
+            activeTemplateName:'Oval',
+            activeTemplate:{
+                "id":"OvalModel",
+                "maxHeight":17,
+                "maxWidth":27,
+                "maxLines":2,
+                "maxWordsAr":3,
+                "maxWordsEn":3,
+                "shiftX":8,
+                "shiftY":11,
+                "file":"../Oval.svg" ,
+                "scale":0.012
+            },
             marginX:0,
-            marginY:0
+            marginY:0,
+            scale:0.032695775,
+            fontchange:0        
         }
         this.handleChange = this.handleChange.bind(this);
+        this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
         this.handleSubmission = this.handleSubmission.bind(this);
+        this.handleTemplateChange = this.handleTemplateChange.bind(this);
         this.generateGcode = this.generateGcode.bind(this);
         this.docuementAdded = this.docuementAdded.bind(this);
         this.loadMinE = this.loadMinE.bind(this);
         this.textWrapping = this.textWrapping.bind(this);
         this.runJob = this.runJob.bind(this);
         this.wordWrapped = this.wordWrapped.bind(this);
+        this.changeFont = this.changeFont.bind(this);
+        this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
+
     }
-    isEnglish(charCode){
-        return (charCode >= 97 && charCode <= 122) 
-               || (charCode>=65 && charCode<=90);
-     }
-     
-    isPersian(key){
-         var p = /^[\u0600-\u06FF\s]+$/;    
-         return p.test(key) && key!=' ';
-     }
-    handleInput(e){
-            console.log(e.Target);
-            if (this.isEnglish(e.Target.charCode))
-              console.log('English');
-            else if(this.isPersian(e.key))
-              console.log('Arabic');
-            else
-              console.log('Others')
-       
-    }
+
+
     componentWillMount() {
         let that = this
         console.log('this',this);
@@ -161,18 +148,92 @@ class Cam extends React.Component {
         this.stopGcode.bind(this);
 
     }
+    resetFontSize(e){
+        let activeTemplateName = this.state.activeTemplateName;
+        this.handleTemplateChange(e,activeTemplateName);
+    }
     handleChange (e)  {
+       this.resetFontSize(e);
+        var words = e.target.value.split(" ");
+        words.forEach(word => {
+            if(word.length> 13){
+                alert('Very long name please use  a shorter name, less than 13 char');
+                return;            
+            }
+        });
+        if(words.length > this.state.activeTemplate.maxWordsEn)
+        {
+            alert(' Only max '+ this.state.activeTemplate.maxWordsEn + ' words is allowed.');
+            return;
+        }
         this.setState({ content: e.target.value });
-        myText = e.target.value;
     }
     handleFontChange (e)  {
-        this.setState({ font: e.target.value });
+        this.resetFontSize(e);
+        switch(e.target.value){
+            case 'GreatVibes':
+                this.setState({ font: 'GreatVibes-Regular.otf' });
+            break;
+            case 'chocolatePristina':
+                this.setState({ font: 'chocolatePristina.ttf' });
+            break;
+            case 'ITCKRIST':
+                this.setState({ font:  'ITCKRIST.TTF' });
+            break;
+            case 'TrajanPro-Bold':
+                this.setState({ font:  'TrajanPro-Bold.otf' });
+            break;   
+            case 'TrajanPro-Regular':
+                this.setState({ font:  'TrajanPro-Regular.otf' });
+            break;   
+            default:                
+                this.setState({ font: 'GreatVibes-Regular.otf' });
+            break;
+        }
     }    
+    handleKeyDown(e){
+        var words = e.target.value.split(" ");
+        if(words.length > this.state.activeTemplate.maxWordsEn)
+        {
+        }
+    }
+    handleTemplateChange (e,templateName = null) {
+        console.log('Got here successfully!!');
+        let  { value } = e.target;
+        this.setState({
+          activeTemplateName: value
+        });
+        if(templateName)
+            value=templateName;
+        var chocoTemplates = require("../data/chocolateTemplates.json");
+        switch(value){
+            case "Oval":
+                this.setState({
+                    activeTemplate:chocoTemplates.templates[0]
+                });
+                console.log('Oval');
+                break;
+            case "Rectangle":
+                this.setState({
+                    activeTemplate:chocoTemplates.templates[1]
+                });                
+                console.log('Recatngle');
+                break;
+            case "Square":
+                this.setState({
+                    activeTemplate:chocoTemplates.templates[2]
+                });                
+                console.log('Square');
+                break;
+            default:
+                break;
+        }
+      };
     generateGcode() {
         this.QE = window.generateGcode();
     }
 
-    stopGcode(e) {
+    stopGcode() {
         if (this.QE) { this.QE.end(); }
     }
     docuementAdded() {
@@ -180,7 +241,8 @@ class Cam extends React.Component {
     }
     shouldComponentUpdate(nextProps, nextState) {
         return (
-            nextState.font !== this.state.font || /*nextState.fontSize !== this.state.fontSize || */ nextProps.documents !== this.props.documents ||
+            nextState.font !== this.state.font || /*nextState.fontSize !== this.state.fontSize || */ 
+            nextProps.documents !== this.props.documents ||
             nextProps.operations !== this.props.operations ||
             nextProps.currentOperation !== this.props.currentOperation ||
             nextProps.bounds !== this.props.bounds ||
@@ -191,232 +253,151 @@ class Cam extends React.Component {
         );
     }
 
-    generateSVG(text){
-        e.preventDefault();
-        var makerjs = require('makerjs');
-        //console.log(e.target.content.value);
-        let output;
-        let that = this;
-
-        setTimeout(() => {opentype.load('ABeeZee-Regular.ttf', function (err, font) {
-            if (err) {
-                console.log('couldnot load the font.!!');
-            } else {       
-                var textModel = new makerjs.models.Text(font, text, 100);
-                output = makerjs.exporter.toSVG(textModel);
-            }
-            }); 
-        }, 3000);
-        return output;
-    }
     runJob(){
+        if(this.state.content == '')
+            return;
         let globalState = GlobalStore().getState(); 
         console.log('globalState',globalState);
-        // you can't rely on globalstate
-        /*if(!globalState.com.serverConnected || !globalState.com.machineConnected){
-            console.log('server or machine is not connected');
-            alert('server is not server or machine is not connected');
-            return;
-        }*/
-            
+        this.generateGcode(); 
         // check if machine is connected first
         if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
-            //console.log(this.props);
             let cmd = this.props.gcode;
-            //console.log(cmd);
             console.log('runJob(' + cmd.length + ')');
             playing = true;
-
-            /*this.setState({
-                isPlaying: true,
-                liveJogging: {
-                    ... this.state.liveJogging, disabled: true, hasHomed: false
-                }
-            })*/
 
             runJob(cmd);
         } 
     }
 
-    wordWrapped(e){
-        function validateWrapping(text,layout){
-            var words = text.split(' ');
-            if(layout.lines.length > words.length){
-                console.log('to be modified: layout lines bigger');
-                return 0;
-            }
-            words.forEach(function(word,i){
-                if(layout.lines[i].length < word.length){
-                    console.log('to be modified one word in two lines');
-                    return 0;
-                }  
-            })
-        }
-        var t0 = performance.now();
-        var words = myText.split(" ");
-        var fontSize;
-        var circleModel = {
-            maxHeight:28,
-            maxWidth:28,
-            maxLines:3,
-            maxWordsAr:4,
-            maxWordsEn:3,
-            depth:11// mm
-        };
-        if(words.length > circleModel.maxWordsEn)
-        {
-            alert(' Only max '+circleModel.maxWordsEn+' words is allowed.');
-            return;
-        }
-        console.log('Checking stared:');
-        var font = 'GreatVibes-Regular.otf';
-        switch(this.state.font){
-            case 'GreatVibes':
-                font = 'GreatVibes-Regular.otf';
-            break;
-            case 'chocolatePristina':
-                font = 'chocolatePristina.ttf';
-            break;
-            case 'ITCKRIST':
-                font = 'ITCKRIST.TTF';
-            break;
-            case 'TrajanPro-Bold':
-                font = 'TrajanPro-Bold.otf';
-            break;   
-            case 'TrajanPro-Regular':
-                font = 'TrajanPro-Regular.otf';
-            break;                       
-        }        
-        const computeLayout = require('opentype-layout');
-        var models2 = {};
-        console.log('font is',font);
-        opentype.load(font,function(err,font){
-            console.log('ZA font',font);
-            font.unitsPerEm = 50;
-            var scale = 0.032695775;
-            //var scale = 1 / font.unitsPerEm * fontSize; //0.012695775
-            fontSize = scale * font.unitsPerEm;
-            console.log('newFontSize',fontSize);
-            var lineHeight = 1.1 * font.unitsPerEm;
-            let finalWidth = circleModel.maxWidth*301;
-            var x = finalWidth * scale;
-            console.log('Units per EM ',font.unitsPerEm);
-            console.log('finalWidth ',finalWidth);
-            console.log('scale ',scale);
-            console.log('x ',x)
-            //let fontSize = finalWidth*font.unitsPerEm;
-            var layoutOptions = {
-                "align":"center",
-                lineHeight: lineHeight ,
-                width: finalWidth
-            };
-            var layout = computeLayout(font, myText, layoutOptions);
-            var validationResult = validateWrapping(myText,layout);
-            font.glyphs.glyphs.map(function(elem,i){
-                font.glyphs.glyphs[i].advanceWidth *= 0.3; 
-            })
-
-            console.log('ZA layout',layout);
-            /*layout.glyphs.forEach((glyph, i) => {
-                var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                character.origin = makerjs.point.scale(glyph.position, scale);
-                makerjs.model.addModel(models, character, i);
-            });*/
-        });
-        var t1 = performance.now();
-        console.log('exection time: ',t1-t0,'milli second');
+    wordWrapped(){
+        console.log("maybe help later!!");
     }
 
-    textWrapping(e){    
-        function validateWrapping(text,layout){
-            var words = text.split(' ');
-            if(layout.lines.length > words.length){
-                console.log('to be modified: layout lines bigger');
-                return 0;
-            }
-            /*words.forEach(function(word,i){// later to be fixed
-                if(layout.lines[i].length < word.length){
-                    console.log('to be modified one word in two lines');
-                    return 0;
-                }  
-            })*/
+    /// to test this I guess there are some conditions to be solved
+    isWrappedWord(layout,text){
+        console.log('we are here ya');
+        let result = true;
+        // for each word check if it is in the same line
+        var words = text.split(" ");
+       words.forEach((word) => {
+            layout.lines.forEach((line,j)=>{
+                console.log('end',layout.lines[j].end,'start',layout.lines[j].start);
+                if(layout.lines[j].end-layout.lines[j].start<word.length)
+                    return false;
+            })
+        })
+        return result;
+    }
+    /// to bet tested this I guess there are some conditions to be solved
+
+    validateLayout(layout,text,maxLines){
+        var result = true;
+        console.log('Comparing layout then max lines: ',layout.lines.length,maxLines);
+        if(layout.lines.length > maxLines){
+            console.log("get here for this reason not entering wrappedWord");
+            return false;
         }
-        var font = 'GreatVibes-Regular.otf';   
-        var words = myText.split(" ");
-        var fontSize;
-        var chocoTemplates = require("../data/chocolateTemplates.json");
-        //circleModel = chocoTemplates.templates[0];
-        var circleModel = {
-            maxHeight:28,
-            maxWidth:28,
-            maxLines:3,
-            maxWordsAr:4,
-            maxWordsEn:3
-        };
-        if(words.length > circleModel.maxWordsEn)
-        {
-            alert(' Only max '+circleModel.maxWordsEn+' words is allowed.');
-            return;
-        }
+            
+        else if(!this.isWrappedWord(layout,text))
+            return false;
+        return result;
+
+    }
+    init(){
         console.log('clean everything before you start again: delete documents,clean gcode');
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
-        var mainsvgID = '';
-        var that = this;
-        let { settings, documents, operations } = that.props;
-        //if documents is not empty then cleant it dispatch remove documets
+    }
+    changeFont(amount){
+        console.log('amount',amount);
+        if(amount>0)
+            console.log('Bigger Font');
+        else 
+            console.log('Smaller Font');
+        this.updateFontChangeAmount(amount);
+        let changeAmount =this.state.changeAmount;
+        let activeTemplate = this.state.activeTemplate;
+        console.log('activeTemplate',activeTemplate);
+        activeTemplate.scale = activeTemplate.scale *(changeAmount*0.10);
+        //this.textWrapping(); problem here to be solved
+    }
+    updateFontChangeAmount(amount){
+        let fontChangeAmount = this.state.fontChangeAmount;
+        this.setState({fontChangeAmount:fontChangeAmount+amount});
+    }
+    textWrapping(){  
+        if(this.state.content == ''){
+            console.log('no text???');
+            return;
+        }
+           
         console.log('Text Wrapping started');
+        var that = this;
+        const computeLayout = require('opentype-layout');
+        let font = this.state.font;
+        let text = this.state.content;
+        let activeTemplate = this.state.activeTemplate;
+        let models = {};
+        let fontSize;
+        this.init();
+        var mainsvgID = '';
         const release = captureConsole();
         const parser = new Parser({});
-        var makerjs = require('makerjs');
-        ////// test
-        const file = {
-            name:"file.svg",
-            type: "image/svg+xml"
-        };
-        const modifiers = {};
-        const computeLayout = require('opentype-layout');
-        var models = {};
-        opentype.load('GreatVibes-Regular.otf', function (err, font) {
+        const makerjs = require('makerjs');
+
+        opentype.load(font, function (err, font) {//for arabic fonst we will see
+            // maybe getOptimizedLayout
+            //this.getOptimizedLayout(parameteres);
             console.log(font);
-            var lineHeight = 1.1 * font.unitsPerEm;
-            var width = 115; 
-            var scale = 0.018695775;        
-            //scale = 0.009695775;
+            let lineHeight = 1 * font.unitsPerEm;
+            console.log('unitsPerEm : ',font.unitsPerEm);
+            console.log('active Scale is : ',activeTemplate.scale);
+            let scale = activeTemplate.scale;        
             fontSize = scale * font.unitsPerEm;
             console.log('fontsize',fontSize);
-            var finalWidth =width / scale;// should be maxMM * 301 (which is point in mm)
-            finalWidth = circleModel.maxWidth*301;
-            var layoutOptions = {
+            let finalWidth = activeTemplate.maxWidth*220;// should be maxMM * 301 (which is point in mm)
+            console.log('Final Width: ',finalWidth);
+            let layoutOptions = {
                 "align":"center",
                 lineHeight: lineHeight ,
                 width: finalWidth
             };
-
-            var layout = computeLayout(font, myText, layoutOptions);
-
-            if( layout.lines.length > circleModel.maxLines ){
-                console.log('lines now: ',layout.lines.length,' circleModel.maxLines: ',circleModel.maxLines);
-            }
-            var validationResult = validateWrapping(myText,layout);
-            if(!validationResult){
-                for(let j =0;j<font.glyphs.glyphs.length;j++){
-                    font.glyphs.glyphs[j].advanceWidth *= 0.5;
+            let layout = computeLayout(font, text, layoutOptions);
+            console.log('Layout is like this: ',layout);
+            let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
+            console.log('first layout evaluation result is ',result);
+            while(!result)
+            {
+                that.setState({
+                    activeTemplate:activeTemplate
+                });
+                //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
+                console.log('new unitsPerEm : ',font.unitsPerEm);
+                scale = scale * 0.70; // we should make this dynamic based on the difference how many char are in another line
+                activeTemplate.scale = scale;
+                that.setState({activeTemplate:activeTemplate});
+                fontSize = scale*font.unitsPerEm;
+                layoutOptions = { // depends on the situation we change the layout option
+                   "align":"center",
+                    lineHeight: lineHeight ,
+                    width: finalWidth*2.15
                 }
-                layout = computeLayout(font, myText, layoutOptions);
+                layout = computeLayout(font, text, layoutOptions);
+                if(layout.lines.length> 1)
+                    activeTemplate.shiftY -= 2;
+                activeTemplate.shiftX -= 3;
+                console.log('new layout is ',layout);
+                result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
             }
-                
-                    
-            var widthOperator = finalWidth * scale;
-            console.log('widthOperator : ',widthOperator);
+
             layout.glyphs.forEach((glyph, i) => {
-                var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                 character.origin = makerjs.point.scale(glyph.position, scale);
                 makerjs.model.addModel(models, character, i);
             });
             
-
-            var output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+            console.log('Models',models,);
+            let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
             parser.parse(output).then((tags) => {
                 let captures = release(true);
                 let warns = captures.filter(i => i.method == 'warn')
@@ -426,65 +407,64 @@ class Cam extends React.Component {
                     CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
                 if (errors.length)
                     CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                
+                const file = {
+                    name:"file.svg",
+                    type: "image/svg+xml"
+                };
+                const modifiers = {};
                 imageTagPromise(tags).then((tags) => {
                     //console.log('loadDocument: generatedID',generatedID);
                     that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                     //console.log('!!!!* select document: dispatch :props:',that.props);
                     that.props.dispatch(selectDocuments(true));
-                    let documents = that.props.documents.map(d => that.props.documents[0].id).slice(0, 1);
+                    let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
                     mainsvgID = documents;
                     console.log('DocId is:',documents);
                     that.props.dispatch(addOperation({ documents}));
-                    that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 12, 13]));
-                    that.generateGcode(e);
+                    that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
 
                     let globalState = GlobalStore().getState(); 
                     console.log('that.propts',that.props.op,'state',globalState);
                     that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id)) 
                 }).then( () => {
-                    // can we load the image file from the location
+                    fetch(activeTemplate.file)
+                    .then(resp => resp.text())
+                    .then(content => {
+                        parser.parse(content).then((tags) => {
+                            let captures = release(true);
+                            let warns = captures.filter(i => i.method == 'warn')
+                            let errors = captures.filter(i => i.method == 'errors')
+                            
+                            if (warns.length)
+                                CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                            if (errors.length)
+                                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                            imageTagPromise(tags).then((tags) => {
+                                that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                                that.props.dispatch(selectDocuments(mainsvgID));
+                            }).then( () => {
+                                // can we load the image file from the location
+                            })
+                        });
+                    });
                 })
             });
-            
-            fetch("../oval.svg")
-            .then(resp => resp.text())
-            .then(content => {
-                parser.parse(content).then((tags) => {
-                    let captures = release(true);
-                    let warns = captures.filter(i => i.method == 'warn')
-                    let errors = captures.filter(i => i.method == 'errors')
-                    
-                    if (warns.length)
-                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                    if (errors.length)
-                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                    imageTagPromise(tags).then((tags) => {
-                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                        that.props.dispatch(selectDocuments(mainsvgID));
-                    }).then( () => {
-                        // can we load the image file from the location
-                    })
-                });
-            });
         })
-
     }
+
     loadMinE(e){
+        if(this.state.content == '')
+            return;
         console.log('clean everything before you start again: delete documents,clean gcode');
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
         let that = this;
-        let { settings, documents, operations } = that.props;
         //if documents is not empty then cleant it dispatch remove documets
-        console.log('1 you are gonna like it');
         const release = captureConsole();
         let parser = new Parser({});
         var makerjs = require('makerjs');
-        //var text = state.myText;
-        var text = myText;
-        if(text == '')
-            text = 'NoText';
+        var text = this.state.content;
+
         let output;
         let file = '';
         const modifiers = {};
@@ -537,7 +517,7 @@ class Cam extends React.Component {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                         //console.log('!!!!* select document: dispatch :props:',that.props);
                         that.props.dispatch(selectDocuments(true));
-                        let documents = that.props.documents.map(d => that.props.documents[0].id).slice(0, 1);
+                        let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
 
                         console.log('DocId is:',documents);
                         that.props.dispatch(addOperation({ documents}));
@@ -568,15 +548,13 @@ class Cam extends React.Component {
     handleSubmission(e) {
         e.preventDefault();
         var text = e.target.content.value;
-        myText = text;
-        console.log('started');
         this.setState({
             content:text
         });
     }
     render() {
         //console.log('cam.js this.props: ',this.props);
-        let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument,loadMine,loadMinE, bounds } = this.props;
+        let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument,bounds } = this.props;
         let validator = ValidateSettings(false)
         let valid = validator.passes();
         let someSelected=documents.some((i)=>(i.selected));
@@ -628,11 +606,11 @@ class Cam extends React.Component {
                         {documents.length ? <ButtonToolbar bsSize="xsmall" bsStyle="default">
                             
                             <ButtonGroup>
-                                <Button  bsStyle="info" bsSize="xsmall" onClick={e=>{this.props.dispatch(selectDocuments(true))}} title="Select all"><Icon name="cubes"/></Button>
-                                <Button  bsStyle="default" bsSize="xsmall" onClick={e=>{this.props.dispatch(selectDocuments(false))}} title="Select none"><Icon name="cubes"/></Button>
+                                <Button  bsStyle="info" bsSize="xsmall" onClick={()=>{this.props.dispatch(selectDocuments(true))}} title="Select all"><Icon name="cubes"/></Button>
+                                <Button  bsStyle="default" bsSize="xsmall" onClick={()=>{this.props.dispatch(selectDocuments(false))}} title="Select none"><Icon name="cubes"/></Button>
                             </ButtonGroup>
-                            <Button  bsStyle="warning" bsSize="xsmall" disabled={!someSelected} onClick={e=>{this.props.dispatch(cloneDocumentSelected())}} title="Clone selected"><Icon name="copy"/></Button>
-                            <Button  bsStyle="danger" bsSize="xsmall" disabled={!someSelected} onClick={e=>{this.props.dispatch(removeDocumentSelected())}} title="Remove selected"><Icon name="trash"/></Button>
+                            <Button  bsStyle="warning" bsSize="xsmall" disabled={!someSelected} onClick={()=>{this.props.dispatch(cloneDocumentSelected())}} title="Clone selected"><Icon name="copy"/></Button>
+                            <Button  bsStyle="danger" bsSize="xsmall" disabled={!someSelected} onClick={()=>{this.props.dispatch(removeDocumentSelected())}} title="Remove selected"><Icon name="trash"/></Button>
                             <ButtonGroup>
                                 <ColorPicker to="rgba" icon="pencil" bsSize="xsmall" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({strokeColor:v||[0,0,0,1]}))}/>
                                 <ColorPicker to="rgba" icon="paint-brush" bsSize="xsmall" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({fillColor:v||[0,0,0,0]}))}/>
@@ -657,7 +635,7 @@ class Cam extends React.Component {
                                             </FileField>
                                         </ButtonGroup>
                                         <button title="Clear" className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
-                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode(e)} />}</td>
+                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -681,24 +659,58 @@ class Cam extends React.Component {
                 <option value="TrajanPro-Regular">TrajanPro-R</option>
             </select><br />
                 Text: <br />
-                <textarea name="content"  id="content" ref = "content" /*onKeyDown={this.handleInput}*/ onChange={ this.handleChange } ></textarea><br />
-                <div id ="render-text">
-                
+
+                </Form>
+        <FormGroup>
+            <div>
+                <div className="form-check" >
+                    <label htmlFor ="Oval"> 
+                        <input 
+                        type="radio"  name="template" 
+                        value="Oval"                         
+                        onChange={this.handleTemplateChange}
+                        className="form-check-input" 
+                        />
+                        Oval
+                    </label>
+                    <img src="oval.jpg" height="40" width="80" />
                 </div>
-            </Form>
-            <button name="sendSVG" onClick={ this.loadMinE}>Generate Image</button>
-            <button name="runJob" onClick={ this.runJob}>Run</button>
-            <button name="textWrapping" onClick={ this.textWrapping}>Text Wrap</button>
-            <button name="checkWrapping" onClick={ this.wordWrapped}>Check</button>
-            
-            <div >
-                <input type="radio" id="Oval" name="template" value="Oval"></input>
-                <label for="Oval">Oval</label><img src="oval.jpg" height="40" width="80" /><br></br>
-                <input type="radio" id="Oval" name="template" value="Oval"></input>
-                <label for="Rectangle">Rectangle</label><img src="rectangle.jpg" height="40" width="80" ></img><br></br>
-                <input type="radio" id="Square" name="template" value="Square"></input>
-                <label for="Square">Square</label><img src="oval.jpg" height="40" width="80" ></img><br></br>
+                <div className="form-check">
+                    <label htmlFor ="Rectangle"> 
+                        <input type="radio"  name="template" value="Rectangle"                         
+                        onChange={this.handleTemplateChange} 
+                        className="form-check-input"
+                    />
+                    Rectangle
+                    </label>
+                    <img src="rectangle.jpg" height="40" width="80" />
+                </div>    
+                <div className="form-check">
+                    <label htmlFor ="Square"> 
+                        <input type="radio"  name="template" value="Square"
+                        onChange={this.handleTemplateChange} 
+                        className="form-check-input" 
+                        />
+                        Square
+                    </label>
+                    <img src="rectangle.jpg" height="50" width="50" />
+                </div>                             
             </div>
+        </FormGroup>
+        <textarea 
+            name="content"  id="content" ref = "content"   maxLength="25"          
+            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } defaultValue ={this.state.content}
+        />
+        <br />
+        <div id ="render-text"></div>
+        <div>
+            <Button name="sendSVG" onClick={ this.loadMinE} bsSize="small" bsStyle="info" ><Icon name="object-group" /> Generate Image</Button>
+            <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >Run</Button>
+            <Button name="textWrapping" onClick={ this.textWrapping}  bsStyle="danger" >Text Wrap</Button>
+            <Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>                    
+            <Button name="fontplus" onClick={() => { this.changeFont(1) }}   bsSize="small" bsStyle="primary">Bigger Font ++</Button>                    
+            <Button name="fontminus" onClick={ () => {this.changeFont(-1)}} bsSize="small" bsStyle="primary">Smaller Font --</Button>                    
+        </div>
 
         </div>);
     }
@@ -729,70 +741,7 @@ Cam = connect(
         },
         resetWorkspace: () => {
             confirm("Are you sure?", (data) => { if (data) dispatch(resetWorkspace()); })
-        },
-        //loadMinE: this.loadMinE,
-        loadMine:(e, modifiers = {})   => {
-            let reader = new FileReader;
-            //reader.onload = () => {
-                console.log('1 you are gonna like it');
-                const release = captureConsole()
-
-                let parser = new Parser({});
-                var makerjs = require('makerjs');
-                var text = myText;
-                if(text == '')
-                    text = 'NoText';
-                let output;
-                let file = '';
-                file = {
-                    name:"file.svg",
-                    type: "image/svg+xml"
-                }
-                console.log('text is : ',text);
-                setTimeout(() => {opentype.load('ABeeZee-Regular.ttf', function (err, font) {
-                    if (err) {
-                        console.log('could not load the font.!!');
-                    } else {
-                
-                        var textModel = new makerjs.models.Text(font, text, 100);
-                        output = makerjs.exporter.toSVG(textModel);
-                        //console.log("inside ");
-                        //console.log(output);
-                        parser.parse(output)
-                        .then((tags) => {
-                            let captures = release(true);
-                            let warns = captures.filter(i => i.method == 'warn')
-                            let errors = captures.filter(i => i.method == 'errors')
-                            if (warns.length)
-                                CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                            if (errors.length)
-                                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                            // not gonna be used
-                            const generatedID = "c298057b-6925-47d5-bc62-bb564b8c9dba";
-
-                            imageTagPromise(tags).then((tags) => {
-                                //console.log('loadDocument: generatedID',generatedID);
-                                dispatch(loadDocument(file, { parser, tags }, modifiers));
-                                console.log('select document: dispatch modifiers',modifiers);
-                                dispatch(selectDocuments(true));
-                                //get documents
-                                
-                                console.log('this',this);
-                                // I need to access documetns to dispatch it
-                                //let documents = this.props.documents;
-                                //dispatch(addOperation(generatedID));
-                            })
-                        })
-                        .catch((e) => {
-                            release(true);
-                            CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", String(e), 3)
-                            console.error(e)
-                        })
-                    }
-                    }); 
-                }, 3000);                  
-
-        },
+        },       
         loadDocument: (e, modifiers = {}) => {
             // TODO: report errors
             for (let file of e.target.files) {
@@ -800,8 +749,6 @@ Cam = connect(
                 if (file.name.substr(-4) === '.svg') {
                     reader.onload = () => {
                         const release = captureConsole()
-
-                        //console.log('loadDocument: construct Parser');
                         let parser = new Parser({});
                         console.log('result of loading svg file',reader.result);
                         parser.parse(reader.result)
@@ -816,7 +763,6 @@ Cam = connect(
                                 //onsole.log('loadDocument: imageTagPromise');
                                 imageTagPromise(tags).then((tags) => {
                                     console.log('loadDocument: dispatch');
-                                    let generatedID;
                                     dispatch(loadDocument(file, { parser, tags }, modifiers));
                                 })
                             })
@@ -828,7 +774,6 @@ Cam = connect(
                             })
 
                     }
-                    //console.log('loadDocument: readAsText');
                     reader.readAsText(file);
                 }
                 else if (file.type.substring(0, 6) === 'image/') {
