@@ -16,7 +16,7 @@
 import React from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments } from '../actions/document';
+import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument,selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
 import { addOperation, clearOperations, setOperationAttrs } from '../actions/operation';
@@ -98,7 +98,9 @@ class Cam extends React.Component {
             marginX:0,
             marginY:0,
             scale:0.032695775,
-            fontchange:0        
+            fontchange:0,
+            textDocID:'',
+            templateDocID:''
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -198,7 +200,6 @@ class Cam extends React.Component {
         }
     }
     handleTemplateChange (e,templateName = null) {
-        console.log('Got here successfully!!');
         let  { value } = e.target;
         this.setState({
           activeTemplateName: value
@@ -211,19 +212,19 @@ class Cam extends React.Component {
                 this.setState({
                     activeTemplate:chocoTemplates.templates[0]
                 });
-                console.log('Oval');
+                console.log(' Template Change Oval');
                 break;
             case "Rectangle":
                 this.setState({
                     activeTemplate:chocoTemplates.templates[1]
                 });                
-                console.log('Recatngle');
+                console.log('Template Change Recatngle');
                 break;
             case "Square":
                 this.setState({
                     activeTemplate:chocoTemplates.templates[2]
                 });                
-                console.log('Square');
+                console.log('Template Change Square');
                 break;
             default:
                 break;
@@ -275,7 +276,6 @@ class Cam extends React.Component {
 
     /// to test this I guess there are some conditions to be solved
     isWrappedWord(layout,text){
-        console.log('we are here ya');
         let result = true;
         // for each word check if it is in the same line
         var words = text.split(" ");
@@ -305,6 +305,11 @@ class Cam extends React.Component {
     }
     init(){
         console.log('clean everything before you start again: delete documents,clean gcode');
+        if(this.state.templateDocID !='')
+            this.props.dispatch(selectDocument(this.state.templateDocID));
+        if(this.state.textDocID !='')
+            this.props.dispatch(selectDocument(this.state.textDocID));
+        this.props.dispatch(selectDocuments(true));
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
     }
@@ -315,15 +320,20 @@ class Cam extends React.Component {
         else 
             console.log('Smaller Font');
         this.updateFontChangeAmount(amount);
-        let changeAmount =this.state.changeAmount;
+        /*let changeAmount =this.state.changeAmount;
         let activeTemplate = this.state.activeTemplate;
         console.log('activeTemplate',activeTemplate);
-        activeTemplate.scale = activeTemplate.scale *(changeAmount*0.10);
-        //this.textWrapping(); problem here to be solved
+        activeTemplate.scale = activeTemplate.scale *(changeAmount*0.10);*/
+        console.log('chnage Font');
+
+        this.textWrapping(); //problem here to be solved
     }
     updateFontChangeAmount(amount){
-        let fontChangeAmount = this.state.fontChangeAmount;
-        this.setState({fontChangeAmount:fontChangeAmount+amount});
+        let fontchange = this.state.fontchange;
+        console.log('before  fontChange',this.state.fontchange);
+
+        this.setState({fontchange:fontchange+amount});
+        console.log('new fontChange',this.state.fontchange);
     }
     textWrapping(){  
         if(this.state.content == ''){
@@ -332,11 +342,12 @@ class Cam extends React.Component {
         }
            
         console.log('Text Wrapping started');
+
         var that = this;
+       // const toggleSelectDocument  = this.props.toggleSelectDocument ;
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
         let text = this.state.content;
-        let activeTemplate = this.state.activeTemplate;
         let models = {};
         let fontSize;
         this.init();
@@ -348,11 +359,18 @@ class Cam extends React.Component {
         opentype.load(font, function (err, font) {//for arabic fonst we will see
             // maybe getOptimizedLayout
             //this.getOptimizedLayout(parameteres);
+            let activeTemplate = that.state.activeTemplate;
+
             console.log(font);
             let lineHeight = 1 * font.unitsPerEm;
             console.log('unitsPerEm : ',font.unitsPerEm);
             console.log('active Scale is : ',activeTemplate.scale);
-            let scale = activeTemplate.scale;        
+
+            let scale = activeTemplate.scale*(1+that.state.fontchange*0.1); 
+            console.log('fontChange',that.state.fontchange);   
+            console.log('modified scale',scale);   
+            /*if(fontChange != null)
+                scale = scale * (1+fontChange);*/
             fontSize = scale * font.unitsPerEm;
             console.log('fontsize',fontSize);
             let finalWidth = activeTemplate.maxWidth*220;// should be maxMM * 301 (which is point in mm)
@@ -366,7 +384,7 @@ class Cam extends React.Component {
             console.log('Layout is like this: ',layout);
             let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
             console.log('first layout evaluation result is ',result);
-            while(!result)
+           while(!result)
             {
                 that.setState({
                     activeTemplate:activeTemplate
@@ -407,7 +425,7 @@ class Cam extends React.Component {
                     CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
                 if (errors.length)
                     CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                const file = {
+                let file = {
                     name:"file.svg",
                     type: "image/svg+xml"
                 };
@@ -420,6 +438,7 @@ class Cam extends React.Component {
                     let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
                     mainsvgID = documents;
                     console.log('DocId is:',documents);
+                    that.setState({textDocID:documents});
                     that.props.dispatch(addOperation({ documents}));
                     that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
 
@@ -427,6 +446,10 @@ class Cam extends React.Component {
                     console.log('that.propts',that.props.op,'state',globalState);
                     that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id)) 
                 }).then( () => {
+                    file = {
+                        name:"template.svg",
+                        type: "image/svg+xml"
+                    };
                     fetch(activeTemplate.file)
                     .then(resp => resp.text())
                     .then(content => {
@@ -440,8 +463,16 @@ class Cam extends React.Component {
                             if (errors.length)
                                 CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
                             imageTagPromise(tags).then((tags) => {
-                                that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                                let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
+                                that.setState({templateDocID:templateDoc});
                                 that.props.dispatch(selectDocuments(mainsvgID));
+                                that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                                that.props.dispatch(selectDocument(that.state.textDocID));
+
+                                console.log('text doc id ',that.state.textDocID,'template doc id ',that.state.templateDocID);
+                                console.log(templateDoc);
+                                that.props.dispatch(toggleSelectDocument(templateDoc[0]));
+
                             }).then( () => {
                                 // can we load the image file from the location
                             })
