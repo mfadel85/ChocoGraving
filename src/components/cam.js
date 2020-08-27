@@ -100,7 +100,8 @@ class Cam extends React.Component {
             scale:0.032695775,
             fontchange:0,
             textDocID:'',
-            templateDocID:''
+            templateDocID:'',
+            direction:'LTR'
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -115,6 +116,7 @@ class Cam extends React.Component {
         this.wordWrapped = this.wordWrapped.bind(this);
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
+        this.checkRTL = this.checkRTL.bind(this);
 
     }
 
@@ -150,6 +152,13 @@ class Cam extends React.Component {
         this.stopGcode.bind(this);
 
     }
+    componentDidMount() {
+        this.updateCanvas();
+    }
+    updateCanvas(context) {
+        //const ctx = this.refs.canvas.getContext('2d');
+        //ctx.fillRect(context);
+    }
     resetFontSize(e){
         let activeTemplateName = this.state.activeTemplateName;
         this.handleTemplateChange(e,activeTemplateName);
@@ -176,7 +185,12 @@ class Cam extends React.Component {
             case 'GreatVibes':
                 this.setState({ font: 'GreatVibes-Regular.otf' });
             break;
+            case 'Arslan':
+                console.log('Almaarai is chosen');
+                this.setState({font:'Almarai-Bold.ttf'});
+            break;
             case 'chocolatePristina':
+                console.log('chocolatePristina is chosen');
                 this.setState({ font: 'chocolatePristina.ttf' });
             break;
             case 'ITCKRIST':
@@ -233,7 +247,19 @@ class Cam extends React.Component {
     generateGcode() {
         this.QE = window.generateGcode();
     }
-
+    checkRTL(s){          
+ 
+        var ltrChars        = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF'+'\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF',
+            rtlChars        = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC',
+            rtlDirCheck     = new RegExp('^[^'+ltrChars+']*['+rtlChars+']');
+        if(rtlDirCheck.test(s.target.value)){
+            this.setState({direction:'RTL'});
+        }
+            
+        else
+            this.setState({direction:'LTR'});
+        return rtlDirCheck.test(s.target.value);
+    };
     stopGcode() {
         if (this.QE) { this.QE.end(); }
     }
@@ -336,17 +362,19 @@ class Cam extends React.Component {
         console.log('new fontChange',this.state.fontchange);
     }
     textWrapping(){  
+
         if(this.state.content == ''){
             console.log('no text???');
             return;
         }
            
-        console.log('Text Wrapping started');
+        console.log('Text Wrapping started direactoin',this.state.direction);
 
         var that = this;
        // const toggleSelectDocument  = this.props.toggleSelectDocument ;
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
+        console.log('this.state.font',font);
         let text = this.state.content;
         let models = {};
         let fontSize;
@@ -355,12 +383,10 @@ class Cam extends React.Component {
         const release = captureConsole();
         const parser = new Parser({});
         const makerjs = require('makerjs');
-
+        //font= 'Almarai-Bold.ttf';
         opentype.load(font, function (err, font) {//for arabic fonst we will see
-            // maybe getOptimizedLayout
-            //this.getOptimizedLayout(parameteres);
-            let activeTemplate = that.state.activeTemplate;
 
+            let activeTemplate = that.state.activeTemplate;
             console.log(font);
             let lineHeight = 1 * font.unitsPerEm;
             console.log('unitsPerEm : ',font.unitsPerEm);
@@ -380,11 +406,60 @@ class Cam extends React.Component {
                 lineHeight: lineHeight ,
                 width: finalWidth
             };
+            if(that.state.direction == 'RTL'){
+                let wordModel ='';
+                let wordWidthes = [];
+                let shiftX = 0;
+                let shiftY = 0;
+                let shifts = [shiftX,shiftY];
+                let prevWordWidth =0;
+                var words = text.split(' ');
+                words.forEach((word,i) => {
+                    
+                    console.log(word,i,'fontsize',fontSize);
+                    wordModel = new makerjs.models.Text(font, word, fontSize);
+                    console.log('word model: ',wordModel);
+                    //return;
+                    shiftX = shiftX + i*30;
+                    shiftY=  i*10;
+                    console.log('prevwordwidht',prevWordWidth);
+                    if("undefined" !== typeof wordModel.models[word.length-1].origin[0] )
+                        wordWidthes[i] = wordModel.models[word.length-1].origin[0];
+                    if( i==1 )
+                        prevWordWidth = wordModel.models[word.length-1].origin[0]+prevWordWidth+ 8;
+                    if(i == 2){
+                        shiftX = (wordWidthes[0]+wordWidthes[1])/2;
+                    }
+                     
+
+                    for (let index = 0; index < word.length; index++) {
+                        if(i==0){
+                            shifts = [wordModel.models[index].origin[0],wordModel.models[index].origin[1]]
+                        }
+                        if(i==1){
+                            shifts = [wordModel.models[index].origin[0]-prevWordWidth,wordModel.models[index].origin[1]]
+                        }
+                        else if(i == 2){
+                            shifts = [wordModel.models[index].origin[0]-shiftX,wordModel.models[index].origin[1]-shiftY] ;
+                        }
+                        wordModel.models[index].origin = shifts;
+                        console.log('modified value',wordModel.models[index].origin[0]);
+                    }
+
+                    makerjs.model.addModel(models, wordModel); 
+                });                
+               prevWordWidth =0;
+               console.log('WordWidthes: ',wordWidthes);
+               //let testOutput = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+
+            }
+           else {// LTR
+
             let layout = computeLayout(font, text, layoutOptions);
             console.log('Layout is like this: ',layout);
             let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
             console.log('first layout evaluation result is ',result);
-           while(!result)
+            while(!result)
             {
                 that.setState({
                     activeTemplate:activeTemplate
@@ -408,14 +483,22 @@ class Cam extends React.Component {
                 result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
             }
 
-            layout.glyphs.forEach((glyph, i) => {
-                let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                character.origin = makerjs.point.scale(glyph.position, scale);
-                makerjs.model.addModel(models, character, i);
-            });
-            
-            console.log('Models',models,);
+
+
+               layout.glyphs.forEach((glyph, i) => {
+                   let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                   character.origin = makerjs.point.scale(glyph.position, scale);
+                   makerjs.model.addModel(models, character, i);
+                });
+           }
+
+            //models = new makerjs.models.Text(font, 'الحقيقة', 100);
+            //console.log('Models',models,);
             let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+            console.log('svg is : ',output);
+
+            document.getElementById('render-text').innerHTML = output;
+
             parser.parse(output).then((tags) => {
                 let captures = release(true);
                 let warns = captures.filter(i => i.method == 'warn')
@@ -440,6 +523,7 @@ class Cam extends React.Component {
                     console.log('DocId is:',documents);
                     that.setState({textDocID:documents});
                     that.props.dispatch(addOperation({ documents}));
+                    // we need two shiftX shifty one for Arabic and one for English
                     that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
 
                     let globalState = GlobalStore().getState(); 
@@ -684,6 +768,7 @@ class Cam extends React.Component {
              Font: 
             <select value={this.state.font} onChange={this.handleFontChange}>
                 <option value="GreatVibes">Great Vibes</option>
+                <option value="Arslan">Arslan</option>
                 <option value="chocolatePristina">Pristina</option>
                 <option value="ITCKRIST">ITCKRIST</option>
                 <option value="TrajanPro-Bold">TrajanPro-B</option>
@@ -730,7 +815,7 @@ class Cam extends React.Component {
         </FormGroup>
         <textarea 
             name="content"  id="content" ref = "content"   maxLength="25"          
-            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } defaultValue ={this.state.content}
+            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />
         <br />
         <div id ="render-text"></div>
@@ -742,6 +827,7 @@ class Cam extends React.Component {
             <Button name="fontplus" onClick={() => { this.changeFont(1) }}   bsSize="small" bsStyle="primary">Bigger Font ++</Button>                    
             <Button name="fontminus" onClick={ () => {this.changeFont(-1)}} bsSize="small" bsStyle="primary">Smaller Font --</Button>                    
         </div>
+        <canvas ref="canvas" width={300} height={300}/>
 
         </div>);
     }

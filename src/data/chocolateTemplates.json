@@ -2,14 +2,40 @@
 {
     "templates":[
         {
-            "id":"CircleModel",
-            "maxHeight":28,
-            "maxWidth":28,
+            "id":"OvalModel",
+            "maxHeight":17,
+            "maxWidth":27,
+            "maxLines":2,
+            "maxWordsAr":3,
+            "maxWordsEn":3,
+            "shiftX":8,
+            "shiftY":11,
+            "file":"../Oval.svg" ,
+            "scale":0.011
+        },
+        {
+            "id":"RectangleModel",
+            "maxHeight":26,
+            "maxWidth":15,
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,
-            "shiftX":3,
-            "shiftY":3
-        } 
+            "shiftX":9,
+            "shiftY":9,
+            "file":"../Rectangle.svg",
+            "scale":0.010
+        },
+        {
+            "id":"SquareModel",
+            "maxHeight":24,
+            "maxWidth":24,
+            "maxLines":3,
+            "maxWordsAr":4,
+            "maxWordsEn":3,
+            "shiftX":10,
+            "shiftY":10,
+            "file":"../Square.svg",
+            "scale":0.010
+        }
     ]
 } 
