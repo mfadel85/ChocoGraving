@@ -14,7 +14,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import React from 'react';
-import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar,Text } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument,selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
@@ -376,6 +376,7 @@ class Cam extends React.Component {
         let font = this.state.font;
         console.log('this.state.font',font);
         let text = this.state.content;
+        console.log('text: ',text);
         let models = {};
         let fontSize;
         this.init();
@@ -407,50 +408,92 @@ class Cam extends React.Component {
                 width: finalWidth
             };
             if(that.state.direction == 'RTL'){
-                let wordModel ='';
-                let wordWidthes = [];
+                //let wordModel ='';
+                let wordModel = new makerjs.models.Text(font, text, fontSize);
+                makerjs.model.addModel(models, wordModel); 
+                let testOutput = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                console.log(testOutput);
+
+                let wordWidths = [];
+                let wordHeigths = [];
+
                 let shiftX = 0;
                 let shiftY = 0;
                 let shifts = [shiftX,shiftY];
                 let prevWordWidth =0;
                 var words = text.split(' ');
+                let svgWords =[];
                 words.forEach((word,i) => {
-                    
-                    console.log(word,i,'fontsize',fontSize);
+                    models= {};
                     wordModel = new makerjs.models.Text(font, word, fontSize);
-                    console.log('word model: ',wordModel);
-                    //return;
-                    shiftX = shiftX + i*30;
-                    shiftY=  i*10;
-                    console.log('prevwordwidht',prevWordWidth);
-                    if("undefined" !== typeof wordModel.models[word.length-1].origin[0] )
-                        wordWidthes[i] = wordModel.models[word.length-1].origin[0];
-                    if( i==1 )
-                        prevWordWidth = wordModel.models[word.length-1].origin[0]+prevWordWidth+ 8;
-                    if(i == 2){
-                        shiftX = (wordWidthes[0]+wordWidthes[1])/2;
-                    }
-                     
-
-                    for (let index = 0; index < word.length; index++) {
-                        if(i==0){
-                            shifts = [wordModel.models[index].origin[0],wordModel.models[index].origin[1]]
-                        }
-                        if(i==1){
-                            shifts = [wordModel.models[index].origin[0]-prevWordWidth,wordModel.models[index].origin[1]]
-                        }
-                        else if(i == 2){
-                            shifts = [wordModel.models[index].origin[0]-shiftX,wordModel.models[index].origin[1]-shiftY] ;
-                        }
-                        wordModel.models[index].origin = shifts;
-                        console.log('modified value',wordModel.models[index].origin[0]);
-                    }
-
                     makerjs.model.addModel(models, wordModel); 
-                });                
+                    svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                    let parts = svgWords[i].split("\"");
+                    wordWidths[i] = parts[1];
+                    wordHeigths[i] = parts[3];
+                });
+                console.log('widths',wordWidths,'heights',wordHeigths);
+                models= {};
+                /*
+                 */
+                try {
+                    words.forEach((word,i) => {
+                        console.log(word,i,'fontsize',fontSize);
+                        wordModel = new makerjs.models.Text(font, word, fontSize);   
+
+                        let count = 0;
+                        for (var c in wordModel.models) {
+                            count = count + 1;
+                        }
+
+                        if(typeof(wordModel) == 'undefined')
+                        {
+                            console.log('no results');
+                            return;
+                        }
+                        console.log('word model length: ',wordModel.models,'count', count);
+                        
+                        //return;
+                        shiftX = shiftX + i*30;
+                        shiftY =  i*10;
+                        console.log('prevwordwidht',prevWordWidth);
+    
+                        if( i==1 ){
+                            prevWordWidth = wordModel.models[count-1].origin[0]+prevWordWidth+ 8;
+                            console.log('shiftx: ',prevWordWidth);
+                        }
+                        if(i == 2){
+                            shiftX = (parseFloat(wordWidths[0])+parseFloat(wordWidths[1]))/2;
+                            console.log('shiftx: ',shiftX);
+                        }
+                         
+    
+                        for (let index = 0; index < count; index++) {
+                            if(i==0){
+                                console.log('Exception: ',wordModel.models[index],wordModel.models,index);
+
+                                shifts = [wordModel.models[index].origin[0],wordModel.models[index].origin[1]]
+                            }
+                            if(i==1){
+                                shifts = [wordModel.models[index].origin[0]-prevWordWidth,wordModel.models[index].origin[1]]
+                            }
+                            else if(i == 2){
+                                console.log('Exception: ',wordModel.models[index],wordModel.models,index);
+                                shifts = [wordModel.models[index].origin[0]-shiftX,wordModel.models[index].origin[1]-shiftY] ;
+                                //shifts = [0,0];
+                            }
+                            wordModel.models[index].origin = shifts;
+                            console.log('modified value',wordModel.models[index].origin[0]);
+                            console.log('shifts: ',shifts, 'index: ',index);
+    
+                        }
+                        makerjs.model.addModel(models, wordModel); 
+                    });                     
+                } catch (error) {
+                    console.log(error);
+                }               
+        
                prevWordWidth =0;
-               console.log('WordWidthes: ',wordWidthes);
-               //let testOutput = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
 
             }
            else {// LTR
@@ -473,7 +516,7 @@ class Cam extends React.Component {
                 layoutOptions = { // depends on the situation we change the layout option
                    "align":"center",
                     lineHeight: lineHeight ,
-                    width: finalWidth*2.15
+                    width: finalWidth*1.3
                 }
                 layout = computeLayout(font, text, layoutOptions);
                 if(layout.lines.length> 1)
@@ -495,7 +538,7 @@ class Cam extends React.Component {
             //models = new makerjs.models.Text(font, 'الحقيقة', 100);
             //console.log('Models',models,);
             let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
-            console.log('svg is : ',output);
+            //console.log('svg is : ',output);
 
             document.getElementById('render-text').innerHTML = output;
 
@@ -813,11 +856,21 @@ class Cam extends React.Component {
                 </div>                             
             </div>
         </FormGroup>
-        <textarea 
+        Line 1:<input type="text" 
             name="content"  id="content" ref = "content"   maxLength="25"          
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />
         <br />
+        Line 2:<input type="text" 
+            name="line2"  id="line2" ref = "line2"   maxLength="25"          
+            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
+        />
+        <br />       
+        Line 3:<input type="text" 
+            name="line3"  id="line3" ref = "line3"   maxLength="25"          
+            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
+        />
+        <br />            
         <div id ="render-text"></div>
         <div>
             <Button name="sendSVG" onClick={ this.loadMinE} bsSize="small" bsStyle="info" ><Icon name="object-group" /> Generate Image</Button>
