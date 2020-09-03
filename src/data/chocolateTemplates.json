@@ -8,10 +8,10 @@
             "maxLines":2,
             "maxWordsAr":3,
             "maxWordsEn":3,
-            "shiftX":8,
-            "shiftY":11,
+            "shiftX":17.765,
+            "shiftY":8,
             "file":"../Oval.svg" ,
-            "scale":0.011
+            "scale":0.032
         },
         {
             "id":"RectangleModel",
@@ -20,10 +20,10 @@
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,
-            "shiftX":9,
+            "shiftX":17.75,
             "shiftY":9,
             "file":"../Rectangle.svg",
-            "scale":0.010
+            "scale":0.012
         },
         {
             "id":"SquareModel",
@@ -35,7 +35,7 @@
             "shiftX":10,
             "shiftY":10,
             "file":"../Square.svg",
-            "scale":0.010
+            "scale":0.012
         }
     ]
 } 

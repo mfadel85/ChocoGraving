@@ -714,6 +714,7 @@ export const choose = (message, options, value, callback=console.log) => {
 export class MaterialPickerButton extends React.Component {
     constructor(props) {
         super(props);
+        //console.log('my lovely props',props);
         this.state = { showModal: false }
         this.handleApplyPreset.bind(this);
         this.handleClick.bind(this)
@@ -721,6 +722,10 @@ export class MaterialPickerButton extends React.Component {
         this.offModKey.bind(this)
         this.state = {}
         this.__mounted=false;
+
+        // here we should dispatch add operation thing
+        //props.dispatch(addOperation(props.documents[0].id)); // this comes first after exectuing this the MaterialPickerButton works
+
     }
 
     onModKey(e) {
@@ -735,6 +740,9 @@ export class MaterialPickerButton extends React.Component {
 
     componentDidMount() {
         this.__mounted=true;
+        console.log('applying Nasimi preset');
+        this.handleApplyPreset('092aa2c3-fe1d-4869-8a1f-c1d9d77a2ed5');
+        console.log(' done applying Nasimi preset');
         document.addEventListener('keydown', this.onModKey.bind(this))
         document.addEventListener('keyup', this.offModKey.bind(this))
     }
@@ -750,7 +758,7 @@ export class MaterialPickerButton extends React.Component {
     }
 
     handleApplyPreset(operationId) {
-
+        console.log('apply operation preset Nasimi',operationId);
         let operation = getMaterialDbPreset(this.props.groups, operationId)
             operation.params = omit(omit(operation.params, (val, key) => { return val !== undefined && val !== null; }),['id','documents'])
 
@@ -759,6 +767,8 @@ export class MaterialPickerButton extends React.Component {
     }
 
     render() {
+        //console.log('!!!!!* now applying the Nasimi presets');
+        //this.handleApplyPreset('092aa2c3-fe1d-4869-8a1f-c1d9d77a2ed5'); // MFH Edit now to add operation but how???
         let closeModal = () => this.setState({ showModal: false });
         let className = this.props.className;
         //if (this.state.shiftKey) className += ' btn-warning'
