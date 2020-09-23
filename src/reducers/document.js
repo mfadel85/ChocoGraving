@@ -37,7 +37,7 @@ export function document(state, action) {
     //console.log("Action is ",action);
     switch (action.type) {
         case 'DOCUMENT_TRANSFORM2D_SELECTED':
-            console.log("now svg will be transformed !!");
+            console.log("now svg will be transformed !!",action.payload,action);
             if (state.selected && state.transform2d)
                 return { ...state, transform2d: mat2d.multiply([], action.payload, state.transform2d) };
             else
@@ -66,20 +66,14 @@ export function document(state, action) {
 const documentsForest = forest('document', document);
 
 function loadSvg(state, settings, { file, content }, id = uuidv4()) {
-    console.log('settings',settings);
-    console.log('state',state);
-
-    /*  
-    console.log('LoadSVG File',file);
-    console.log('Content',content);
-    */    
+ 
     let { parser, tags, attrs = {} } = content;
     state = state.slice();
     let pxPerInch = (settings.pxPerInch) ? +settings.pxPerInch : 96;
     let allPositions = [];
-
     if (tags.element.width && parser.document.viewBox.width && !settings.forcePxPerInch) {
         let v = tags.element.width.baseVal;
+
         v.convertToSpecifiedUnits(v.SVG_LENGTHTYPE_IN);
         let w = v.valueInSpecifiedUnits;
         if (w)
@@ -299,7 +293,7 @@ export function documentsLoad(state, settings, action) {
     if (action.payload.modifiers.shift) {
         CommandHistory.warn('Replacing occurrences of ' + action.payload.file.name)
         let doc = state.find((doc, index, docs) => doc.name === action.payload.file.name)
-
+        console.log('doc is',doc);
         if (doc) {
             docId = doc.id;
             let ids = getSubtreeIds(state, docId);
@@ -309,7 +303,6 @@ export function documentsLoad(state, settings, action) {
                 }));
         }
     }
-    console.log('documentsLoad doc: ',docId);
 
     // we set them here :D
     if (action.payload.file.type === 'image/svg+xml')
@@ -352,7 +345,7 @@ export function documents(state, action) {
     state = documentsForest(state, action);
     switch (action.type) {
         case 'DOCUMENT_SELECT': {
-            console.log('DOCUMENT_SELECT',action.payload.id);
+            console.log('Z0 DOCUMENT_SELECT',action.payload.id);
             let ids = getSubtreeIds(state, action.payload.id);
             return state.map(o => Object.assign({}, o, { selected: ids.includes(o.id) }));
 
@@ -372,7 +365,7 @@ export function documents(state, action) {
         case 'DOCUMENT_SELECT_META': {
             // can we get document id so we pass it addOpeationDispatcher here?
             // I need document ID
-            console.log('DOCUMETN_SELECT_META',state[0].id);
+            //console.log('DOCUMETN_SELECT_META',state[0].id);
             if (action.payload.meta===true || action.payload.meta===false){
                 return state.map((o)=>{ return Object.assign({},o,{selected: action.payload.meta})})
             }

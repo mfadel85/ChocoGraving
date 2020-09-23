@@ -287,9 +287,10 @@ class Cam extends React.Component {
     runJob(){/// bug here to be solved
         /*if(this.state.content == '')
             return;*/
+        this.generateGcode(); 
+
         let globalState = GlobalStore().getState(); 
         console.log('globalState',globalState);
-        this.generateGcode(); 
         // check if machine is connected first
         if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
             let cmd = this.props.gcode;
@@ -576,22 +577,18 @@ class Cam extends React.Component {
                     console.log('new layout is ',layout);
                     result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
                 }
-               layout.glyphs.forEach((glyph, i) => {
+                layout.glyphs.forEach((glyph, i) => {
                    let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                    character.origin = makerjs.point.scale(glyph.position, scale);
                    makerjs.model.addModel(models, character, i);
                 });
            }
 
-            //models = new makerjs.models.Text(font, 'الحقيقة', 100);
-            //console.log('Models',models,);
 
+           const moldShifts = [30,10];
 
             try {
                 let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
-                //console.log('svg is : ',output);
-                //document.getElementById('render-text').innerHTML = output;
-
                 parser.parse(output).then((tags) => {
                     let captures = release(true);
                     let warns = captures.filter(i => i.method == 'warn')
@@ -607,9 +604,7 @@ class Cam extends React.Component {
                     };
                     const modifiers = {};
                     imageTagPromise(tags).then((tags) => {
-                        //console.log('loadDocument: generatedID',generatedID);
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                        //console.log('!!!!* select document: dispatch :props:',that.props);
                         that.props.dispatch(selectDocuments(true));
                         let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
                         mainsvgID = documents;
@@ -618,6 +613,7 @@ class Cam extends React.Component {
                         that.props.dispatch(addOperation({ documents}));
                         // we need two shiftX shifty one for Arabic and one for English
                         that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
+                        //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 105, 96]));
 
                         let globalState = GlobalStore().getState(); 
                         console.log('that.propts',that.props.op,'state',globalState);
@@ -642,15 +638,41 @@ class Cam extends React.Component {
                                 imageTagPromise(tags).then((tags) => {
                                     let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
                                     that.setState({templateDocID:templateDoc});
-                                    that.props.dispatch(selectDocuments(mainsvgID));
+                                    console.log('templateDoc:',templateDoc);
+                                    //that.props.dispatch(toggleSelectDocument(that.state.textDocID));
+                                    that.props.dispatch(selectDocument(templateDoc));
                                     that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                                     that.props.dispatch(selectDocument(that.state.textDocID));
+                                    //that.props.dispatch(toggleSelectDocument(that.state.textDocID));
+                                    that.props.dispatch(selectDocuments(true));
+                                    console.log("applied twice");
+                                    that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0], moldShifts[1]]));
 
-                                    console.log('text doc id ',that.state.textDocID,'template doc id ',that.state.templateDocID);
-                                    console.log(templateDoc);
+                                    console.log('text doc id ',that.state.textDocID,'template doc id ',that.state.templateDocID,templateDoc);
+                                    that.props.dispatch(selectDocuments(false));
+                                    that.props.dispatch(selectDocument(that.state.textDocID));
+                                    that.props.dispatch(toggleSelectDocument(that.state.textDocID));
                                     that.props.dispatch(toggleSelectDocument(templateDoc[0]));
+                                    //that.props.dispatch(selectDocuments(true));
 
+                                    //
+                                    //
                                 }).then( () => {
+                                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 105, 96]));
+                                    //that.props.dispatch(toggleSelectDocument(templateDoc));
+                                    //
+
+                                    //that.props.dispatch(selectDocument(this.state.textDocID));
+                                    //that.props.dispatch(selectDocuments(true));
+                                   //that.props.dispatch(selectDocuments(templateDoc[0]));
+                                    /*
+                                    if(this.state.templateDocID !='')
+                                        this.props.dispatch(selectDocument(this.state.templateDocID));
+                                    if(this.state.textDocID !='')
+                                        this.props.dispatch(selectDocument(this.state.textDocID));
+                                    this.props.dispatch(selectDocuments(true));
+                                    */
+                                   // that.props.dispatch(toggleSelectDocument(templateDoc[0]));
                                     // can we load the image file from the location
                                 })
                             });
