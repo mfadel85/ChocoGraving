@@ -619,7 +619,8 @@ class Cam extends React.Component {
            }
 
 
-           const moldShifts = [107,88];//[105,96];
+           //const moldShifts = [107,88];//[105,96];
+           const moldShifts = [0,0];//[105,96];
            console.log("ZestZ");
 
             try {

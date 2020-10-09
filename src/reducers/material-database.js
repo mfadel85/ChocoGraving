@@ -10,7 +10,9 @@ import { OPERATION_INITIALSTATE } from './operation'
 
 import CommandHistory from '../components/command-history'
 
-export const MATERIALDB_INITIALSTATE = require("../data/lw.materials/material-database.json");
+//export const MATERIALDB_INITIALSTATE = require("../data/lw.materials/material-database.json");
+export const MATERIALDB_INITIALSTATE = require("../data/lw.materials/material-databaseM.json");
+
 export const MATERIALDB_SCHEMA = require("../data/lw.materials/material-database.spec.json");
 
 import { confirm } from '../components/laserweb'
