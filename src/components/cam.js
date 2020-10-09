@@ -38,6 +38,7 @@ import { Error, Operations } from './operation';
 import { OperationDiagram } from './operation-diagram';
 import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
+import Select from 'react-select';
 
 const opentype = require('opentype.js');
 var playing = false;
@@ -117,6 +118,7 @@ class Cam extends React.Component {
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
         this.checkRTL = this.checkRTL.bind(this);
+        this.handleMinChange = this.handleMinChange.bind(this);
 
     }
 
@@ -183,7 +185,39 @@ class Cam extends React.Component {
         });        
         this.setState({ content: e.target.value });
     }
+    handleMinChange(selectedOption)  {
+        //this.resetFontSize(e);
+        console.log(selectedOption);
+        switch(selectedOption){
+            case 'GreatVibes':
+                this.setState({ font: 'GreatVibes-Regular.otf' });
+            break;
+            case 'Arslan':
+                console.log('Almaarai is chosen');
+                this.setState({font:'Almarai-Bold.ttf'});
+            break;
+            case 'chocolatePristina':
+                console.log('chocolatePristina is chosen');
+                this.setState({ font: 'chocolatePristina.ttf' });
+            break;
+            case 'ITCKRIST':
+                this.setState({ font:  'ITCKRIST.TTF' });
+            break;
+            case 'TrajanPro-Bold':
+                this.setState({ font:  'TrajanPro-Bold.otf' });
+            break;   
+            case 'TrajanPro-Regular':
+                this.setState({ font:  'TrajanPro-Regular.otf' });
+            break;   
+            default:                
+                this.setState({ font: 'GreatVibes-Regular.otf' });
+            break;
+        }
+        this.setState({ font: selectedOption.value });
+        console.log(`Option selected:`, selectedOption);
+      };
     handleFontChange (e)  {
+        console.log(e);
         this.resetFontSize(e);
         switch(e.target.value){
             case 'GreatVibes':
@@ -370,7 +404,7 @@ class Cam extends React.Component {
         console.log('new fontChange',this.state.fontchange);
     }
     textWrapping(){  
-
+        console.log(this.state);
         if(this.state.content == ''){
             console.log('no text???');
             return;
@@ -585,7 +619,8 @@ class Cam extends React.Component {
            }
 
 
-           const moldShifts = [30,10];
+           const moldShifts = [107,88];//[105,96];
+           console.log("ZestZ");
 
             try {
                 let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
@@ -602,6 +637,17 @@ class Cam extends React.Component {
                         name:"file.svg",
                         type: "image/svg+xml"
                     };
+                    /* mine 
+                  "startHeight": "-28",
+                  "millRapidZ": -1,
+                  "millStartZ": -33,
+                  "millEndZ": -35,
+                  xing                  
+                  "startHeight": "-68",
+                  "millRapidZ": -1,
+                  "millStartZ": -70,
+                  "millEndZ": -72,
+                    */
                     const modifiers = {};
                     imageTagPromise(tags).then((tags) => {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
@@ -780,6 +826,7 @@ class Cam extends React.Component {
         }, 3000);     
 
     }
+
     handleSubmission(e) {
         e.preventDefault();
         var text = e.target.content.value;
@@ -788,11 +835,25 @@ class Cam extends React.Component {
         });
     }
     render() {
+        const { selectedOption } = this.state;
+
         //console.log('cam.js this.props: ',this.props);
         let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument,bounds } = this.props;
         let validator = ValidateSettings(false)
         let valid = validator.passes();
         let someSelected=documents.some((i)=>(i.selected));
+
+        const Fonts = [
+            { value: 'GreatVibes-Regular.otf', label: 'Great Vibes' },
+            { value: 'Almarai-Bold.ttf', label: 'Arslan' },
+            { value: 'chocolatePristina.ttf', label: 'Pristina' },
+            { value: 'ITCKRIST.TTF', label: 'ITCKRIST' },
+            { value: 'TrajanPro-Bold.otf', label: 'TrajanPro-B' },
+            { value: 'TrajanPro-Regular.otf', label: 'TrajanPro-R' },
+        ];
+
+
+
         return (
             <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div className="panel panel-danger" style={{ marginBottom: 0 }}>
@@ -886,17 +947,20 @@ class Cam extends React.Component {
             <Form onSubmit={ this.handleSubmission }>
 
              Font: 
-            <select value={this.state.font} onChange={this.handleFontChange}>
+            <Select value={this.state.font}         value={this.state.font}         onChange={this.handleMinChange}
+
+ /*onChange={this.handleFontChange}*/ defaultValue= {this.state.font} options={Fonts}>
                 <option value="GreatVibes">Great Vibes</option>
-                <option value="Arslan">Arslan</option>
+                <option value="Arslan">ArslanFont</option>
                 <option value="chocolatePristina">Pristina</option>
                 <option value="ITCKRIST">ITCKRIST</option>
                 <option value="TrajanPro-Bold">TrajanPro-B</option>
                 <option value="TrajanPro-Regular">TrajanPro-R</option>
-            </select><br />
-                Text: <br />
+            </Select>
+            <br />
+            Text: <br />
 
-                </Form>
+        </Form>
         <FormGroup>
             <div>
                 <div className="form-check" >
@@ -933,35 +997,30 @@ class Cam extends React.Component {
                 </div>                             
             </div>
         </FormGroup>
-        Line 1:<textarea 
+        Line Main:<textarea 
             name="content"  id="content" ref = "content"   maxLength="25"          
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />
-        <br />
-        <label style={{visibility:  'hidden' }} >Line 2:</label>
+        {/*<label style={{visibility:  'hidden' }} >Line 2:</label>
         <input type="text" 
             name="line2"  id="line2" ref = "line2"   maxLength="25"    
             style={{visibility:  'hidden' }}          
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />
-        <br />       
         <label style={{visibility:  'hidden' }} >Line 3:</label>
         <input type="text" 
             name="line3"  id="line3" ref = "line3"   maxLength="25"     
             style={{visibility:  'hidden' }}          
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
-        />
-        <br />            
-        <div id ="render-text"></div>
+        />*/}
         <div>
-            <Button name="sendSVG" onClick={ this.loadMinE} bsSize="small" bsStyle="info" ><Icon name="object-group" /> Generate Image</Button>
-            <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >Run</Button>
-            <Button name="textWrapping" onClick={ this.textWrapping}  bsStyle="danger" >Text Wrap</Button>
+            <Button name="sendSVG" onClick={ this.loadMinE} bsSize="small" bsStyle="info" ><Icon name="object-group" /> G </Button>
+            <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >R</Button>
+            <Button name="textWrapping" onClick={ this.textWrapping}  bsStyle="danger" >Generate</Button>
             <Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>                    
             <Button name="fontplus" onClick={() => { this.changeFont(1) }}   bsSize="small" bsStyle="primary">Bigger Font ++</Button>                    
             <Button name="fontminus" onClick={ () => {this.changeFont(-1)}} bsSize="small" bsStyle="primary">Smaller Font --</Button>                    
         </div>
-        <canvas ref="canvas" width={300} height={300}/>
 
         </div>);
     }

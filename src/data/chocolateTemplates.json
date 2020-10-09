@@ -11,7 +11,7 @@
             "shiftX":17.765,
             "shiftY":8,
             "file":"../Oval.svg" ,
-            "scale":0.032
+            "scale":0.018
         },
         {
             "id":"RectangleModel",
@@ -23,19 +23,19 @@
             "shiftX":17.75,
             "shiftY":9,
             "file":"../Rectangle.svg",
-            "scale":0.012
+            "scale":0.016
         },
         {
             "id":"SquareModel",
-            "maxHeight":24,
-            "maxWidth":24,
+            "maxHeight":25,
+            "maxWidth":25,
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,
             "shiftX":10,
             "shiftY":10,
             "file":"../Square.svg",
-            "scale":0.012
+            "scale":0.016
         }
     ]
 } 
