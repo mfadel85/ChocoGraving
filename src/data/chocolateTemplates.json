@@ -3,39 +3,39 @@
     "templates":[
         {
             "id":"OvalModel",
-            "maxHeight":17,
-            "maxWidth":27,
+            "maxHeight":20,
+            "maxWidth":40,
             "maxLines":2,
             "maxWordsAr":3,
             "maxWordsEn":3,
             "shiftX":17.765,
             "shiftY":8,
             "file":"../Oval.svg" ,
-            "scale":0.018
+            "scale":0.020
         },
         {
             "id":"RectangleModel",
-            "maxHeight":26,
-            "maxWidth":15,
+            "maxHeight":33,
+            "maxWidth":33,
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,
-            "shiftX":17.75,
-            "shiftY":9,
+            "shiftX":0,
+            "shiftY":0,
             "file":"../Rectangle.svg",
-            "scale":0.016
+            "scale":0.1
         },
         {
             "id":"SquareModel",
-            "maxHeight":25,
-            "maxWidth":25,
+            "maxHeight":40,
+            "maxWidth":45,
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,
             "shiftX":10,
             "shiftY":10,
             "file":"../Square.svg",
-            "scale":0.016
+            "scale":0.010
         }
     ]
 } 

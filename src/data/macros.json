@@ -2,7 +2,7 @@
     
    "*GotoXY0": {
         "label": "Goto XY zero",
-        "gcode": "G0 X0Y0",
+        "gcode": "G0 X0Y0Z0",
         "keybinding": "ctrl+f1",
         "_locked":false
    },

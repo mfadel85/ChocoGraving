@@ -128,7 +128,7 @@ class LaserWeb extends React.Component {
         updateTitle();
         if (this.glOk) {
             this.setupKeybindings();
-            this.setupVideoCapture();
+            //this.setupVideoCapture();
         }
         fetchRelease().then(function(data){
             if (this.props.settings.__latestRelease) {

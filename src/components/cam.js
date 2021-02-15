@@ -79,10 +79,10 @@ class Cam extends React.Component {
             filter:null,
             content:"",
             svg:"",
-            font: 'GreatVibes-Regular.otf',
+            font: 'Bubble.otf',
             width:0,
             lineHeight:0,
-            fontSize : 25,
+            fontSize : 20,
             activeTemplateName:'Oval',
             activeTemplate:{
                 "id":"OvalModel",
@@ -94,11 +94,11 @@ class Cam extends React.Component {
                 "shiftX":8,
                 "shiftY":11,
                 "file":"../Oval.svg" ,
-                "scale":0.012
+                "scale":0.029
             },
             marginX:0,
             marginY:0,
-            scale:0.032695775,
+            scale:0.012695775,
             fontchange:0,
             textDocID:'',
             templateDocID:'',
@@ -206,11 +206,11 @@ class Cam extends React.Component {
             case 'TrajanPro-Bold':
                 this.setState({ font:  'TrajanPro-Bold.otf' });
             break;   
-            case 'TrajanPro-Regular':
-                this.setState({ font:  'TrajanPro-Regular.otf' });
+            case 'Bevan':
+                this.setState({ font:  'Bevan.ttf' });
             break;   
             default:                
-                this.setState({ font: 'GreatVibes-Regular.otf' });
+                this.setState({ font: 'ITCKRIST.TTF'});
             break;
         }
         this.setState({ font: selectedOption.value });
@@ -237,11 +237,11 @@ class Cam extends React.Component {
             case 'TrajanPro-Bold':
                 this.setState({ font:  'TrajanPro-Bold.otf' });
             break;   
-            case 'TrajanPro-Regular':
-                this.setState({ font:  'TrajanPro-Regular.otf' });
+            case 'Bevan':
+                this.setState({ font:  'Bevan.ttf' });
             break;   
             default:                
-                this.setState({ font: 'GreatVibes-Regular.otf' });
+                this.setState({ font: 'Almarai-Bold.ttf' });
             break;
         }
     }    
@@ -388,13 +388,9 @@ class Cam extends React.Component {
         else 
             console.log('Smaller Font');
         this.updateFontChangeAmount(amount);
-        /*let changeAmount =this.state.changeAmount;
-        let activeTemplate = this.state.activeTemplate;
-        console.log('activeTemplate',activeTemplate);
-        activeTemplate.scale = activeTemplate.scale *(changeAmount*0.10);*/
         console.log('chnage Font');
 
-        this.textWrapping(); //problem here to be solved
+        this.textWrapping(); 
     }
     updateFontChangeAmount(amount){
         let fontchange = this.state.fontchange;
@@ -406,11 +402,11 @@ class Cam extends React.Component {
     textWrapping(){  
         console.log(this.state);
         if(this.state.content == ''){
-            console.log('no text???');
+            alert('no text???');
             return;
         }
            
-        console.log('Text Wrapping started direactoin',this.state.direction);
+        console.log('Text Wrapping started directoin',this.state.direction);
 
         var that = this;
        // const toggleSelectDocument  = this.props.toggleSelectDocument ;
@@ -449,181 +445,106 @@ class Cam extends React.Component {
                 "align":"center",
                 lineHeight: lineHeight ,
                 width: finalWidth
-            };
-            if(that.state.direction == 'RTL'){
-                let wordModel ='';
-                /*let wordModel = new makerjs.models.Text(font, text, fontSize);
+        };
+        if(that.state.direction == 'RTL'){
+            let wordModel ='';
+            /*let wordModel = new makerjs.models.Text(font, text, fontSize);
+            makerjs.model.addModel(models, wordModel); 
+            //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
+            // console.log(testOutput);
+
+            let wordWidths = [];
+            let wordHeigths = [];
+            let svgWords =[];
+
+            let shiftX = 0;
+            let shiftY = 0;
+            let shifts = [shiftX,shiftY];
+            let prevWordWidth =0;
+
+            models= {};
+
+            console.log('lines are : ',lines);
+            svgWords =[];
+            lines.forEach((line,i) => {
+                wordModel  = new makerjs.models.Text(font,line,fontSize);
                 makerjs.model.addModel(models, wordModel); 
-                //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
-               // console.log(testOutput);
-
-                let wordWidths = [];
-                let wordHeigths = [];
-                let svgWords =[];
-
-                let shiftX = 0;
-                let shiftY = 0;
-                let shifts = [shiftX,shiftY];
-                let prevWordWidth =0;
-                var words = text.split(' ');
-               /* words.forEach((word,i) => {
-                    models= {};
-                    wordModel = new makerjs.models.Text(font, word, fontSize);
-                    makerjs.model.addModel(models, wordModel); 
-                    svgWords[i] = makerjs.exporter.toSVG(models);
-                    let parts = svgWords[i].split("\"");
-                    wordWidths[i] = parseFloat(parts[1]);
-                    wordHeigths[i] = parseFloat(parts[3]);
-                });*/
-                /*Array.prototype.max = function() {
-                    return Math.max.apply(null, this);
-                };
-                console.log(Math.max(...array1));*/
-
+                svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
                 models= {};
+                let parts = svgWords[i].split("\"");
+                wordWidths[i] = parseFloat(parts[1]);
+                wordHeigths[i] = parseFloat(parts[3]);
+                //console.log('width',wordWidths[i],'line',line,svgWords[i]);
+            });
+            let maxWHeight = Math.max(...wordHeigths);
+            console.log('widths',wordWidths,'heights',wordHeigths); 
 
-                console.log('lines are : ',lines);
-                svgWords =[];
-                lines.forEach((line,i) => {
-                    wordModel  = new makerjs.models.Text(font,line,fontSize);
-                    makerjs.model.addModel(models, wordModel); 
-                    svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
-                    models= {};
-                    let parts = svgWords[i].split("\"");
-                    wordWidths[i] = parseFloat(parts[1]);
-                    wordHeigths[i] = parseFloat(parts[3]);
-                    //console.log('width',wordWidths[i],'line',line,svgWords[i]);
-                });
-                let maxWHeight = Math.max(...wordHeigths);
-                console.log('widths',wordWidths,'heights',wordHeigths); 
+            models= {};
+            lines.forEach((line,i) => {
+                wordModel  = new makerjs.models.Text(font,line,fontSize,true);
+                let count = 0;
+                for(var c in wordModel.models)
+                    count++;
+                console.log('count',count);
+                shiftY = shiftY +maxWHeight+3;
+                shiftX = that.state.activeTemplate.shiftX*9 - (wordWidths[i]/(2*3.78));
+                console.log('shiftX',shiftX,' wordWidths[i]', wordWidths[i]/(2*3.78),'activetempalte.shiftx',that.state.activeTemplate.shiftX);
+                for (let index = 0; index < count; index++) {
+                    shifts = [wordModel.models[index].origin[0]+shiftX,wordModel.models[index].origin[1]-shiftY] ;
+                    console.log('xShiftFinal',shifts);
+                    wordModel.models[index].origin = [shifts[0],shifts[1]];
+                    console.log('wordModel.models[index].origin',wordModel.models[index].origin);
 
-                models= {};
-                lines.forEach((line,i) => {
-                    wordModel  = new makerjs.models.Text(font,line,fontSize,true);
-                    let count = 0;
-                    for(var c in wordModel.models)
-                        count++;
-                    console.log('count',count);
-                    shiftY = shiftY +maxWHeight+3;
-                    shiftX = that.state.activeTemplate.shiftX*9 - (wordWidths[i]/(2*3.78));
-                    //shiftX =30;
-                    console.log('shiftX',shiftX,' wordWidths[i]', wordWidths[i]/(2*3.78),'activetempalte.shiftx',that.state.activeTemplate.shiftX);
-                    for (let index = 0; index < count; index++) {
-                        shifts = [wordModel.models[index].origin[0]+shiftX,wordModel.models[index].origin[1]-shiftY] ;
-                        console.log('xShiftFinal',shifts);
-                        wordModel.models[index].origin = [shifts[0],shifts[1]];
-                        console.log('wordModel.models[index].origin',wordModel.models[index].origin);
-
-                    }
-                    var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
-                    makerjs.model.addModel(models, newWordModel); 
-
-                });
-                console.log('models',models);   
-                /*
-                 
-                try {
-                    words.forEach((word,i) => {
-                        console.log(word,i,'fontsize',fontSize);
-                        wordModel = new makerjs.models.Text(font, word, fontSize);   
-
-                        let count = 0;
-                        for (var c in wordModel.models) {
-                            count = count + 1;
-                        }
-
-                        if(typeof(wordModel) == 'undefined')
-                        {
-                            console.log('no results');
-                            return;
-                        }
-                        console.log('word model length: ',wordModel.models,'count', count);
-                        
-                        //return;
-                        shiftX = shiftX + i*30;
-                        shiftY =  i*10;
-                        console.log('prevwordwidht',prevWordWidth);
-    
-                        if( i==1 ){
-                            prevWordWidth = wordModel.models[count-1].origin[0]+prevWordWidth+ 8;
-                            console.log('shiftx: ',prevWordWidth);
-                        }
-                        if(i == 2){
-                            shiftX = (parseFloat(wordWidths[0])+parseFloat(wordWidths[1]))/2;
-                            console.log('shiftx: ',shiftX);
-                        }
-                         
-    
-                        for (let index = 0; index < count; index++) {
-                            if(i==0){
-                                console.log('Exception: ',wordModel.models[index],wordModel.models,index);
-
-                                shifts = [wordModel.models[index].origin[0],wordModel.models[index].origin[1]]
-                            }
-                            if(i==1){
-                                shifts = [wordModel.models[index].origin[0]-prevWordWidth,wordModel.models[index].origin[1]]
-                            }
-                            else if(i == 2){
-                                console.log('Exception: ',wordModel.models[index],wordModel.models,index);
-                                shifts = [wordModel.models[index].origin[0]-shiftX,wordModel.models[index].origin[1]-shiftY] ;
-                                //shifts = [0,0];
-                            }
-                            wordModel.models[index].origin = shifts;
-                            console.log('modified value',wordModel.models[index].origin[0]);
-                            console.log('shifts: ',shifts, 'index: ',index);
-    
-                        }
-                        makerjs.model.addModel(models, wordModel); 
-                    });                     
-                } catch (error) {
-                    console.log(error);
-                }     */          
-        
-               prevWordWidth =0;
-
-            }
-           else {// LTR
-
-                let layout = computeLayout(font, text, layoutOptions);
-                console.log('Layout is like this: ',layout);
-                let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
-                console.log('first layout evaluation result is ',result);
-                while(!result)
-                {
-                    that.setState({
-                        activeTemplate:activeTemplate
-                    });
-                    //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
-                    console.log('new unitsPerEm : ',font.unitsPerEm);
-                    scale = scale * 0.70; // we should make this dynamic based on the difference how many char are in another line
-                    activeTemplate.scale = scale;
-                    that.setState({activeTemplate:activeTemplate});
-                    fontSize = scale*font.unitsPerEm;
-                    layoutOptions = { // depends on the situation we change the layout option
-                    "align":"center",
-                        lineHeight: lineHeight ,
-                        width: finalWidth*1.3
-                    }
-                    layout = computeLayout(font, text, layoutOptions);
-                    if(layout.lines.length> 1)
-                        activeTemplate.shiftY -= 2;
-                    activeTemplate.shiftX -= 3;
-                    console.log('new layout is ',layout);
-                    result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
                 }
-                layout.glyphs.forEach((glyph, i) => {
-                   let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                   character.origin = makerjs.point.scale(glyph.position, scale);
-                   makerjs.model.addModel(models, character, i);
+                var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
+                makerjs.model.addModel(models, newWordModel); 
+
+            });
+            console.log('models',models);           
+            prevWordWidth =0;
+
+        }
+        else {// LTR
+
+            let layout = computeLayout(font, text, layoutOptions);
+            console.log('Layout is like this: ',layout);
+            let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
+            console.log('first layout evaluation result is ',result);
+            while(!result)
+            {
+                that.setState({
+                    activeTemplate:activeTemplate
                 });
-           }
+                //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
+                console.log('new unitsPerEm : ',font.unitsPerEm);
+                scale = scale * 0.1; // we should make this dynamic based on the difference how many char are in another line
+                activeTemplate.scale = scale;
+                that.setState({activeTemplate:activeTemplate});
+                fontSize = scale*font.unitsPerEm;
+                layoutOptions = { // depends on the situation we change the layout option
+                "align":"center",
+                    lineHeight: lineHeight ,
+                    width: finalWidth*0.7
+                }
+                layout = computeLayout(font, text, layoutOptions);
+                if(layout.lines.length> 1)
+                    activeTemplate.shiftY -= 2;
+                activeTemplate.shiftX -= 3;
+                console.log('new layout is ',layout);
+                result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
+            }
+            layout.glyphs.forEach((glyph, i) => {
+                let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                character.origin = makerjs.point.scale(glyph.position, scale);
+                makerjs.model.addModel(models, character, i);
+            });
+        }
 
 
-           //const moldShifts = [107,88];//[105,96];
-           const moldShifts = [0,0];//[105,96];
-           console.log("ZestZ");
+        const moldShifts = [65,60];//[105,96];
+           //const moldShifts = [0,0];//[105,96];
 
-            try {
+        try {
                 let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
                 parser.parse(output).then((tags) => {
                     let captures = release(true);
@@ -638,17 +559,7 @@ class Cam extends React.Component {
                         name:"file.svg",
                         type: "image/svg+xml"
                     };
-                    /* mine 
-                  "startHeight": "-28",
-                  "millRapidZ": -1,
-                  "millStartZ": -33,
-                  "millEndZ": -35,
-                  xing                  
-                  "startHeight": "-68",
-                  "millRapidZ": -1,
-                  "millStartZ": -70,
-                  "millEndZ": -72,
-                    */
+
                     const modifiers = {};
                     imageTagPromise(tags).then((tags) => {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
@@ -686,11 +597,9 @@ class Cam extends React.Component {
                                     let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
                                     that.setState({templateDocID:templateDoc});
                                     console.log('templateDoc:',templateDoc);
-                                    //that.props.dispatch(toggleSelectDocument(that.state.textDocID));
                                     that.props.dispatch(selectDocument(templateDoc));
                                     that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                                     that.props.dispatch(selectDocument(that.state.textDocID));
-                                    //that.props.dispatch(toggleSelectDocument(that.state.textDocID));
                                     that.props.dispatch(selectDocuments(true));
                                     console.log("applied twice");
                                     that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0], moldShifts[1]]));
@@ -700,35 +609,16 @@ class Cam extends React.Component {
                                     that.props.dispatch(selectDocument(that.state.textDocID));
                                     that.props.dispatch(toggleSelectDocument(that.state.textDocID));
                                     that.props.dispatch(toggleSelectDocument(templateDoc[0]));
-                                    //that.props.dispatch(selectDocuments(true));
 
-                                    //
-                                    //
                                 }).then( () => {
-                                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 105, 96]));
-                                    //that.props.dispatch(toggleSelectDocument(templateDoc));
-                                    //
-
-                                    //that.props.dispatch(selectDocument(this.state.textDocID));
-                                    //that.props.dispatch(selectDocuments(true));
-                                   //that.props.dispatch(selectDocuments(templateDoc[0]));
-                                    /*
-                                    if(this.state.templateDocID !='')
-                                        this.props.dispatch(selectDocument(this.state.templateDocID));
-                                    if(this.state.textDocID !='')
-                                        this.props.dispatch(selectDocument(this.state.textDocID));
-                                    this.props.dispatch(selectDocuments(true));
-                                    */
-                                   // that.props.dispatch(toggleSelectDocument(templateDoc[0]));
-                                    // can we load the image file from the location
-                                })
-                            });
+                            })
                         });
-                    })
-                });
-            }
-            catch(Exception){
-                console.log(Exception);
+                    });
+                })
+            });
+        }
+        catch(Exception){
+            console.log(Exception);
 
             }
         })
@@ -768,8 +658,8 @@ class Cam extends React.Component {
             case 'TrajanPro-Bold':
                 font = 'TrajanPro-Bold.otf';
             break;   
-            case 'TrajanPro-Regular':
-                font = 'TrajanPro-Regular.otf';
+            case 'Bevan':
+                font = 'Bevan.ttf';
             break;                       
         }
         setTimeout(() => {opentype.load(font, function (err, font) {
@@ -850,7 +740,7 @@ class Cam extends React.Component {
             { value: 'chocolatePristina.ttf', label: 'Pristina' },
             { value: 'ITCKRIST.TTF', label: 'ITCKRIST' },
             { value: 'TrajanPro-Bold.otf', label: 'TrajanPro-B' },
-            { value: 'TrajanPro-Regular.otf', label: 'TrajanPro-R' },
+            { value: 'Bevan.ttf', label: 'Bevan' },
         ];
 
 
@@ -956,7 +846,7 @@ class Cam extends React.Component {
                 <option value="chocolatePristina">Pristina</option>
                 <option value="ITCKRIST">ITCKRIST</option>
                 <option value="TrajanPro-Bold">TrajanPro-B</option>
-                <option value="TrajanPro-Regular">TrajanPro-R</option>
+                <option value="Bevan">Eevan</option>
             </Select>
             <br />
             Text: <br />
@@ -1015,12 +905,12 @@ class Cam extends React.Component {
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />*/}
         <div>
-            <Button name="sendSVG" onClick={ this.loadMinE} bsSize="small" bsStyle="info" ><Icon name="object-group" /> G </Button>
-            <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >R</Button>
+            {/*<Button name="sendSVG" onClick={ this.loadMinE} bsSize="small" bsStyle="info" ><Icon name="object-group" /> G </Button>
+            <Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>
+            <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >R</Button>*/}
             <Button name="textWrapping" onClick={ this.textWrapping}  bsStyle="danger" >Generate</Button>
-            <Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>                    
-            <Button name="fontplus" onClick={() => { this.changeFont(1) }}   bsSize="small" bsStyle="primary">Bigger Font ++</Button>                    
-            <Button name="fontminus" onClick={ () => {this.changeFont(-1)}} bsSize="small" bsStyle="primary">Smaller Font --</Button>                    
+            <Button name="fontplus" onClick={() => { this.changeFont(1) }}   bsSize="small" bsStyle="primary">Bigger ++</Button>                    
+            <Button name="fontminus" onClick={ () => {this.changeFont(-1)}} bsSize="small" bsStyle="primary">Smaller --</Button>                    
         </div>
 
         </div>);

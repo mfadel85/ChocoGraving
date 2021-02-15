@@ -118,7 +118,7 @@ export const SETTINGS_INITIALSTATE = {
     toolTestSValue: 1,
     toolTestDuration: 0,
 /*  */
-    gcodeStart: "G21         ; Set units to mm\r\nG90         ; Absolute positioning\r\nM4 S0       ; Enable Laser/Spindle (0 power)\r\n",
+    gcodeStart: "G21         ; Set units to mm\r\nG90         ; Absolute positioning\r\nM3 S1000       ; Enable Laser/Spindle (0 power)\r\n",
     gcodeEnd: "M5          ; Switch tool offEnd\r\n",
     gcodeHoming: "$H",
     gcodeGenerator: "default",
