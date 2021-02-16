@@ -423,7 +423,6 @@ class Cam extends React.Component {
         const release = captureConsole();
         const parser = new Parser({});
         const makerjs = require('makerjs');
-        //font= 'Almarai-Bold.ttf';
         opentype.load(font, function (err, font) {//for arabic fonst we will see
 
             let activeTemplate = that.state.activeTemplate;
@@ -505,7 +504,6 @@ class Cam extends React.Component {
 
         }
         else {// LTR
-
             let layout = computeLayout(font, text, layoutOptions);
             console.log('Layout is like this: ',layout);
             let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
@@ -527,7 +525,7 @@ class Cam extends React.Component {
                     width: finalWidth*0.7
                 }
                 layout = computeLayout(font, text, layoutOptions);
-                if(layout.lines.length> 1)
+                if(layout.lines.length > 1)
                     activeTemplate.shiftY -= 2;
                 activeTemplate.shiftX -= 3;
                 console.log('new layout is ',layout);
@@ -539,11 +537,7 @@ class Cam extends React.Component {
                 makerjs.model.addModel(models, character, i);
             });
         }
-
-
         const moldShifts = [65,60];//[105,96];
-           //const moldShifts = [0,0];//[105,96];
-
         try {
                 let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
                 parser.parse(output).then((tags) => {
@@ -565,13 +559,13 @@ class Cam extends React.Component {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                         that.props.dispatch(selectDocuments(true));
                         let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
+                        console.log('the docs are : ',that.props.documents);
                         mainsvgID = documents;
                         console.log('DocId is:',documents);
                         that.setState({textDocID:documents});
                         that.props.dispatch(addOperation({ documents}));
                         // we need two shiftX shifty one for Arabic and one for English
                         that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
-                        //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 105, 96]));
 
                         let globalState = GlobalStore().getState(); 
                         console.log('that.propts',that.props.op,'state',globalState);
@@ -593,7 +587,7 @@ class Cam extends React.Component {
                                     CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
                                 if (errors.length)
                                     CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                                imageTagPromise(tags).then((tags) => {
+                                imageTagPromise(tags).then((tags) => { /** this is for chocolate template  */
                                     let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
                                     that.setState({templateDocID:templateDoc});
                                     console.log('templateDoc:',templateDoc);

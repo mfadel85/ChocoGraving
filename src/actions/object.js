@@ -21,6 +21,7 @@ export function setAttrs(objectType) {
 export function add(objectType, defaults=function(){return {}}) {
     
     let type = objectType.toUpperCase() + '_ADD';
+    console.log("16Feb: ",objectType,defaults);
     return (attrs) => ({ type, payload: { attrs: { ...defaults(), ...attrs, id: attrs.id || uuidv4() } } });
 };
 

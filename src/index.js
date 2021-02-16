@@ -10,7 +10,6 @@ import filter from 'redux-localstorage-filter';
 
 
 
-import { load } from 'opentype.js'
 export const LOCALSTORAGE_KEY = 'LaserWeb';
 export const DEBUG_KEY = "LaserwebDebug";
 

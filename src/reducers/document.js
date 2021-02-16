@@ -37,7 +37,6 @@ export function document(state, action) {
     //console.log("Action is ",action);
     switch (action.type) {
         case 'DOCUMENT_TRANSFORM2D_SELECTED':
-            console.log("now svg will be transformed !!",action.payload,action);
             if (state.selected && state.transform2d)
                 return { ...state, transform2d: mat2d.multiply([], action.payload, state.transform2d) };
             else
@@ -345,7 +344,7 @@ export function documents(state, action) {
     state = documentsForest(state, action);
     switch (action.type) {
         case 'DOCUMENT_SELECT': {
-            console.log('Z0 DOCUMENT_SELECT',action.payload.id);
+            //console.log('Z0 DOCUMENT_SELECT',action.payload.id);
             let ids = getSubtreeIds(state, action.payload.id);
             return state.map(o => Object.assign({}, o, { selected: ids.includes(o.id) }));
 
