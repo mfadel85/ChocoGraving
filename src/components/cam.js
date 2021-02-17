@@ -82,7 +82,6 @@ class Cam extends React.Component {
             font: 'Bubble.otf',
             width:0,
             lineHeight:0,
-            fontSize : 20,
             activeTemplateName:'Oval',
             activeTemplate:{
                 "id":"OvalModel",
@@ -94,11 +93,13 @@ class Cam extends React.Component {
                 "shiftX":8,
                 "shiftY":11,
                 "file":"../Oval.svg" ,
-                "scale":0.029
+				"scale":0.029,
+				fontSize:15
             },
             marginX:0,
             marginY:0,
-            scale:0.012695775,
+			scale:0.012695775,
+			fontSize: 15,
             fontchange:0,
             textDocID:'',
             templateDocID:'',
@@ -160,7 +161,7 @@ class Cam extends React.Component {
         //const ctx = this.refs.canvas.getContext('2d');
         //ctx.fillRect(context);
     }
-    resetFontSize(e){
+    resetFontSize(e){ // a bug here!!!
         let activeTemplateName = this.state.activeTemplateName;
         this.handleTemplateChange(e,activeTemplateName);
     }
@@ -215,7 +216,7 @@ class Cam extends React.Component {
         this.setState({ font: selectedOption.value });
         console.log(`Option selected:`, selectedOption);
       };
-    handleFontChange (e)  {
+    /*handleFontChange (e)  {
         console.log(e);
         this.resetFontSize(e);
         switch(e.target.value){
@@ -243,20 +244,21 @@ class Cam extends React.Component {
                 this.setState({ font: 'Almarai-Bold.ttf' });
             break;
         }
-    }    
+    }    */
     handleKeyDown(e){
         var words = e.target.value.split(" ");
         if(words.length > this.state.activeTemplate.maxWordsEn)
         {
         }
     }
-    handleTemplateChange (e,templateName = null) {
-        let  { value } = e.target;
-        this.setState({
-          activeTemplateName: value
-        });
+    handleTemplateChange (e,templateName = null) { 
+        let	{ value } = e.target;
+        
         if(templateName)
-            value=templateName;
+			value=templateName;
+		this.setState({
+			activeTemplateName: value
+		});
         var chocoTemplates = require("../data/chocolateTemplates.json");
         switch(value){
             case "Oval":
@@ -357,7 +359,7 @@ class Cam extends React.Component {
     }
     /// to bet tested this I guess there are some conditions to be solved
 
-    validateLayout(layout,text,maxLines){
+    validateLayout(layout,text,maxLines){ //// add another condition which is if the number of lines is bigger than the number of words
         var result = true;
         console.log('Comparing layout then max lines: ',layout.lines.length,maxLines);
         if(layout.lines.length > maxLines){
@@ -397,7 +399,18 @@ class Cam extends React.Component {
 
         this.setState({fontchange:fontchange+amount});
         console.log('new fontChange',this.state.fontchange);
-    }
+	}
+	getDimension(output) {
+		///<svg width="27.24" height="10.62" viewBox="0 0 27.24 10.62"
+		// how to get the heıght and the width
+		// divide by 3.7777
+		//console.log('full output is ',output);
+		var n = output.search('width="');
+		console.log('index is : ',n);
+		/// starting from n+6 until next '"'
+
+		return [0,1];
+	}
     textWrapping(){  
         console.log(this.state);
         if(this.state.content == ''){
@@ -429,15 +442,18 @@ class Cam extends React.Component {
             let lineHeight = 1 * font.unitsPerEm;
             console.log('unitsPerEm : ',font.unitsPerEm);
             console.log('active Scale is : ',activeTemplate.scale);
+			console.lg('active template : ', activeTemplate);
 
-            let scale = activeTemplate.scale*(1+that.state.fontchange*0.1); 
-            console.log('fontChange',that.state.fontchange);   
+			//let scale = activeTemplate.scale * (1 + that.state.fontchange * 0.1); //1 / font.unitsPerEm * fontSize0
+			let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
+
+			console.log('fontChange', that.state.fontSize);   
             console.log('modified scale',scale);   
             /*if(fontChange != null)
                 scale = scale * (1+fontChange);*/
             fontSize = scale * font.unitsPerEm;
             console.log('fontsize',fontSize);
-            let finalWidth = activeTemplate.maxWidth*220;// should be maxMM * 301 (which is point in mm)
+            let finalWidth = activeTemplate.maxWidth*320;// should be maxMM * 301 (which is point in mm)
             console.log('Final Width: ',finalWidth);
             let layoutOptions = {
                 "align":"center",
@@ -504,7 +520,7 @@ class Cam extends React.Component {
             else {// LTR
                 let layout = computeLayout(font, text, layoutOptions);
                 
-                console.log('Layout is like this: ',layout);
+                console.log('Layout is like this: ',layout,'Layout options',layoutOptions);
                 let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
                 
                 console.log('first layout evaluation result is ',result);
@@ -518,13 +534,14 @@ class Cam extends React.Component {
                     //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
                     console.log('new unitsPerEm : ',font.unitsPerEm);
                     //scale = scale * 0.1; // we should make this dynamic based on the difference how many char are in another line
-                    activeTemplate.scale = scale;
+					activeTemplate.scale = scale;
+					activeTemplate.fontSize = fontSize;
+					fontSize = this.state.fontSize * 0.8; /// we should change font size
                     that.setState({activeTemplate:activeTemplate});
-                    fontSize = scale*font.unitsPerEm;
                     layoutOptions = { // depends on the situation we change the layout option
                     "align":"center",
                         lineHeight: lineHeight ,
-                        width: finalWidth*0.7
+                        width: finalWidth
                     }
                     layout = computeLayout(font, text, layoutOptions);
                     if(layout.lines.length > 1)
@@ -532,7 +549,9 @@ class Cam extends React.Component {
                     activeTemplate.shiftX -= 3;
                     console.log('new layout is ',layout);
                     result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
-                }
+				}
+				
+
                 layout.glyphs.forEach((glyph, i) => {
                     let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                     console.log('character is:',character);
@@ -545,17 +564,20 @@ class Cam extends React.Component {
             
             try 
             {
-                let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
-                console.log("Models are ",models);
+				let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+				let dims = that.getDimension(output);
+                console.log("Models are ",models,output,dims);
                 parser.parse(output).then((tags) => {
                     let captures = release(true);
                     let warns = captures.filter(i => i.method == 'warn')
                     let errors = captures.filter(i => i.method == 'errors')
                     
                     if (warns.length)
-                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+						CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+						
                     if (errors.length)
-                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+						CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+						
                     let file = {
                         name:"file.svg",
                         type: "image/svg+xml"
@@ -595,7 +617,7 @@ class Cam extends React.Component {
                                 if (errors.length)
                                     CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
                                 imageTagPromise(tags).then((tags) => { // this is for chocolate template  
-                                let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
+                                	let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
                                     that.setState({templateDocID:templateDoc});
                                     console.log('templateDoc:',templateDoc);
                                     that.props.dispatch(selectDocument(templateDoc));
@@ -794,7 +816,7 @@ class Cam extends React.Component {
             </div>
         </FormGroup>
         Line Main:<textarea 
-            name="content"  id="content" ref = "content"   maxLength="25"          
+					name="content" id="content" ref="content" maxLength="23" 
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />
         {/*<label style={{visibility:  'hidden' }} >Line 2:</label>
