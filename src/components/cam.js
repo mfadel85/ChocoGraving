@@ -111,14 +111,13 @@ class Cam extends React.Component {
         this.handleTemplateChange = this.handleTemplateChange.bind(this);
         this.generateGcode = this.generateGcode.bind(this);
         this.docuementAdded = this.docuementAdded.bind(this);
-        this.loadMinE = this.loadMinE.bind(this);
         this.textWrapping = this.textWrapping.bind(this);
         this.runJob = this.runJob.bind(this);
         this.wordWrapped = this.wordWrapped.bind(this);
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
         this.checkRTL = this.checkRTL.bind(this);
-        this.handleMinChange = this.handleMinChange.bind(this);
+        this.handleFontChange = this.handleFontChange.bind(this);
 
     }
 
@@ -185,7 +184,7 @@ class Cam extends React.Component {
         });        
         this.setState({ content: e.target.value });
     }
-    handleMinChange(selectedOption)  {
+    handleFontChange(selectedOption)  {
         //this.resetFontSize(e);
         console.log(selectedOption);
         switch(selectedOption){
@@ -383,7 +382,7 @@ class Cam extends React.Component {
     }
     changeFont(amount){
         console.log('amount',amount);
-        if(amount>0)
+        if( amount>0 )
             console.log('Bigger Font');
         else 
             console.log('Smaller Font');
@@ -405,7 +404,6 @@ class Cam extends React.Component {
             alert('no text???');
             return;
         }
-           
         console.log('Text Wrapping started directoin',this.state.direction);
 
         var that = this;
@@ -423,6 +421,7 @@ class Cam extends React.Component {
         const release = captureConsole();
         const parser = new Parser({});
         const makerjs = require('makerjs');
+        
         opentype.load(font, function (err, font) {//for arabic fonst we will see
 
             let activeTemplate = that.state.activeTemplate;
@@ -444,102 +443,110 @@ class Cam extends React.Component {
                 "align":"center",
                 lineHeight: lineHeight ,
                 width: finalWidth
-        };
-        if(that.state.direction == 'RTL'){
-            let wordModel ='';
-            /*let wordModel = new makerjs.models.Text(font, text, fontSize);
-            makerjs.model.addModel(models, wordModel); 
-            //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
-            // console.log(testOutput);
-
-            let wordWidths = [];
-            let wordHeigths = [];
-            let svgWords =[];
-
-            let shiftX = 0;
-            let shiftY = 0;
-            let shifts = [shiftX,shiftY];
-            let prevWordWidth =0;
-
-            models= {};
-
-            console.log('lines are : ',lines);
-            svgWords =[];
-            lines.forEach((line,i) => {
-                wordModel  = new makerjs.models.Text(font,line,fontSize);
+            };
+        
+            if(that.state.direction == 'RTL'){
+                let wordModel ='';
+                /*let wordModel = new makerjs.models.Text(font, text, fontSize);
                 makerjs.model.addModel(models, wordModel); 
-                svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
+                // console.log(testOutput);
+
+                let wordWidths = [];
+                let wordHeigths = [];
+                let svgWords =[];
+
+                let shiftX = 0;
+                let shiftY = 0;
+                let shifts = [shiftX,shiftY];
+                let prevWordWidth =0;
+
                 models= {};
-                let parts = svgWords[i].split("\"");
-                wordWidths[i] = parseFloat(parts[1]);
-                wordHeigths[i] = parseFloat(parts[3]);
-                //console.log('width',wordWidths[i],'line',line,svgWords[i]);
-            });
-            let maxWHeight = Math.max(...wordHeigths);
-            console.log('widths',wordWidths,'heights',wordHeigths); 
 
-            models= {};
-            lines.forEach((line,i) => {
-                wordModel  = new makerjs.models.Text(font,line,fontSize,true);
-                let count = 0;
-                for(var c in wordModel.models)
-                    count++;
-                console.log('count',count);
-                shiftY = shiftY +maxWHeight+3;
-                shiftX = that.state.activeTemplate.shiftX*9 - (wordWidths[i]/(2*3.78));
-                console.log('shiftX',shiftX,' wordWidths[i]', wordWidths[i]/(2*3.78),'activetempalte.shiftx',that.state.activeTemplate.shiftX);
-                for (let index = 0; index < count; index++) {
-                    shifts = [wordModel.models[index].origin[0]+shiftX,wordModel.models[index].origin[1]-shiftY] ;
-                    console.log('xShiftFinal',shifts);
-                    wordModel.models[index].origin = [shifts[0],shifts[1]];
-                    console.log('wordModel.models[index].origin',wordModel.models[index].origin);
-
-                }
-                var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
-                makerjs.model.addModel(models, newWordModel); 
-
-            });
-            console.log('models',models);           
-            prevWordWidth =0;
-
-        }
-        else {// LTR
-            let layout = computeLayout(font, text, layoutOptions);
-            console.log('Layout is like this: ',layout);
-            let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
-            console.log('first layout evaluation result is ',result);
-            while(!result)
-            {
-                that.setState({
-                    activeTemplate:activeTemplate
+                console.log('lines are : ',lines);
+                svgWords =[];
+                lines.forEach((line,i) => {
+                    wordModel  = new makerjs.models.Text(font,line,fontSize);
+                    makerjs.model.addModel(models, wordModel); 
+                    svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                    models= {};
+                    let parts = svgWords[i].split("\"");
+                    wordWidths[i] = parseFloat(parts[1]);
+                    wordHeigths[i] = parseFloat(parts[3]);
+                    //console.log('width',wordWidths[i],'line',line,svgWords[i]);
                 });
-                //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
-                console.log('new unitsPerEm : ',font.unitsPerEm);
-                scale = scale * 0.1; // we should make this dynamic based on the difference how many char are in another line
-                activeTemplate.scale = scale;
-                that.setState({activeTemplate:activeTemplate});
-                fontSize = scale*font.unitsPerEm;
-                layoutOptions = { // depends on the situation we change the layout option
-                "align":"center",
-                    lineHeight: lineHeight ,
-                    width: finalWidth*0.7
-                }
-                layout = computeLayout(font, text, layoutOptions);
-                if(layout.lines.length > 1)
-                    activeTemplate.shiftY -= 2;
-                activeTemplate.shiftX -= 3;
-                console.log('new layout is ',layout);
-                result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
+                let maxWHeight = Math.max(...wordHeigths);
+                console.log('widths',wordWidths,'heights',wordHeigths); 
+
+                models= {};
+                lines.forEach((line,i) => {
+                    wordModel  = new makerjs.models.Text(font,line,fontSize,true);
+                    let count = 0;
+                    for(var c in wordModel.models)
+                        count++;
+                    console.log('count',count);
+                    shiftY = shiftY +maxWHeight+3;
+                    shiftX = that.state.activeTemplate.shiftX*9 - (wordWidths[i]/(2*3.78));
+                    console.log('shiftX',shiftX,' wordWidths[i]', wordWidths[i]/(2*3.78),'activetempalte.shiftx',that.state.activeTemplate.shiftX);
+                    for (let index = 0; index < count; index++) {
+                        shifts = [wordModel.models[index].origin[0]+shiftX,wordModel.models[index].origin[1]-shiftY] ;
+                        console.log('xShiftFinal',shifts);
+                        wordModel.models[index].origin = [shifts[0],shifts[1]];
+                        console.log('wordModel.models[index].origin',wordModel.models[index].origin);
+                    }
+                    var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
+                    makerjs.model.addModel(models, newWordModel); 
+                });
+                console.log('models',models);           
+                prevWordWidth =0;
+
             }
-            layout.glyphs.forEach((glyph, i) => {
-                let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                character.origin = makerjs.point.scale(glyph.position, scale);
-                makerjs.model.addModel(models, character, i);
-            });
-        }
-        const moldShifts = [65,60];//[105,96];
-        try {
+            else {// LTR
+                let layout = computeLayout(font, text, layoutOptions);
+                
+                console.log('Layout is like this: ',layout);
+                let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
+                
+                console.log('first layout evaluation result is ',result);
+                
+                while(!result)
+                {
+                    console.log("we get here!!!");
+                    that.setState({
+                        activeTemplate:activeTemplate
+                    });
+                    //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
+                    console.log('new unitsPerEm : ',font.unitsPerEm);
+                    //scale = scale * 0.1; // we should make this dynamic based on the difference how many char are in another line
+                    activeTemplate.scale = scale;
+                    that.setState({activeTemplate:activeTemplate});
+                    fontSize = scale*font.unitsPerEm;
+                    layoutOptions = { // depends on the situation we change the layout option
+                    "align":"center",
+                        lineHeight: lineHeight ,
+                        width: finalWidth*0.7
+                    }
+                    layout = computeLayout(font, text, layoutOptions);
+                    if(layout.lines.length > 1)
+                        activeTemplate.shiftY -= 2;
+                    activeTemplate.shiftX -= 3;
+                    console.log('new layout is ',layout);
+                    result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
+                }
+                layout.glyphs.forEach((glyph, i) => {
+                    let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                    console.log('character is:',character);
+                    character.origin = makerjs.point.scale(glyph.position, scale);
+                    makerjs.model.addModel(models, character, i);
+                });
+                
+            }
+            const moldShifts = [65,60];//[105,96];
+            
+            try 
+            {
                 let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                console.log("Models are ",models);
                 parser.parse(output).then((tags) => {
                     let captures = release(true);
                     let warns = captures.filter(i => i.method == 'warn')
@@ -587,8 +594,8 @@ class Cam extends React.Component {
                                     CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
                                 if (errors.length)
                                     CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                                imageTagPromise(tags).then((tags) => { /** this is for chocolate template  */
-                                    let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
+                                imageTagPromise(tags).then((tags) => { // this is for chocolate template  
+                                let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
                                     that.setState({templateDocID:templateDoc});
                                     console.log('templateDoc:',templateDoc);
                                     that.props.dispatch(selectDocument(templateDoc));
@@ -603,113 +610,19 @@ class Cam extends React.Component {
                                     that.props.dispatch(selectDocument(that.state.textDocID));
                                     that.props.dispatch(toggleSelectDocument(that.state.textDocID));
                                     that.props.dispatch(toggleSelectDocument(templateDoc[0]));
-
                                 }).then( () => {
-                            })
-                        });
-                    });
-                })
-            });
-        }
-        catch(Exception){
-            console.log(Exception);
 
+                                })
+                            });
+                        });
+                    })
+                });
+            }
+            catch(Exception)
+            {
+                console.log(Exception);
             }
         })
-    }
-
-    loadMinE(e){
-        if(this.state.content == '')
-            return;
-        console.log('clean everything before you start again: delete documents,clean gcode');
-        this.props.dispatch(removeDocumentSelected());
-        this.props.dispatch(clearOperations());
-        let that = this;
-        //if documents is not empty then cleant it dispatch remove documets
-        const release = captureConsole();
-        let parser = new Parser({});
-        var makerjs = require('makerjs');
-        var text = this.state.content;
-
-        let output;
-        let file = '';
-        const modifiers = {};
-        file = {
-            name:"file.svg",
-            type: "image/svg+xml"
-        }
-        var font = 'GreatVibes-Regular.otf';
-        switch(this.state.font){
-            case 'GreatVibes':
-                font = 'GreatVibes-Regular.otf';
-            break;
-            case 'chocolatePristina':
-                font = 'chocolatePristina.ttf';
-            break;
-            case 'ITCKRIST':
-                font = 'ITCKRIST.TTF';
-            break;
-            case 'TrajanPro-Bold':
-                font = 'TrajanPro-Bold.otf';
-            break;   
-            case 'Bevan':
-                font = 'Bevan.ttf';
-            break;                       
-        }
-        setTimeout(() => {opentype.load(font, function (err, font) {
-            if (err) {
-                console.log('could not load the font.!!');
-            } else {
-        
-                var textModel = new makerjs.models.Text(font, text, 120);
-                output = makerjs.exporter.toSVG(textModel);
-                //console.log("inside ");
-                //console.log(output);
-                parser.parse(output)
-                .then((tags) => {
-                    let captures = release(true);
-                    let warns = captures.filter(i => i.method == 'warn')
-                    let errors = captures.filter(i => i.method == 'errors')
-                    
-                    if (warns.length)
-                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                    if (errors.length)
-                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                    // not gonna be used
-                    //console.log("params",file,parser,tags,modifiers,this.props);
-
-                    imageTagPromise(tags).then((tags) => {
-                        //console.log('loadDocument: generatedID',generatedID);
-                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                        //console.log('!!!!* select document: dispatch :props:',that.props);
-                        that.props.dispatch(selectDocuments(true));
-                        let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
-
-                        console.log('DocId is:',documents);
-                        that.props.dispatch(addOperation({ documents}));
-                        console.log('Generateing GCode');
-                        that.generateGcode(e);
-                        console.log('done Generateing GCode');
-                        let globalState = GlobalStore().getState(); 
-
-                        console.log('that.propts',that.props.op,'state',globalState);
-                        that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
-
-                        
-                    }).then( () => {
-
-
-                    })
-                })
-                .catch((e) => {
-                    release(true);
-                    CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", String(e), 3)
-                    console.log(e)
-                })
-            }
-            }); 
-        }, 3000);     
-
     }
 
     handleSubmission(e) {
@@ -832,9 +745,7 @@ class Cam extends React.Component {
             <Form onSubmit={ this.handleSubmission }>
 
              Font: 
-            <Select value={this.state.font}         value={this.state.font}         onChange={this.handleMinChange}
-
- /*onChange={this.handleFontChange}*/ defaultValue= {this.state.font} options={Fonts}>
+            <Select value={this.state.font}  onChange={this.handleFontChange} defaultValue= {this.state.font} options={Fonts} >
                 <option value="GreatVibes">Great Vibes</option>
                 <option value="Arslan">ArslanFont</option>
                 <option value="chocolatePristina">Pristina</option>
@@ -899,8 +810,7 @@ class Cam extends React.Component {
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />*/}
         <div>
-            {/*<Button name="sendSVG" onClick={ this.loadMinE} bsSize="small" bsStyle="info" ><Icon name="object-group" /> G </Button>
-            <Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>
+            {/*<Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>
             <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >R</Button>*/}
             <Button name="textWrapping" onClick={ this.textWrapping}  bsStyle="danger" >Generate</Button>
             <Button name="fontplus" onClick={() => { this.changeFont(1) }}   bsSize="small" bsStyle="primary">Bigger ++</Button>                    
