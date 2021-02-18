@@ -39,6 +39,7 @@ import { OperationDiagram } from './operation-diagram';
 import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
+import { layout } from 'makerjs';
 
 const opentype = require('opentype.js');
 var playing = false;
@@ -86,7 +87,7 @@ class Cam extends React.Component {
             activeTemplate:{
                 "id":"OvalModel",
                 "maxHeight":17,
-                "maxWidth":27,
+                "maxWidth":25,
                 "maxLines":2,
                 "maxWordsAr":3,
                 "maxWordsEn":3,
@@ -94,12 +95,12 @@ class Cam extends React.Component {
                 "shiftY":11,
                 "file":"../Oval.svg" ,
 				"scale":0.029,
-				fontSize:15
+				fontSize:17
             },
             marginX:0,
             marginY:0,
 			scale:0.012695775,
-			fontSize: 15,
+			fontSize: 17,
             fontchange:0,
             textDocID:'',
             templateDocID:'',
@@ -354,7 +355,8 @@ class Cam extends React.Component {
                 if(layout.lines[j].end-layout.lines[j].start<word.length)
                     return false;
             })
-        })
+		})
+		return true;
         return result;
     }
     /// to bet tested this I guess there are some conditions to be solved
@@ -400,16 +402,25 @@ class Cam extends React.Component {
         this.setState({fontchange:fontchange+amount});
         console.log('new fontChange',this.state.fontchange);
 	}
+	getPosition(string, subString, index) {
+		return string.split(subString, index).join(subString).length;
+	}
 	getDimension(output) {
 		///<svg width="27.24" height="10.62" viewBox="0 0 27.24 10.62"
 		// how to get the heıght and the width
 		// divide by 3.7777
 		//console.log('full output is ',output);
-		var n = output.search('width="');
-		console.log('index is : ',n);
+		let widthStart = this.getPosition(output, '"', 1);
+		let widthFin = this.getPosition(output,'"',2);
+		let width = output.slice(widthStart+1,widthFin)
+		let heightStart = this.getPosition(output, '"', 3);
+		let heightEnd = this.getPosition(output, '"', 4);
+		let height = output.slice(heightStart + 1, heightEnd)
+
+		console.log('width : ', width, 'height:', height);
 		/// starting from n+6 until next '"'
 
-		return [0,1];
+		return [parseFloat(width),parseFloat(height)];
 	}
     textWrapping(){  
         console.log(this.state);
@@ -434,33 +445,36 @@ class Cam extends React.Component {
         const release = captureConsole();
         const parser = new Parser({});
         const makerjs = require('makerjs');
-        
+		let layout;
         opentype.load(font, function (err, font) {//for arabic fonst we will see
 
             let activeTemplate = that.state.activeTemplate;
             console.log(font);
             let lineHeight = 1 * font.unitsPerEm;
-            console.log('unitsPerEm : ',font.unitsPerEm);
             console.log('active Scale is : ',activeTemplate.scale);
-			console.lg('active template : ', activeTemplate);
+			console.log('active template : ', activeTemplate);
 
 			//let scale = activeTemplate.scale * (1 + that.state.fontchange * 0.1); //1 / font.unitsPerEm * fontSize0
-			let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-
-			console.log('fontChange', that.state.fontSize);   
-            console.log('modified scale',scale);   
+			//usamaaaaaaaee fafsddafassssss
+			
             /*if(fontChange != null)
-                scale = scale * (1+fontChange);*/
-            fontSize = scale * font.unitsPerEm;
-            console.log('fontsize',fontSize);
-            let finalWidth = activeTemplate.maxWidth*320;// should be maxMM * 301 (which is point in mm)
-            console.log('Final Width: ',finalWidth);
+				scale = scale * (1+fontChange);*/
+			fontSize = font.unitsPerEm /150;
+			let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
+			let finalWidth = 100;// should be maxMM * 301 (which is point in mm) 5000
+			//finalWidht depends on the font
+			
+
             let layoutOptions = {
                 "align":"center",
                 lineHeight: lineHeight ,
-                width: finalWidth
+				width: finalWidth/scale
             };
-        
+			console.log('Final Width: ', finalWidth);
+			console.log('fontsize', that.state.fontSize);
+			console.log('modified scale', scale);
+			console.log('unitsPerEm : ', font.unitsPerEm);
+			console.log('layout widht is ', finalWidth / scale);
             if(that.state.direction == 'RTL'){
                 let wordModel ='';
                 /*let wordModel = new makerjs.models.Text(font, text, fontSize);
@@ -517,12 +531,19 @@ class Cam extends React.Component {
                 prevWordWidth =0;
 
             }
-            else {// LTR
-                let layout = computeLayout(font, text, layoutOptions);
-                
+			else {// LTR
+				console.log("we are here 0");
+				try {
+					layout = computeLayout(font, text, layoutOptions);
+				}
+				catch(ex){
+					console.log(ex);
+				}
+				console.log("we are here 1");
                 console.log('Layout is like this: ',layout,'Layout options',layoutOptions);
                 let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
-                
+				console.log("we are here 2");
+
                 console.log('first layout evaluation result is ',result);
                 
                 while(!result)
@@ -533,15 +554,16 @@ class Cam extends React.Component {
                     });
                     //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
                     console.log('new unitsPerEm : ',font.unitsPerEm);
-                    //scale = scale * 0.1; // we should make this dynamic based on the difference how many char are in another line
-					activeTemplate.scale = scale;
 					activeTemplate.fontSize = fontSize;
-					fontSize = this.state.fontSize * 0.8; /// we should change font size
-                    that.setState({activeTemplate:activeTemplate});
+					fontSize = that.state.fontSize * 0.8; /// we should change font size
+					that.setState({activeTemplate:activeTemplate});
+					let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
+					//finalWidth = activeTemplate.maxWidth * 230;
+
                     layoutOptions = { // depends on the situation we change the layout option
-                    "align":"center",
+                    	"align":"center",
                         lineHeight: lineHeight ,
-                        width: finalWidth
+						width: finalWidth / scale
                     }
                     layout = computeLayout(font, text, layoutOptions);
                     if(layout.lines.length > 1)
@@ -554,19 +576,26 @@ class Cam extends React.Component {
 
                 layout.glyphs.forEach((glyph, i) => {
                     let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                    console.log('character is:',character);
                     character.origin = makerjs.point.scale(glyph.position, scale);
                     makerjs.model.addModel(models, character, i);
                 });
                 
             }
             const moldShifts = [65,60];//[105,96];
-            
+            /// testlertestler testytyq
             try 
             {
 				let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
 				let dims = that.getDimension(output);
-                console.log("Models are ",models,output,dims);
+				let mmDims = dims.map(n => n/3.777);
+				//// get layout.lines, the  max value of them, get the number of letters in that line
+				const max = layout.lines.reduce(
+					(prev,current) => (prev.width > current.width) ? prev : current
+				);
+				const letterCount = max.end - max.start;
+				const letterWidth = mmDims[0]/letterCount;
+				console.log("Letters:  ",  dims, max,mmDims,'letter count:',letterCount,'letter width',letterWidth,layout);
+
                 parser.parse(output).then((tags) => {
                     let captures = release(true);
                     let warns = captures.filter(i => i.method == 'warn')
