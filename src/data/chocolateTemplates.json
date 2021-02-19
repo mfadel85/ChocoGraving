@@ -4,7 +4,7 @@
         {
             "id":"OvalModel",
             "maxHeight":20,
-            "maxWidth":40,
+            "maxWidth":25,
             "maxLines":2,
             "maxWordsAr":3,
             "maxWordsEn":3,
@@ -15,8 +15,8 @@
         },
         {
             "id":"RectangleModel",
-            "maxHeight":33,
-            "maxWidth":33,
+            "maxHeight":20,
+            "maxWidth":25,
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,
@@ -27,8 +27,8 @@
         },
         {
             "id":"SquareModel",
-            "maxHeight":40,
-            "maxWidth":45,
+            "maxHeight":32,
+            "maxWidth":25,
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,

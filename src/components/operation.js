@@ -897,7 +897,6 @@ class Operations extends React.Component {
                 addColor(strokeColors, doc.strokeColor);
             }
         }
-        console.log("Operations: ",operations);
         for (let op of operations) {
             if (op.filterFillColor)
                 addColor(fillColors, op.filterFillColor);

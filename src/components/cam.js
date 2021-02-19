@@ -95,12 +95,12 @@ class Cam extends React.Component {
                 "shiftY":11,
                 "file":"../Oval.svg" ,
 				"scale":0.029,
-				fontSize:17
+				fontSize:18
             },
             marginX:0,
             marginY:0,
 			scale:0.012695775,
-			fontSize: 17,
+			fontSize: 18,
             fontchange:0,
             textDocID:'',
             templateDocID:'',
@@ -188,30 +188,30 @@ class Cam extends React.Component {
     }
     handleFontChange(selectedOption)  {
         //this.resetFontSize(e);
-        console.log(selectedOption);
-        switch(selectedOption){
-            case 'GreatVibes':
-                this.setState({ font: 'GreatVibes-Regular.otf' });
+        console.log('our state',selectedOption);
+        switch(selectedOption.value){
+            case 'GreatVibes-Regular.otf':
+                this.setState({ font: 'GreatVibes-Regular.otf',fontSize:24 });
             break;
-            case 'Arslan':
+            case 'Almarai-Bold.ttf':
                 console.log('Almaarai is chosen');
-                this.setState({font:'Almarai-Bold.ttf'});
+				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 15});
             break;
-            case 'chocolatePristina':
+            case 'chocolatePristina.ttf':
                 console.log('chocolatePristina is chosen');
-                this.setState({ font: 'chocolatePristina.ttf' });
+				this.setState({ font: 'chocolatePristina.ttf', fontSize: 22 });
             break;
-            case 'ITCKRIST':
-                this.setState({ font:  'ITCKRIST.TTF' });
+            case 'ITCKRIST.TTF':
+				this.setState({ font: 'ITCKRIST.TTF', fontSize: 16 });
             break;
-            case 'TrajanPro-Bold':
-                this.setState({ font:  'TrajanPro-Bold.otf' });
+            case 'TrajanPro-Bold.otf':
+				this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 14});
             break;   
-            case 'Bevan':
-                this.setState({ font:  'Bevan.ttf' });
+            case 'Bevan.ttf':
+				this.setState({ font: 'Bevan.ttf', fontSize: 15 });
             break;   
             default:                
-                this.setState({ font: 'ITCKRIST.TTF'});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 15});
             break;
         }
         this.setState({ font: selectedOption.value });
@@ -423,12 +423,12 @@ class Cam extends React.Component {
 		return [parseFloat(width),parseFloat(height)];
 	}
     textWrapping(){  
-        console.log(this.state);
+        console.log('our state now ; ',this.state);
         if(this.state.content == ''){
             alert('no text???');
             return;
         }
-        console.log('Text Wrapping started directoin',this.state.direction);
+        console.log('Text Wrapping started directoin', this.state.direction, 'fontsize', this.state.fontSize);
 
         var that = this;
        // const toggleSelectDocument  = this.props.toggleSelectDocument ;
@@ -450,7 +450,7 @@ class Cam extends React.Component {
 
             let activeTemplate = that.state.activeTemplate;
             console.log(font);
-            let lineHeight = 1 * font.unitsPerEm;
+            let lineHeight = 1.5 * font.unitsPerEm;
             console.log('active Scale is : ',activeTemplate.scale);
 			console.log('active template : ', activeTemplate);
 
@@ -459,8 +459,9 @@ class Cam extends React.Component {
 			
             /*if(fontChange != null)
 				scale = scale * (1+fontChange);*/
-			fontSize = font.unitsPerEm /150;
-			let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
+			//fontSize = font.unitsPerEm /150;
+			fontSize = that.state.fontSize;
+			let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
 			let finalWidth = 100;// should be maxMM * 301 (which is point in mm) 5000
 			//finalWidht depends on the font
 			
@@ -476,6 +477,8 @@ class Cam extends React.Component {
 			console.log('unitsPerEm : ', font.unitsPerEm);
 			console.log('layout widht is ', finalWidth / scale);
             if(that.state.direction == 'RTL'){
+                console.log('started');
+
                 let wordModel ='';
                 /*let wordModel = new makerjs.models.Text(font, text, fontSize);
                 makerjs.model.addModel(models, wordModel); 
