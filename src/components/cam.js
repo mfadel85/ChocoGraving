@@ -104,7 +104,8 @@ class Cam extends React.Component {
             fontchange:0,
             textDocID:'',
             templateDocID:'',
-            direction:'LTR'
+            direction:'LTR',
+            stepOver: 40
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -120,7 +121,6 @@ class Cam extends React.Component {
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
         this.checkRTL = this.checkRTL.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
-
     }
 
 
@@ -133,7 +133,8 @@ class Cam extends React.Component {
             __interval = setInterval(() => {
                 that.props.dispatch(generatingGcode(true, isNaN(percent) ? 0 : Number(percent)));
             }, 100)
-
+            settings.stepOver = that.state.stepOver;
+            console.log("settings are: ",settings);
             let QE = getGcode(settings, documents, operations, that.props.documentCacheHolder,
                 (msg, level) => { CommandHistory.write(msg, level); },
                 (gcode) => {
@@ -154,6 +155,9 @@ class Cam extends React.Component {
         this.generateGcode.bind(this);
         this.stopGcode.bind(this);
 
+    }
+    generateGcode() {
+        this.QE = window.generateGcode();
     }
     componentDidMount() {
         this.updateCanvas();
@@ -191,27 +195,27 @@ class Cam extends React.Component {
         console.log('our state',selectedOption);
         switch(selectedOption.value){
             case 'GreatVibes-Regular.otf':
-                this.setState({ font: 'GreatVibes-Regular.otf',fontSize:24 });
+                this.setState({ font: 'GreatVibes-Regular.otf',fontSize:36 });
             break;
             case 'Almarai-Bold.ttf':
                 console.log('Almaarai is chosen');
-				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 15});
+				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
             break;
             case 'chocolatePristina.ttf':
                 console.log('chocolatePristina is chosen');
-				this.setState({ font: 'chocolatePristina.ttf', fontSize: 22 });
+				this.setState({ font: 'chocolatePristina.ttf', fontSize: 35 });
             break;
             case 'ITCKRIST.TTF':
-				this.setState({ font: 'ITCKRIST.TTF', fontSize: 16 });
+				this.setState({ font: 'ITCKRIST.TTF', fontSize: 20 });
             break;
             case 'TrajanPro-Bold.otf':
-				this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 14});
+				this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 17});
             break;   
             case 'Bevan.ttf':
-				this.setState({ font: 'Bevan.ttf', fontSize: 15 });
+				this.setState({ font: 'Bevan.ttf', fontSize: 17 });
             break;   
             default:                
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 15});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
             break;
         }
         this.setState({ font: selectedOption.value });
@@ -284,9 +288,7 @@ class Cam extends React.Component {
                 break;
         }
       };
-    generateGcode() {
-        this.QE = window.generateGcode();
-    }
+
     checkRTL(s){          
  
         var ltrChars        = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF'+'\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF',
@@ -349,15 +351,21 @@ class Cam extends React.Component {
         let result = true;
         // for each word check if it is in the same line
         var words = text.split(" ");
+        // compare the words with 
+
+        // re write this code it is not working
        words.forEach((word) => {
             layout.lines.forEach((line,j)=>{
-                console.log('end',layout.lines[j].end,'start',layout.lines[j].start);
-                if(layout.lines[j].end-layout.lines[j].start<word.length)
-                    return false;
+                console.log('end',layout.lines[j].end,'start',layout.lines[j].start,'word length:',word.length);
+                if(layout.lines[j].end-layout.lines[j].start<word.length){
+                    console.log('şerefsiz misiniz? I dont know !!!')
+                    result  =  false;
+                }
+                    
             })
 		})
-		return true;
-        return result;
+		//return true;
+        return true;
     }
     /// to bet tested this I guess there are some conditions to be solved
 
@@ -371,7 +379,7 @@ class Cam extends React.Component {
             
         else if(!this.isWrappedWord(layout,text))
             return false;
-        return result;
+        return true;
 
     }
     init(){
@@ -462,14 +470,15 @@ class Cam extends React.Component {
 			//fontSize = font.unitsPerEm /150;
 			fontSize = that.state.fontSize;
 			let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-			let finalWidth = 100;// should be maxMM * 301 (which is point in mm) 5000
+			let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
 			//finalWidht depends on the font
 			
 
             let layoutOptions = {
                 "align":"center",
                 lineHeight: lineHeight ,
-				width: finalWidth/scale
+				width: finalWidth/scale,
+                mode:'nowrap'
             };
 			console.log('Final Width: ', finalWidth);
 			console.log('fontsize', that.state.fontSize);
@@ -477,14 +486,14 @@ class Cam extends React.Component {
 			console.log('unitsPerEm : ', font.unitsPerEm);
 			console.log('layout widht is ', finalWidth / scale);
             if(that.state.direction == 'RTL'){
-                console.log('started');
+                layout = computeLayout(font, text, layoutOptions);
 
+                console.log('started RTL');
                 let wordModel ='';
                 /*let wordModel = new makerjs.models.Text(font, text, fontSize);
                 makerjs.model.addModel(models, wordModel); 
                 //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
                 // console.log(testOutput);
-
                 let wordWidths = [];
                 let wordHeigths = [];
                 let svgWords =[];
@@ -496,9 +505,9 @@ class Cam extends React.Component {
 
                 models= {};
 
-                console.log('lines are : ',lines);
+                console.log('lines are : ',layout.lines);
                 svgWords =[];
-                lines.forEach((line,i) => {
+                layout.lines.forEach((line,i) => {
                     wordModel  = new makerjs.models.Text(font,line,fontSize);
                     makerjs.model.addModel(models, wordModel); 
                     svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
@@ -512,7 +521,7 @@ class Cam extends React.Component {
                 console.log('widths',wordWidths,'heights',wordHeigths); 
 
                 models= {};
-                lines.forEach((line,i) => {
+                layout.lines.forEach((line,i) => {
                     wordModel  = new makerjs.models.Text(font,line,fontSize,true);
                     let count = 0;
                     for(var c in wordModel.models)
@@ -557,12 +566,21 @@ class Cam extends React.Component {
                     });
                     //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
                     console.log('new unitsPerEm : ',font.unitsPerEm);
-					activeTemplate.fontSize = fontSize;
+					
 					fontSize = that.state.fontSize * 0.8; /// we should change font size
+                    activeTemplate.fontSize = fontSize;
 					that.setState({activeTemplate:activeTemplate});
 					let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
-					//finalWidth = activeTemplate.maxWidth * 230;
+                    //let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
+                    let finalWidth = 120;// should be maxMM * 301 (which is point in mm) 5000
+                    //finalWidht depends on the font
 
+
+                    let layoutOptions = {
+                        "align": "center",
+                        lineHeight: lineHeight,
+                        width: finalWidth / scale
+                    };
                     layoutOptions = { // depends on the situation we change the layout option
                     	"align":"center",
                         lineHeight: lineHeight ,
@@ -596,8 +614,11 @@ class Cam extends React.Component {
 					(prev,current) => (prev.width > current.width) ? prev : current
 				);
 				const letterCount = max.end - max.start;
-				const letterWidth = mmDims[0]/letterCount;
-				console.log("Letters:  ",  dims, max,mmDims,'letter count:',letterCount,'letter width',letterWidth,layout);
+                const letterWidth = mmDims[0]/letterCount;
+                that.setState({stepOver:1});
+                let generalState = GlobalStore().getState(); 
+
+				console.log('general state',generalState,"Letters:  ",  dims, max,mmDims,'letter count:',letterCount,'letter width',letterWidth,layout);
 
                 parser.parse(output).then((tags) => {
                     let captures = release(true);
@@ -665,6 +686,7 @@ class Cam extends React.Component {
                                     that.props.dispatch(toggleSelectDocument(that.state.textDocID));
                                     that.props.dispatch(toggleSelectDocument(templateDoc[0]));
                                 }).then( () => {
+                                    console.log(that.state);
 
                                 })
                             });
