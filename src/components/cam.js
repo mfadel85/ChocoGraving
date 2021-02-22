@@ -478,7 +478,7 @@ class Cam extends React.Component {
                 "align":"center",
                 lineHeight: lineHeight ,
 				width: finalWidth/scale,
-                mode:'nowrap'
+                /*mode:'nowrap'*/
             };
 			console.log('Final Width: ', finalWidth);
 			console.log('fontsize', that.state.fontSize);
@@ -507,7 +507,7 @@ class Cam extends React.Component {
 
                 console.log('lines are : ',layout.lines);
                 svgWords =[];
-                layout.lines.forEach((line,i) => {
+                lines.forEach((line,i) => {
                     wordModel  = new makerjs.models.Text(font,line,fontSize);
                     makerjs.model.addModel(models, wordModel); 
                     svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
@@ -521,7 +521,7 @@ class Cam extends React.Component {
                 console.log('widths',wordWidths,'heights',wordHeigths); 
 
                 models= {};
-                layout.lines.forEach((line,i) => {
+                lines.forEach((line,i) => {
                     wordModel  = new makerjs.models.Text(font,line,fontSize,true);
                     let count = 0;
                     for(var c in wordModel.models)
