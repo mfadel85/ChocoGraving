@@ -458,27 +458,17 @@ class Cam extends React.Component {
 
             let activeTemplate = that.state.activeTemplate;
             console.log(font);
-            let lineHeight = 1.5 * font.unitsPerEm;
-            console.log('active Scale is : ',activeTemplate.scale);
-			console.log('active template : ', activeTemplate);
+            let lineHeight = 1.3 * font.unitsPerEm;
 
-			//let scale = activeTemplate.scale * (1 + that.state.fontchange * 0.1); //1 / font.unitsPerEm * fontSize0
-			//usamaaaaaaaee fafsddafassssss
-			
-            /*if(fontChange != null)
-				scale = scale * (1+fontChange);*/
-			//fontSize = font.unitsPerEm /150;
 			fontSize = that.state.fontSize;
 			let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
 			let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
-			//finalWidht depends on the font
 			
-
             let layoutOptions = {
                 "align":"center",
                 lineHeight: lineHeight ,
 				width: finalWidth/scale,
-                /*mode:'nowrap'*/
+                mode:'nowrap'
             };
 			console.log('Final Width: ', finalWidth);
 			console.log('fontsize', that.state.fontSize);
@@ -494,7 +484,7 @@ class Cam extends React.Component {
                 makerjs.model.addModel(models, wordModel); 
                 //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
                 // console.log(testOutput);
-                let wordWidths = [];
+                let wordWidths = [];// line widths
                 let wordHeigths = [];
                 let svgWords =[];
 
@@ -502,6 +492,7 @@ class Cam extends React.Component {
                 let shiftY = 0;
                 let shifts = [shiftX,shiftY];
                 let prevWordWidth =0;
+                let pervWordOrigin = 0;
 
                 models= {};
 
@@ -518,7 +509,7 @@ class Cam extends React.Component {
                     //console.log('width',wordWidths[i],'line',line,svgWords[i]);
                 });
                 let maxWHeight = Math.max(...wordHeigths);
-                console.log('widths',wordWidths,'heights',wordHeigths); 
+                console.log('widths',wordWidths,'heights',wordHeigths);//  
 
                 models= {};
                 lines.forEach((line,i) => {
@@ -526,22 +517,30 @@ class Cam extends React.Component {
                     let count = 0;
                     for(var c in wordModel.models)
                         count++;
+                    // calcaulate shiftX and shiftY in a suitable way
                     console.log('count',count);
                     shiftY = shiftY +maxWHeight+3;
-                    shiftX = that.state.activeTemplate.shiftX*9 - (wordWidths[i]/(2*3.78));
-                    console.log('shiftX',shiftX,' wordWidths[i]', wordWidths[i]/(2*3.78),'activetempalte.shiftx',that.state.activeTemplate.shiftX);
-                    for (let index = 0; index < count; index++) {
-                        shifts = [wordModel.models[index].origin[0]+shiftX,wordModel.models[index].origin[1]-shiftY] ;
-                        console.log('xShiftFinal',shifts);
-                        wordModel.models[index].origin = [shifts[0],shifts[1]];
-                        console.log('wordModel.models[index].origin',wordModel.models[index].origin);
+                    shiftX = that.state.activeTemplate.shiftX*9 - (wordWidths[i]/(2*3.78));/// what is this equation?
+                    let firstLineShift = that.state.activeTemplate.shiftX * 9 - (wordWidths[0] / (2 * 3.78));
+                    //shiftX=0;
+                    console.log('shiftX',shiftX,' wordWidths[i]', wordWidths[i]/(2*3.78),'activetempalte.shiftx',
+                    that.state.activeTemplate.shiftX);
+                    let shiftingFactor = 0;
+                    if(i>0){
+                        shiftingFactor = wordWidths[0]/2;
                     }
+                    for (let index = 0; index < count; index++) {
+                        shifts = [wordModel.models[index].origin[0] + shiftX-shiftingFactor, wordModel.models[index].origin[1] - shiftY];
+                        wordModel.models[index].origin = [shifts[0],shifts[1]];
+                    }
+                    console.log( 'shiftX is ',  shiftX,'shiftY is:',shiftY,'word model is:',wordModel);
+                    console.log('xShiftFinal', shifts);
+
                     var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
                     makerjs.model.addModel(models, newWordModel); 
                 });
-                console.log('models',models);           
+                console.log('models', models);           
                 prevWordWidth =0;
-
             }
 			else {// LTR
 				console.log("we are here 0");
