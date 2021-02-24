@@ -527,17 +527,18 @@ class Cam extends React.Component {
                     that.state.activeTemplate.shiftX);
                     let shiftingFactor = 0;
                     if(i>0){
-                        shiftingFactor = wordWidths[0]/2;
+                        shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
+                        console.log('shifting factor is',shiftingFactor,wordWidths[0],wordWidths[1]);
                     }
                     for (let index = 0; index < count; index++) {
-                        shifts = [wordModel.models[index].origin[0] + shiftX-shiftingFactor, wordModel.models[index].origin[1] - shiftY];
+                        shifts = [wordModel.models[index].origin[0] + shiftX+shiftingFactor, wordModel.models[index].origin[1] - shiftY];
                         wordModel.models[index].origin = [shifts[0],shifts[1]];
                     }
-                    console.log( 'shiftX is ',  shiftX,'shiftY is:',shiftY,'word model is:',wordModel);
+                    console.log('shiftX is ', shiftX, 'shiftY is:', shiftY, 'word model is:', wordModel.models[0].origin);
                     console.log('xShiftFinal', shifts);
 
-                    var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
-                    makerjs.model.addModel(models, newWordModel); 
+                    //var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
+                    makerjs.model.addModel(models, wordModel); 
                 });
                 console.log('models', models);           
                 prevWordWidth =0;
@@ -601,7 +602,7 @@ class Cam extends React.Component {
                 });
                 
             }
-            const moldShifts = [65,60];//[105,96];
+            const moldShifts = [60,60];//[105,96];
             /// testlertestler testytyq
             try 
             {
