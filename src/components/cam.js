@@ -197,9 +197,9 @@ class Cam extends React.Component {
             case 'GreatVibes-Regular.otf':
                 this.setState({ font: 'GreatVibes-Regular.otf',fontSize:36 });
             break;
-            case 'Almarai-Bold.ttf':
+            case 'ElMessiri-Medium.ttf':
                 console.log('Almaarai is chosen');
-				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
+				this.setState({ font: 'ElMessiri-Medium.ttf', fontSize: 21});
             break;
             case 'chocolatePristina.ttf':
                 console.log('chocolatePristina is chosen');
@@ -214,42 +214,16 @@ class Cam extends React.Component {
             case 'Bevan.ttf':
 				this.setState({ font: 'Bevan.ttf', fontSize: 17 });
             break;   
+            case 'Almarai-Bold.ttf':
+				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 17 });
+            break;   
             default:                
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
+                this.setState({ font: 'ElMessiri-Medium.ttf', fontSize: 21});
             break;
         }
         this.setState({ font: selectedOption.value });
         console.log(`Option selected:`, selectedOption);
       };
-    /*handleFontChange (e)  {
-        console.log(e);
-        this.resetFontSize(e);
-        switch(e.target.value){
-            case 'GreatVibes':
-                this.setState({ font: 'GreatVibes-Regular.otf' });
-            break;
-            case 'Arslan':
-                console.log('Almaarai is chosen');
-                this.setState({font:'Almarai-Bold.ttf'});
-            break;
-            case 'chocolatePristina':
-                console.log('chocolatePristina is chosen');
-                this.setState({ font: 'chocolatePristina.ttf' });
-            break;
-            case 'ITCKRIST':
-                this.setState({ font:  'ITCKRIST.TTF' });
-            break;
-            case 'TrajanPro-Bold':
-                this.setState({ font:  'TrajanPro-Bold.otf' });
-            break;   
-            case 'Bevan':
-                this.setState({ font:  'Bevan.ttf' });
-            break;   
-            default:                
-                this.setState({ font: 'Almarai-Bold.ttf' });
-            break;
-        }
-    }    */
     handleKeyDown(e){
         var words = e.target.value.split(" ");
         if(words.length > this.state.activeTemplate.maxWordsEn)
@@ -527,17 +501,18 @@ class Cam extends React.Component {
                     that.state.activeTemplate.shiftX);
                     let shiftingFactor = 0;
                     if(i>0){
-                        shiftingFactor = wordWidths[0]/2;
+                        shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
+                        console.log('shifting factor is',shiftingFactor,wordWidths[0],wordWidths[1]);
                     }
                     for (let index = 0; index < count; index++) {
-                        shifts = [wordModel.models[index].origin[0] + shiftX-shiftingFactor, wordModel.models[index].origin[1] - shiftY];
+                        shifts = [wordModel.models[index].origin[0] + shiftX+shiftingFactor, wordModel.models[index].origin[1] - shiftY];
                         wordModel.models[index].origin = [shifts[0],shifts[1]];
                     }
-                    console.log( 'shiftX is ',  shiftX,'shiftY is:',shiftY,'word model is:',wordModel);
+                    console.log('shiftX is ', shiftX, 'shiftY is:', shiftY, 'word model is:', wordModel.models[0].origin);
                     console.log('xShiftFinal', shifts);
 
-                    var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
-                    makerjs.model.addModel(models, newWordModel); 
+                    //var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
+                    makerjs.model.addModel(models, wordModel); 
                 });
                 console.log('models', models);           
                 prevWordWidth =0;
@@ -601,7 +576,7 @@ class Cam extends React.Component {
                 });
                 
             }
-            const moldShifts = [65,60];//[105,96];
+            const moldShifts = [75,75];//[105,96];
             /// testlertestler testytyq
             try 
             {
@@ -718,11 +693,13 @@ class Cam extends React.Component {
 
         const Fonts = [
             { value: 'GreatVibes-Regular.otf', label: 'Great Vibes' },
-            { value: 'Almarai-Bold.ttf', label: 'Arslan' },
+            { value: 'ElMessiri-Medium.ttf', label: 'El Messiri' },
             { value: 'chocolatePristina.ttf', label: 'Pristina' },
             { value: 'ITCKRIST.TTF', label: 'ITCKRIST' },
             { value: 'TrajanPro-Bold.otf', label: 'TrajanPro-B' },
             { value: 'Bevan.ttf', label: 'Bevan' },
+            { value: 'Almarai-Bold.ttf', label: 'المراعي' },
+
         ];
 
 
