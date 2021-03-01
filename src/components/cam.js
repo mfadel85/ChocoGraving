@@ -14,9 +14,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import React from 'react';
-import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar,Text } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument,selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
+import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
 import { addOperation, clearOperations, setOperationAttrs } from '../actions/operation';
@@ -74,40 +74,40 @@ let __interval;
 
 class Cam extends React.Component {
 
-    constructor(props){
+    constructor(props) {
         super(props);
-        this.state={
-            filter:null,
-            content:"",
-            svg:"",
+        this.state = {
+            filter: null,
+            content: "",
+            svg: "",
             font: 'Bubble.otf',
-            width:0,
-            lineHeight:0,
-            activeTemplateName:'Oval',
-            activeTemplate:{
-                "id":"OvalModel",
-                "maxHeight":17,
-                "maxWidth":25,
-                "maxLines":2,
-                "maxWordsAr":3,
-                "maxWordsEn":3,
-                "shiftX":8,
-                "shiftY":11,
-                "file":"../Oval.svg" ,
-				"scale":0.029,
-				fontSize:18
+            width: 0,
+            lineHeight: 0,
+            activeTemplateName: 'Oval',
+            activeTemplate: {
+                "id": "OvalModel",
+                "maxHeight": 17,
+                "maxWidth": 25,
+                "maxLines": 2,
+                "maxWordsAr": 3,
+                "maxWordsEn": 3,
+                "shiftX": 8,
+                "shiftY": 11,
+                "file": "../Oval.svg",
+                "scale": 0.029,
+                fontSize: 18
             },
-            marginX:0,
-            marginY:0,
-			scale:0.012695775,
-			fontSize: 18,
-            fontchange:0,
-            textDocID:'',
-            templateDocID:'',
-            direction:'LTR',
+            marginX: 0,
+            marginY: 0,
+            scale: 0.012695775,
+            fontSize: 18,
+            fontchange: 0,
+            textDocID: '',
+            templateDocID: '',
+            direction: 'LTR',
             stepOver: 40,
-            layout:[],
-            chocolateDepth:30
+            layout: [],
+            chocolateDepth: 30
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -128,7 +128,7 @@ class Cam extends React.Component {
 
     componentWillMount() {
         let that = this
-        console.log('this',this);
+        console.log('this', this);
         window.generateGcode = () => {
             let { settings, documents, operations } = that.props;
             let percent = 0;
@@ -136,7 +136,7 @@ class Cam extends React.Component {
                 that.props.dispatch(generatingGcode(true, isNaN(percent) ? 0 : Number(percent)));
             }, 100)
             settings.stepOver = that.state.stepOver;
-            console.log("settings are: ",settings);
+            console.log("settings are: ", settings);
             let QE = getGcode(settings, documents, operations, that.props.documentCacheHolder,
                 (msg, level) => { CommandHistory.write(msg, level); },
                 (gcode) => {
@@ -168,110 +168,109 @@ class Cam extends React.Component {
         //const ctx = this.refs.canvas.getContext('2d');
         //ctx.fillRect(context);
     }
-    resetFontSize(e){ // a bug here!!!
+    resetFontSize(e) { // a bug here!!!
         let activeTemplateName = this.state.activeTemplateName;
-        this.handleTemplateChange(e,activeTemplateName);
+        this.handleTemplateChange(e, activeTemplateName);
     }
-    handleDepthChange(e){
+    handleDepthChange(e) {
         this.setState({ chocolateDepth: e.target.value });
 
     }
-    handleChange (e)  {
+    handleChange(e) {
 
         this.resetFontSize(e);
         var lines = e.target.value.split("\n");
-        lines.forEach((line,i) => {
+        lines.forEach((line, i) => {
             var words = line.split(" ");
             words.forEach(word => {
-                if(word.length> 13){
-                    alert('Very long name please use  a shorter name, less than 13 char');
-                    return;            
-                }        
-                if(words.length > this.state.activeTemplate.maxWordsEn)
-                {
-                    alert(' Only max '+ this.state.activeTemplate.maxWordsEn + ' words is allowed.');
+                if (word.length > 13) {
+                    alert('Very long name please use a shorter name, less than 13 char');
+                    return;
+                }
+                if (words.length > this.state.activeTemplate.maxWordsEn) {
+                    alert(' Only max ' + this.state.activeTemplate.maxWordsEn + ' words is allowed.');
                     return;
                 }
             });
-        });        
+        });
+        
         this.setState({ content: e.target.value });
     }
-    handleFontChange(selectedOption)  {
+    handleFontChange(selectedOption) {
         //this.resetFontSize(e);
-        console.log('our state',selectedOption);
-        switch(selectedOption.value){
-            
+        console.log('our state', selectedOption);
+        switch (selectedOption.value) {
+
             case 'Almarai-Bold.ttf':
                 console.log('Almaarai is chosen');
-				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
-            break;
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21 ,stepOver:40});
+                break;
             case 'ITCKRIST.TTF':
-				this.setState({ font: 'ITCKRIST.TTF', fontSize: 20 });
-            break;
+                this.setState({ font: 'ITCKRIST.TTF', fontSize: 20, stepOver: 40});
+                break;
             case 'TrajanPro-Bold.otf':
-				this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 17});
-            break;   
+                this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 22, stepOver: 35});
+                break;
             case 'Bevan.ttf':
-				this.setState({ font: 'Bevan.ttf', fontSize: 17 });
-            break;   
-            default:                
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
-            break;
+                this.setState({ font: 'Bevan.ttf', fontSize: 17 ,stepOver:60});
+                break;
+            default:
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21, stepOver: 40});
+                break;
         }
         this.setState({ font: selectedOption.value });
         console.log(`Option selected:`, selectedOption);
-      };
+    };
 
-    handleKeyDown(e){
+    handleKeyDown(e) {
         var words = e.target.value.split(" ");
-        if(words.length > this.state.activeTemplate.maxWordsEn)
-        {
+        if (words.length > this.state.activeTemplate.maxWordsEn) {
         }
     }
-    handleTemplateChange (e,templateName = null) { 
-        let	{ value } = e.target;
-        
-        if(templateName)
-			value=templateName;
-		this.setState({
-			activeTemplateName: value
-		});
+    handleTemplateChange(e, templateName = null) {
+        let { value } = e.target;
+
+        if (templateName)
+            value = templateName;
+        this.setState({
+            activeTemplateName: value
+        });
         var chocoTemplates = require("../data/chocolateTemplates.json");
-        switch(value){
+        switch (value) {
             case "Oval":
                 this.setState({
-                    activeTemplate:chocoTemplates.templates[0]
+                    activeTemplate: chocoTemplates.templates[0]
                 });
                 console.log(' Template Change Oval');
                 break;
             case "Rectangle":
                 this.setState({
-                    activeTemplate:chocoTemplates.templates[1]
-                });                
+                    activeTemplate: chocoTemplates.templates[1]
+                });
                 console.log('Template Change Recatngle');
                 break;
             case "Square":
                 this.setState({
-                    activeTemplate:chocoTemplates.templates[2]
-                });                
+                    activeTemplate: chocoTemplates.templates[2]
+                });
                 console.log('Template Change Square');
                 break;
             default:
                 break;
         }
-      };
+    };
 
-    checkRTL(s){          
- 
-        var ltrChars        = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF'+'\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF',
-            rtlChars        = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC',
-            rtlDirCheck     = new RegExp('^[^'+ltrChars+']*['+rtlChars+']');
-        if(rtlDirCheck.test(s.target.value)){
-            this.setState({direction:'RTL'});
+    checkRTL(s) {
+
+        var ltrChars = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' + '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF',
+            rtlChars = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC',
+            rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']');
+        if (rtlDirCheck.test(s.target.value)) {
+            this.setState({ direction: 'RTL' });
         }
-            
+
         else
-            this.setState({direction:'LTR'});
+            this.setState({ direction: 'LTR' });
         return rtlDirCheck.test(s.target.value);
     };
     stopGcode() {
@@ -282,7 +281,7 @@ class Cam extends React.Component {
     }
     shouldComponentUpdate(nextProps, nextState) {
         return (
-            nextState.font !== this.state.font || /*nextState.fontSize !== this.state.fontSize || */ 
+            nextState.font !== this.state.font || /*nextState.fontSize !== this.state.fontSize || */
             nextProps.documents !== this.props.documents ||
             nextProps.operations !== this.props.operations ||
             nextProps.currentOperation !== this.props.currentOperation ||
@@ -294,13 +293,13 @@ class Cam extends React.Component {
         );
     }
 
-    runJob(){/// bug here to be solved
+    runJob() {/// bug here to be solved
         /*if(this.state.content == '')
             return;*/
-        this.generateGcode(); 
+        this.generateGcode();
 
-        let globalState = GlobalStore().getState(); 
-        console.log('globalState',globalState);
+        let globalState = GlobalStore().getState();
+        console.log('globalState', globalState);
         // check if machine is connected first
         if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
             let cmd = this.props.gcode;
@@ -308,116 +307,112 @@ class Cam extends React.Component {
             playing = true;
 
             runJob(cmd);
-        } 
+        }
         else {
-            console.log("didn't work",'Playing',playing,'Paused',paused);
+            console.log("didn't work", 'Playing', playing, 'Paused', paused);
         }
     }
 
-    wordWrapped(){
+    wordWrapped() {
         console.log("maybe help later!!");
     }
 
     /// to test this I guess there are some conditions to be solved
-    isWrappedWord(layout,text){
+    isWrappedWord(layout, text) {
         let result = true;
         // for each word check if it is in the same line
         var words = text.split(" ");
         // compare the words with 
 
         // re write this code it is not working
-       words.forEach((word) => {
-            layout.lines.forEach((line,j)=>{
-                console.log('end',layout.lines[j].end,'start',layout.lines[j].start,'word length:',word.length);
-                if(layout.lines[j].end-layout.lines[j].start<word.length){
+        words.forEach((word) => {
+            layout.lines.forEach((line, j) => {
+                console.log('end', layout.lines[j].end, 'start', layout.lines[j].start, 'word length:', word.length);
+                if (layout.lines[j].end - layout.lines[j].start < word.length) {
                     console.log('şerefsiz misiniz? I dont know !!!')
-                    result  =  false;
+                    result = false;
                 }
-                    
+
             })
-		})
-		//return true;
+        })
+        //return true;
         return true;
     }
     /// to bet tested this I guess there are some conditions to be solved
 
-    validateLayout(layout,text,maxLines){ //// add another condition which is if the number of lines is bigger than the number of words
+    validateLayout(layout, text, maxLines) { //// add another condition which is if the number of lines is bigger than the number of words
         var result = true;
-        console.log('Comparing layout then max lines: ',layout.lines.length,maxLines);
-        if(layout.lines.length > maxLines){
+        console.log('Comparing layout then max lines: ', layout.lines.length, maxLines);
+        if (layout.lines.length > maxLines) {
             console.log("get here for this reason not entering wrappedWord");
             return false;
         }
-            
-        else if(!this.isWrappedWord(layout,text))
+
+        else if (!this.isWrappedWord(layout, text))
             return false;
         return true;
 
     }
-    init(){
+    init() {
         console.log('clean everything before you start again: delete documents,clean gcode');
-        if(this.state.templateDocID !='')
+        if (this.state.templateDocID != '')
             this.props.dispatch(selectDocument(this.state.templateDocID));
-        if(this.state.textDocID !='')
+        if (this.state.textDocID != '')
             this.props.dispatch(selectDocument(this.state.textDocID));
         this.props.dispatch(selectDocuments(true));
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
     }
-    changeFont(amount){
-        console.log('amount',amount);
-        if( amount>0 )
+    changeFont(amount) {
+        console.log('amount', amount);
+        if (amount > 0)
             console.log('Bigger Font');
-        else 
+        else
             console.log('Smaller Font');
         this.updateFontChangeAmount(amount);
         console.log('chnage Font');
 
-        this.textWrapping(); 
+        this.textWrapping();
     }
-    updateFontChangeAmount(amount){
+    updateFontChangeAmount(amount) {
         let fontchange = this.state.fontchange;
-        console.log('before  fontChange',this.state.fontchange);
+        console.log('before  fontChange', this.state.fontchange);
 
-        this.setState({fontchange:fontchange+amount});
-        console.log('new fontChange',this.state.fontchange);
-	}
-	getPosition(string, subString, index) {
-		return string.split(subString, index).join(subString).length;
-	}
-	getDimension(output) {
-		///<svg width="27.24" height="10.62" viewBox="0 0 27.24 10.62"
-		// how to get the heıght and the width
-		// divide by 3.7777
-		//console.log('full output is ',output);
-		let widthStart = this.getPosition(output, '"', 1);
-		let widthFin = this.getPosition(output,'"',2);
-		let width = output.slice(widthStart+1,widthFin)
-		let heightStart = this.getPosition(output, '"', 3);
-		let heightEnd = this.getPosition(output, '"', 4);
-		let height = output.slice(heightStart + 1, heightEnd)
+        this.setState({ fontchange: fontchange + amount });
+        console.log('new fontChange', this.state.fontchange);
+    }
+    getPosition(string, subString, index) {
+        return string.split(subString, index).join(subString).length;
+    }
+    getDimension(output) {
 
-		console.log('width : ', width, 'height:', height);
-		/// starting from n+6 until next '"'
+        let widthStart = this.getPosition(output, '"', 1);
+        let widthFin = this.getPosition(output, '"', 2);
+        let width = output.slice(widthStart + 1, widthFin)
+        let heightStart = this.getPosition(output, '"', 3);
+        let heightEnd = this.getPosition(output, '"', 4);
+        let height = output.slice(heightStart + 1, heightEnd)
 
-		return [parseFloat(width),parseFloat(height)];
-	}
-    textWrapping(){  
-        console.log('our state now ; ',this.state);
-        if(this.state.content == ''){
+        console.log('width : ', width, 'height:', height);
+
+        return [parseFloat(width), parseFloat(height)];
+    }
+    textWrapping() {
+        console.log('our state now ; ', this.state);
+        if (this.state.content == '') {
             alert('no text???');
             return;
         }
         console.log('Text Wrapping started directoin', this.state.direction, 'fontsize', this.state.fontSize);
 
         var that = this;
-       // const toggleSelectDocument  = this.props.toggleSelectDocument ;
+        // const toggleSelectDocument  = this.props.toggleSelectDocument ;
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
-        console.log('this.state.font',font);
+        console.log('this.state.font', font);
         let text = this.state.content;
         var lines = text.split("\n");
-        console.log('text: ',text,lines);
+        console.log('text: ', text, lines);
         let models = {};
         let fontSize;
         this.init();
@@ -425,124 +420,123 @@ class Cam extends React.Component {
         const release = captureConsole();
         const parser = new Parser({});
         const makerjs = require('makerjs');
-		let layout;
+        let layout;
         opentype.load(font, function (err, font) {//for arabic fonst we will see
 
             let activeTemplate = that.state.activeTemplate;
             console.log(font);
             let lineHeight = 1.3 * font.unitsPerEm;
 
-			fontSize = that.state.fontSize;
-			let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-			let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
-			
+            fontSize = that.state.fontSize;
+            let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
+            let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
+
             let layoutOptions = {
-                "align":"center",
-                lineHeight: lineHeight ,
-				width: finalWidth/scale,
-                mode:'nowrap'
+                "align": "center",
+                lineHeight: lineHeight,
+                width: finalWidth / scale,
+                mode: 'nowrap'
             };
-			console.log('Final Width: ', finalWidth);
-			console.log('fontsize', that.state.fontSize);
-			console.log('modified scale', scale);
-			console.log('unitsPerEm : ', font.unitsPerEm);
-			console.log('layout widht is ', finalWidth / scale);
-            if(that.state.direction == 'RTL'){
+            console.log('Final Width: ', finalWidth);
+            console.log('fontsize', that.state.fontSize);
+            console.log('modified scale', scale);
+            console.log('unitsPerEm : ', font.unitsPerEm);
+            console.log('layout widht is ', finalWidth / scale);
+            if (that.state.direction == 'RTL') {
                 layout = computeLayout(font, text, layoutOptions);
 
                 console.log('started RTL');
-                let wordModel ='';
+                let wordModel = '';
                 /*let wordModel = new makerjs.models.Text(font, text, fontSize);
                 makerjs.model.addModel(models, wordModel); 
                 //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
                 // console.log(testOutput);
                 let wordWidths = [];// line widths
                 let wordHeigths = [];
-                let svgWords =[];
+                let svgWords = [];
 
                 let shiftX = 0;
                 let shiftY = 0;
-                let shifts = [shiftX,shiftY];
-                let prevWordWidth =0;
+                let shifts = [shiftX, shiftY];
+                let prevWordWidth = 0;
                 let pervWordOrigin = 0;
 
-                models= {};
+                models = {};
 
-                console.log('lines are : ',layout.lines);
-                svgWords =[];
-                lines.forEach((line,i) => {
-                    wordModel  = new makerjs.models.Text(font,line,fontSize);
-                    makerjs.model.addModel(models, wordModel); 
+                console.log('lines are : ', layout.lines);
+                svgWords = [];
+                lines.forEach((line, i) => {
+                    wordModel = new makerjs.models.Text(font, line, fontSize);
+                    makerjs.model.addModel(models, wordModel);
                     svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
-                    models= {};
+                    models = {};
                     let parts = svgWords[i].split("\"");
                     wordWidths[i] = parseFloat(parts[1]);
                     wordHeigths[i] = parseFloat(parts[3]);
                     //console.log('width',wordWidths[i],'line',line,svgWords[i]);
                 });
                 let maxWHeight = Math.max(...wordHeigths);
-                console.log('widths',wordWidths,'heights',wordHeigths);//  
+                console.log('widths', wordWidths, 'heights', wordHeigths);//  
 
-                models= {};
-                lines.forEach((line,i) => {
-                    wordModel  = new makerjs.models.Text(font,line,fontSize,true);
+                models = {};
+                lines.forEach((line, i) => {
+                    wordModel = new makerjs.models.Text(font, line, fontSize, true);
                     let count = 0;
-                    for(var c in wordModel.models)
+                    for (var c in wordModel.models)
                         count++;
                     // calcaulate shiftX and shiftY in a suitable way
-                    console.log('count',count);
-                    shiftY = shiftY +maxWHeight+3;
-                    shiftX = that.state.activeTemplate.shiftX*9 - (wordWidths[i]/(2*3.78));/// what is this equation?
+                    console.log('count', count);
+                    shiftY = shiftY + maxWHeight + 3;
+                    shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * 3.78));/// what is this equation?
                     let firstLineShift = that.state.activeTemplate.shiftX * 9 - (wordWidths[0] / (2 * 3.78));
                     //shiftX=0;
-                    console.log('shiftX',shiftX,' wordWidths[i]', wordWidths[i]/(2*3.78),'activetempalte.shiftx',
-                    that.state.activeTemplate.shiftX);
+                    console.log('shiftX', shiftX, ' wordWidths[i]', wordWidths[i] / (2 * 3.78), 'activetempalte.shiftx',
+                        that.state.activeTemplate.shiftX);
                     let shiftingFactor = 0;
-                    if(i>0){
+                    if (i > 0) {
                         shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
-                        console.log('shifting factor is',shiftingFactor,wordWidths[0],wordWidths[1]);
+                        console.log('shifting factor is', shiftingFactor, wordWidths[0], wordWidths[1]);
                     }
                     for (let index = 0; index < count; index++) {
-                        shifts = [wordModel.models[index].origin[0] + shiftX+shiftingFactor, wordModel.models[index].origin[1] - shiftY];
-                        wordModel.models[index].origin = [shifts[0],shifts[1]];
+                        shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
+                        wordModel.models[index].origin = [shifts[0], shifts[1]];
                     }
                     console.log('shiftX is ', shiftX, 'shiftY is:', shiftY, 'word model is:', wordModel.models[0].origin);
                     console.log('xShiftFinal', shifts);
 
                     //var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
-                    makerjs.model.addModel(models, wordModel); 
+                    makerjs.model.addModel(models, wordModel);
                 });
-                console.log('models', models);           
-                prevWordWidth =0;
+                console.log('models', models);
+                prevWordWidth = 0;
             }
-			else {// LTR
-				console.log("we are here 0");
-				try {
-					layout = computeLayout(font, text, layoutOptions);
-				}
-				catch(ex){
-					console.log(ex);
-				}
-				console.log("we are here 1");
-                console.log('Layout is like this: ',layout,'Layout options',layoutOptions);
-                let result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
-				console.log("we are here 2");
+            else {// LTR
+                console.log("we are here 0");
+                try {
+                    layout = computeLayout(font, text, layoutOptions);
+                }
+                catch (ex) {
+                    console.log(ex);
+                }
+                console.log("we are here 1");
+                console.log('Layout is like this: ', layout, 'Layout options', layoutOptions);
+                let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
+                console.log("we are here 2");
 
-                console.log('first layout evaluation result is ',result);
-                
-                while(!result)
-                {
+                console.log('first layout evaluation result is ', result);
+
+                while (!result) {
                     console.log("we get here!!!");
                     that.setState({
-                        activeTemplate:activeTemplate
+                        activeTemplate: activeTemplate
                     });
                     //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
-                    console.log('new unitsPerEm : ',font.unitsPerEm);
-					
-					fontSize = that.state.fontSize * 0.8; /// we should change font size
+                    console.log('new unitsPerEm : ', font.unitsPerEm);
+
+                    fontSize = that.state.fontSize * 0.8; /// we should change font size
                     activeTemplate.fontSize = fontSize;
-					that.setState({activeTemplate:activeTemplate});
-					let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
+                    that.setState({ activeTemplate: activeTemplate });
+                    let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
                     //let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
                     let finalWidth = 120;// should be maxMM * 301 (which is point in mm) 5000
                     //finalWidht depends on the font
@@ -554,24 +548,24 @@ class Cam extends React.Component {
                         width: finalWidth / scale
                     };
                     layoutOptions = { // depends on the situation we change the layout option
-                    	"align":"center",
-                        lineHeight: lineHeight ,
-						width: finalWidth / scale
+                        "align": "center",
+                        lineHeight: lineHeight,
+                        width: finalWidth / scale
                     }
                     layout = computeLayout(font, text, layoutOptions);
-                    if(layout.lines.length > 1)
+                    if (layout.lines.length > 1)
                         activeTemplate.shiftY -= 2;
                     activeTemplate.shiftX -= 3;
-                    console.log('new layout is ',layout);
-                    result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
-				}
-				
-                that.setState({layout:layout})
+                    console.log('new layout is ', layout);
+                    result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
+                }
+
+                that.setState({ layout: layout })
                 layout.glyphs.forEach((glyph, i) => {
                     let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                     character.origin = makerjs.point.scale(glyph.position, scale);
 
-                    console.log('origin origin yaho: ',character.origin);
+                    console.log('origin origin yaho: ', character.origin);
                     makerjs.model.addModel(models, character, i);
                     /*let aCharacter = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                     aCharacter.origin = makerjs.point.scale(glyph.position, scale);
@@ -579,39 +573,37 @@ class Cam extends React.Component {
                     //aCharacter.origin.map((item) => item+44*3.78);
                     makerjs.model.addModel(models, aCharacter, i);*/
                 });
-                
-            }
-            const moldShifts = [75,75];//[105,96];
-            /// testlertestler testytyq
-            try 
-            {
-                let output = makerjs.exporter.toSVG(models, {/*origin:[-70.95,0]*/ accuracy:0.001});
-				let dims = that.getDimension(output);
-				let mmDims = dims.map(n => n/3.777);
-				//// get layout.lines, the  max value of them, get the number of letters in that line
-				const max = layout.lines.reduce(
-					(prev,current) => (prev.width > current.width) ? prev : current
-				);
-				const letterCount = max.end - max.start;
-                const letterWidth = mmDims[0]/letterCount;
-                that.setState({stepOver:1});
-                let generalState = GlobalStore().getState(); 
 
-				console.log('general state',generalState,"Letters:  ",  dims, max,mmDims,'letter count:',letterCount,'letter width',letterWidth,layout);
+            }
+            const moldShifts = [60, 60];//[105,96];
+            /// testlertestler testytyq
+            try {
+                let output = makerjs.exporter.toSVG(models, {/*origin:[-70.95,0]*/ accuracy: 0.001 });
+                let dims = that.getDimension(output);
+                let mmDims = dims.map(n => n / 3.777);
+                //// get layout.lines, the  max value of them, get the number of letters in that line
+                const max = layout.lines.reduce(
+                    (prev, current) => (prev.width > current.width) ? prev : current
+                );
+                const letterCount = max.end - max.start;
+                const letterWidth = mmDims[0] / letterCount;
+                let generalState = GlobalStore().getState();
+
+                console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
 
                 parser.parse(output).then((tags) => {
                     let captures = release(true);
                     let warns = captures.filter(i => i.method == 'warn')
                     let errors = captures.filter(i => i.method == 'errors')
-                    
+
                     if (warns.length)
-						CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-						
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+
                     if (errors.length)
-						CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-						
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+
                     let file = {
-                        name:"file.svg",
+                        name: "file.svg",
                         type: "image/svg+xml"
                     };
 
@@ -620,61 +612,60 @@ class Cam extends React.Component {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                         that.props.dispatch(selectDocuments(true));
                         let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
-                        console.log('the docs are : ',that.props.documents);
+                        console.log('the docs are : ', that.props.documents);
                         mainsvgID = documents;
-                        console.log('DocId is:',documents);
-                        that.setState({textDocID:documents});
-                        that.props.dispatch(addOperation({ documents}));
+                        console.log('DocId is:', documents);
+                        that.setState({ textDocID: documents });
+                        that.props.dispatch(addOperation({ documents }));
                         // we need two shiftX shifty one for Arabic and one for English
                         that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
 
-                        let globalState = GlobalStore().getState(); 
-                        console.log('that.propts',that.props.op,'state',globalState);
-                        that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id)) 
-                    }).then( () => {
+                        let globalState = GlobalStore().getState();
+                        console.log('that.propts', that.props.op, 'state', globalState);
+                        that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
+                    }).then(() => {
                         file = {
-                            name:"template.svg",
+                            name: "template.svg",
                             type: "image/svg+xml"
                         };
                         fetch(activeTemplate.file)
-                        .then(resp => resp.text())
-                        .then(content => {
-                            parser.parse(content).then((tags) => {
-                                let captures = release(true);
-                                let warns = captures.filter(i => i.method == 'warn')
-                                let errors = captures.filter(i => i.method == 'errors')
-                                
-                                if (warns.length)
-                                    CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                                if (errors.length)
-                                    CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                                imageTagPromise(tags).then((tags) => { // this is for chocolate template  
-                                	let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
-                                    that.setState({templateDocID:templateDoc});
-                                    console.log('templateDoc:',templateDoc);
-                                    that.props.dispatch(selectDocument(templateDoc));
-                                    that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                                    that.props.dispatch(selectDocument(that.state.textDocID));
-                                    that.props.dispatch(selectDocuments(true));
-                                    console.log("applied twice");
-                                    that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0], moldShifts[1]]));
+                            .then(resp => resp.text())
+                            .then(content => {
+                                parser.parse(content).then((tags) => {
+                                    let captures = release(true);
+                                    let warns = captures.filter(i => i.method == 'warn')
+                                    let errors = captures.filter(i => i.method == 'errors')
 
-                                    console.log('text doc id ',that.state.textDocID,'template doc id ',that.state.templateDocID,templateDoc);
-                                    that.props.dispatch(selectDocuments(false));
-                                    that.props.dispatch(selectDocument(that.state.textDocID));
-                                    that.props.dispatch(toggleSelectDocument(that.state.textDocID));
-                                    that.props.dispatch(toggleSelectDocument(templateDoc[0]));
-                                }).then( () => {
-                                    console.log(that.state);
+                                    if (warns.length)
+                                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                                    if (errors.length)
+                                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                                    imageTagPromise(tags).then((tags) => { // this is for chocolate template  
+                                        let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
+                                        that.setState({ templateDocID: templateDoc });
+                                        console.log('templateDoc:', templateDoc);
+                                        that.props.dispatch(selectDocument(templateDoc));
+                                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                                        that.props.dispatch(selectDocument(that.state.textDocID));
+                                        that.props.dispatch(selectDocuments(true));
+                                        console.log("applied twice");
+                                        that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0], moldShifts[1]]));
 
-                                })
+                                        console.log('text doc id ', that.state.textDocID, 'template doc id ', that.state.templateDocID, templateDoc);
+                                        that.props.dispatch(selectDocuments(false));
+                                        that.props.dispatch(selectDocument(that.state.textDocID));
+                                        that.props.dispatch(toggleSelectDocument(that.state.textDocID));
+                                        that.props.dispatch(toggleSelectDocument(templateDoc[0]));
+                                    }).then(() => {
+                                        console.log(that.state);
+
+                                    })
+                                });
                             });
-                        });
                     })
                 });
             }
-            catch(Exception)
-            {
+            catch (Exception) {
                 console.log(Exception);
             }
         })
@@ -684,17 +675,17 @@ class Cam extends React.Component {
         e.preventDefault();
         var text = e.target.content.value;
         this.setState({
-            content:text
+            content: text
         });
     }
     render() {
         const { selectedOption } = this.state;
 
         //console.log('cam.js this.props: ',this.props);
-        let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument,bounds } = this.props;
+        let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument, bounds } = this.props;
         let validator = ValidateSettings(false)
         let valid = validator.passes();
-        let someSelected=documents.some((i)=>(i.selected));
+        let someSelected = documents.some((i) => (i.selected));
 
         const Fonts = [
             { value: 'Almarai-Bold.ttf', label: 'Arslan' },
@@ -734,36 +725,36 @@ class Cam extends React.Component {
                                     <td>
                                         <label>Documents {Info(<small>Tip:  Hold <kbd>Ctrl</kbd> to click multiple documents</small>)}</label>
                                     </td>
-                                    <td style={{display:"flex", justifyContent: "flex-end" }}>
-                                        <FileField style={{   position: 'relative', cursor: 'pointer' }} onChange={ loadDocument} accept={DOCUMENT_FILETYPES}>
+                                    <td style={{ display: "flex", justifyContent: "flex-end" }}>
+                                        <FileField style={{ position: 'relative', cursor: 'pointer' }} onChange={loadDocument} accept={DOCUMENT_FILETYPES}>
                                             <button title="Add a DXF/SVG/PNG/BMP/JPG document to the document tree" className="btn btn-xs btn-primary">
                                                 <i className="fa fa-fw fa-folder-open" />Add Document</button>
                                             {(this.props.panes.visible) ? <NoDocumentsError camBounds={bounds} settings={settings} documents={documents} operations={operations} /> : undefined}
                                         </FileField>&nbsp;
                                     </td>
                                 </tr>
-                               
+
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <Splitter style={{ flexShrink: 0 }} split="horizontal" initialSize={100} resizerStyle={{ marginTop: 2, marginBottom: 2 }} splitterId="cam-documents">
-                    <div style={{height:"100%", display:"flex", flexDirection:"column"}} >
-                        <div style={{ overflowY: 'auto', flexGrow:1 }}><Documents documents={documents} filter={this.state.filter} toggleExpanded={toggleDocumentExpanded} /></div>
+                    <div style={{ height: "100%", display: "flex", flexDirection: "column" }} >
+                        <div style={{ overflowY: 'auto', flexGrow: 1 }}><Documents documents={documents} filter={this.state.filter} toggleExpanded={toggleDocumentExpanded} /></div>
                         {documents.length ? <ButtonToolbar bsSize="xsmall" bsStyle="default">
-                            
+
                             <ButtonGroup>
-                                <Button  bsStyle="info" bsSize="xsmall" onClick={()=>{this.props.dispatch(selectDocuments(true))}} title="Select all"><Icon name="cubes"/></Button>
-                                <Button  bsStyle="default" bsSize="xsmall" onClick={()=>{this.props.dispatch(selectDocuments(false))}} title="Select none"><Icon name="cubes"/></Button>
+                                <Button bsStyle="info" bsSize="xsmall" onClick={() => { this.props.dispatch(selectDocuments(true)) }} title="Select all"><Icon name="cubes" /></Button>
+                                <Button bsStyle="default" bsSize="xsmall" onClick={() => { this.props.dispatch(selectDocuments(false)) }} title="Select none"><Icon name="cubes" /></Button>
                             </ButtonGroup>
-                            <Button  bsStyle="warning" bsSize="xsmall" disabled={!someSelected} onClick={()=>{this.props.dispatch(cloneDocumentSelected())}} title="Clone selected"><Icon name="copy"/></Button>
-                            <Button  bsStyle="danger" bsSize="xsmall" disabled={!someSelected} onClick={()=>{this.props.dispatch(removeDocumentSelected())}} title="Remove selected"><Icon name="trash"/></Button>
+                            <Button bsStyle="warning" bsSize="xsmall" disabled={!someSelected} onClick={() => { this.props.dispatch(cloneDocumentSelected()) }} title="Clone selected"><Icon name="copy" /></Button>
+                            <Button bsStyle="danger" bsSize="xsmall" disabled={!someSelected} onClick={() => { this.props.dispatch(removeDocumentSelected()) }} title="Remove selected"><Icon name="trash" /></Button>
                             <ButtonGroup>
-                                <ColorPicker to="rgba" icon="pencil" bsSize="xsmall" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({strokeColor:v||[0,0,0,1]}))}/>
-                                <ColorPicker to="rgba" icon="paint-brush" bsSize="xsmall" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({fillColor:v||[0,0,0,0]}))}/>
+                                <ColorPicker to="rgba" icon="pencil" bsSize="xsmall" disabled={!someSelected} onClick={v => this.props.dispatch(colorDocumentSelected({ strokeColor: v || [0, 0, 0, 1] }))} />
+                                <ColorPicker to="rgba" icon="paint-brush" bsSize="xsmall" disabled={!someSelected} onClick={v => this.props.dispatch(colorDocumentSelected({ fillColor: v || [0, 0, 0, 0] }))} />
                             </ButtonGroup>
-                            <SearchButton bsStyle="primary" bsSize="xsmall" search={this.state.filter} onSearch={filter=>{this.setState({filter})}} placement="bottom"><Icon name="search"/></SearchButton>
-                            </ButtonToolbar>:undefined}
+                            <SearchButton bsStyle="primary" bsSize="xsmall" search={this.state.filter} onSearch={filter => { this.setState({ filter }) }} placement="bottom"><Icon name="search" /></SearchButton>
+                        </ButtonToolbar> : undefined}
                     </div>
                 </Splitter>
                 <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7 }}>
@@ -788,69 +779,69 @@ class Cam extends React.Component {
                     </table>
                 </Alert>
                 <OperationDiagram {...{ operations, currentOperation }} />
-                <Operations 
-                    style={{ flexGrow: 2, display: "flex", flexDirection: "column" }  } 
-                    /*genGCode = {this./*generateGcode*//*docuementAdded}*/
-                 />
+                <Operations
+                    style={{ flexGrow: 2, display: "flex", flexDirection: "column" }}
+                /*genGCode = {this./*generateGcode*//*docuementAdded}*/
+                />
 
-        
-            <Form onSubmit={ this.handleSubmission }>
 
-             Font: 
-            <Select value={this.state.font}  onChange={this.handleFontChange} defaultValue= {this.state.font} options={Fonts} >
-                <option value="GreatVibes">Great Vibes</option>
-                <option value="Arslan">ArslanFont</option>
-                <option value="chocolatePristina">Pristina</option>
-                <option value="ITCKRIST">ITCKRIST</option>
-                <option value="TrajanPro-Bold">TrajanPro-B</option>
-                <option value="Bevan">Eevan</option>
-            </Select>
-            <br />
+                <Form onSubmit={this.handleSubmission}>
+
+                    Font:
+                    <Select value={this.state.font} onChange={this.handleFontChange} defaultValue={this.state.font} options={Fonts} >
+                        <option value="GreatVibes">Great Vibes</option>
+                        <option value="Arslan">ArslanFont</option>
+                        <option value="chocolatePristina">Pristina</option>
+                        <option value="ITCKRIST">ITCKRIST</option>
+                        <option value="TrajanPro-Bold">TrajanPro-B</option>
+                        <option value="Bevan">Eevan</option>
+                    </Select>
+                    <br />
             Text: <br />
 
-        </Form>
-        <FormGroup>
-            <div>
-                <div className="form-check" >
-                    <label htmlFor ="Oval"> 
-                        <input 
-                        type="radio"  name="template" 
-                        value="Oval"                         
-                        onChange={this.handleTemplateChange}
-                        className="form-check-input" 
-                        />
+                </Form>
+                <FormGroup>
+                    <div>
+                        <div className="form-check" >
+                            <label htmlFor="Oval">
+                                <input
+                                    type="radio" name="template"
+                                    value="Oval"
+                                    onChange={this.handleTemplateChange}
+                                    className="form-check-input"
+                                />
                         Oval
                     </label>
-                    <img src="oval.jpg" height="40" width="80" />
-                </div>
-                <div className="form-check">
-                    <label htmlFor ="Rectangle"> 
-                        <input type="radio"  name="template" value="Rectangle"                         
-                        onChange={this.handleTemplateChange} 
-                        className="form-check-input"
-                    />
+                            <img src="oval.jpg" height="40" width="80" />
+                        </div>
+                        <div className="form-check">
+                            <label htmlFor="Rectangle">
+                                <input type="radio" name="template" value="Rectangle"
+                                    onChange={this.handleTemplateChange}
+                                    className="form-check-input"
+                                />
                     Rectangle
                     </label>
-                    <img src="rectangle.jpg" height="40" width="80" />
-                </div>    
-                <div className="form-check">
-                    <label htmlFor ="Square"> 
-                        <input type="radio"  name="template" value="Square"
-                        onChange={this.handleTemplateChange} 
-                        className="form-check-input" 
-                        />
+                            <img src="rectangle.jpg" height="40" width="80" />
+                        </div>
+                        <div className="form-check">
+                            <label htmlFor="Square">
+                                <input type="radio" name="template" value="Square"
+                                    onChange={this.handleTemplateChange}
+                                    className="form-check-input"
+                                />
                         Square
                     </label>
-                    <img src="rectangle.jpg" height="50" width="50" />
-                </div>                             
-            </div>
-        </FormGroup>
+                            <img src="rectangle.jpg" height="50" width="50" />
+                        </div>
+                    </div>
+                </FormGroup>
         Chocoalte Depth mm: <input name='chocoalteDepth' type="number" step="0.1" defaultValue='15' onChange={this.handleDepthChange}></input>
-        Line Main:<textarea 
-					name="content" id="content" ref="content" maxLength="23" 
-            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
-        />
-        {/*<label style={{visibility:  'hidden' }} >Line 2:</label>
+        Line Main:<textarea
+                    name="content" id="content" ref="content" maxLength="23"
+                    onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={this.state.content}
+                />
+                {/*<label style={{visibility:  'hidden' }} >Line 2:</label>
         <input type="text" 
             name="line2"  id="line2" ref = "line2"   maxLength="25"    
             style={{visibility:  'hidden' }}          
@@ -862,33 +853,34 @@ class Cam extends React.Component {
             style={{visibility:  'hidden' }}          
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
         />*/}
-        <div>
-            {/*<Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>
+                <div>
+                    {/*<Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>
             <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >R</Button>*/}
-            <Button name="textWrapping" onClick={ this.textWrapping}  bsStyle="danger" >Generate</Button>
-            <Button name="fontplus" onClick={() => { this.changeFont(1) }}   bsSize="small" bsStyle="primary">Bigger ++</Button>                    
-            <Button name="fontminus" onClick={ () => {this.changeFont(-1)}} bsSize="small" bsStyle="primary">Smaller --</Button>                    
-        </div>
+                    <Button name="textWrapping" onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
+                    <Button name="fontplus" onClick={() => { this.changeFont(1) }} bsSize="small" bsStyle="primary">Bigger ++</Button>
+                    <Button name="fontminus" onClick={() => { this.changeFont(-1) }} bsSize="small" bsStyle="primary">Smaller --</Button>
+                </div>
 
-        </div>);
+            </div>);
     }
 };
 
 Cam = connect(
     state => ({
-        myText:state.content,
-        settings: state.settings, 
-        documents: state.documents, 
-        operations: state.operations, 
-        currentOperation: state.currentOperation, 
-        gcode: state.gcode.content, 
-        gcoding: state.gcode.gcoding, 
-        dirty: state.gcode.dirty, 
+        myText: state.content,
+        settings: state.settings,
+        documents: state.documents,
+        operations: state.operations,
+        currentOperation: state.currentOperation,
+        gcode: state.gcode.content,
+        gcoding: state.gcode.gcoding,
+        dirty: state.gcode.dirty,
         panes: state.panes,
-        saveGcode: (e) => { 
-            prompt('Save as', 'gcode.gcode', (file) => { 
-                if (file !== null) sendAsFile(appendExt(file, '.gcode'), state.gcode.content) 
-            }, !e.shiftKey) },
+        saveGcode: (e) => {
+            prompt('Save as', 'gcode.gcode', (file) => {
+                if (file !== null) sendAsFile(appendExt(file, '.gcode'), state.gcode.content)
+            }, !e.shiftKey)
+        },
         viewGcode: () => openDataWindow(state.gcode.content),
     }),
     dispatch => ({
@@ -899,7 +891,7 @@ Cam = connect(
         },
         resetWorkspace: () => {
             confirm("Are you sure?", (data) => { if (data) dispatch(resetWorkspace()); })
-        },       
+        },
         loadDocument: (e, modifiers = {}) => {
             // TODO: report errors
             for (let file of e.target.files) {
@@ -908,7 +900,7 @@ Cam = connect(
                     reader.onload = () => {
                         const release = captureConsole()
                         let parser = new Parser({});
-                        console.log('result of loading svg file',reader.result);
+                        console.log('result of loading svg file', reader.result);
                         parser.parse(reader.result)
                             .then((tags) => {
                                 let captures = release(true);
