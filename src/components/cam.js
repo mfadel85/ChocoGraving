@@ -576,11 +576,7 @@ class Cam extends React.Component {
                 });
                 
             }
-<<<<<<< HEAD
             const moldShifts = [75,75];//[105,96];
-=======
-            const moldShifts = [60,60];//[105,96];
->>>>>>> e2725709c05f0375264e50e218ebc8b21801a1da
             /// testlertestler testytyq
             try 
             {
