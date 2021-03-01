@@ -42,11 +42,15 @@ export const expandHookGCode = (operation) =>{
 
     return op;
 }
+export function updateStepover(stepover){
 
+}
 export function getGcode(settings, documents, operations, documentCacheHolder, showAlert, done, progress) {
     "use strict";
+    let state = GlobalStore().getState(); 
+
     console.log('operations',operations);
-    console.log('settings',settings);
+    console.log('settings',settings,'stepOver',state.stepOver);
     let starttime=new Date().getTime()
 
     const QE = new queue();
