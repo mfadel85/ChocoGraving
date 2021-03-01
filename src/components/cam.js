@@ -105,7 +105,9 @@ class Cam extends React.Component {
             textDocID:'',
             templateDocID:'',
             direction:'LTR',
-            stepOver: 40
+            stepOver: 40,
+            layout:[],
+            chocolateDepth:30
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -170,6 +172,10 @@ class Cam extends React.Component {
         let activeTemplateName = this.state.activeTemplateName;
         this.handleTemplateChange(e,activeTemplateName);
     }
+    handleDepthChange(e){
+        this.setState({ chocolateDepth: e.target.value });
+
+    }
     handleChange (e)  {
 
         this.resetFontSize(e);
@@ -194,16 +200,10 @@ class Cam extends React.Component {
         //this.resetFontSize(e);
         console.log('our state',selectedOption);
         switch(selectedOption.value){
-            case 'GreatVibes-Regular.otf':
-                this.setState({ font: 'GreatVibes-Regular.otf',fontSize:36 });
-            break;
-            case 'ElMessiri-Medium.ttf':
+            
+            case 'Almarai-Bold.ttf':
                 console.log('Almaarai is chosen');
-				this.setState({ font: 'ElMessiri-Medium.ttf', fontSize: 21});
-            break;
-            case 'chocolatePristina.ttf':
-                console.log('chocolatePristina is chosen');
-				this.setState({ font: 'chocolatePristina.ttf', fontSize: 35 });
+				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
             break;
             case 'ITCKRIST.TTF':
 				this.setState({ font: 'ITCKRIST.TTF', fontSize: 20 });
@@ -214,16 +214,14 @@ class Cam extends React.Component {
             case 'Bevan.ttf':
 				this.setState({ font: 'Bevan.ttf', fontSize: 17 });
             break;   
-            case 'Almarai-Bold.ttf':
-				this.setState({ font: 'Almarai-Bold.ttf', fontSize: 17 });
-            break;   
             default:                
-                this.setState({ font: 'ElMessiri-Medium.ttf', fontSize: 21});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21});
             break;
         }
         this.setState({ font: selectedOption.value });
         console.log(`Option selected:`, selectedOption);
       };
+
     handleKeyDown(e){
         var words = e.target.value.split(" ");
         if(words.length > this.state.activeTemplate.maxWordsEn)
@@ -568,23 +566,26 @@ class Cam extends React.Component {
                     result = that.validateLayout(layout,text,that.state.activeTemplate.maxLines);
 				}
 				
-
+                that.setState({layout:layout})
                 layout.glyphs.forEach((glyph, i) => {
                     let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                     character.origin = makerjs.point.scale(glyph.position, scale);
+
+                    console.log('origin origin yaho: ',character.origin);
                     makerjs.model.addModel(models, character, i);
+                    /*let aCharacter = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                    aCharacter.origin = makerjs.point.scale(glyph.position, scale);
+                    aCharacter.origin[0] = aCharacter.origin[0] + 44 * 3.78;
+                    //aCharacter.origin.map((item) => item+44*3.78);
+                    makerjs.model.addModel(models, aCharacter, i);*/
                 });
                 
             }
-<<<<<<< HEAD
-            const moldShifts = [75,75];//[105,96];
-=======
             const moldShifts = [60,60];//[105,96];
->>>>>>> e2725709c05f0375264e50e218ebc8b21801a1da
             /// testlertestler testytyq
             try 
             {
-				let output = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                let output = makerjs.exporter.toSVG(models, {/*origin:[-70.95,0]*/ accuracy:0.001});
 				let dims = that.getDimension(output);
 				let mmDims = dims.map(n => n/3.777);
 				//// get layout.lines, the  max value of them, get the number of letters in that line
@@ -696,14 +697,10 @@ class Cam extends React.Component {
         let someSelected=documents.some((i)=>(i.selected));
 
         const Fonts = [
-            { value: 'GreatVibes-Regular.otf', label: 'Great Vibes' },
-            { value: 'ElMessiri-Medium.ttf', label: 'El Messiri' },
-            { value: 'chocolatePristina.ttf', label: 'Pristina' },
+            { value: 'Almarai-Bold.ttf', label: 'Arslan' },
             { value: 'ITCKRIST.TTF', label: 'ITCKRIST' },
             { value: 'TrajanPro-Bold.otf', label: 'TrajanPro-B' },
             { value: 'Bevan.ttf', label: 'Bevan' },
-            { value: 'Almarai-Bold.ttf', label: 'المراعي' },
-
         ];
 
 
@@ -796,7 +793,6 @@ class Cam extends React.Component {
                     /*genGCode = {this./*generateGcode*//*docuementAdded}*/
                  />
 
-            <h3>String to Image</h3>
         
             <Form onSubmit={ this.handleSubmission }>
 
@@ -849,6 +845,7 @@ class Cam extends React.Component {
                 </div>                             
             </div>
         </FormGroup>
+        Chocoalte Depth mm: <input name='chocoalteDepth' type="number" step="0.1" defaultValue='15' onChange={this.handleDepthChange}></input>
         Line Main:<textarea 
 					name="content" id="content" ref="content" maxLength="23" 
             onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
@@ -969,3 +966,4 @@ Cam = connect(
 Cam = withDocumentCache(withGetBounds(Cam));
 
 export default Cam;
+
