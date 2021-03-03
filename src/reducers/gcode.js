@@ -3,6 +3,8 @@ export const GCODE_INITIALSTATE = {
     gcoding: { enable: false, percent: 0},
     content: '',
     dirty:false,
+    text:'',
+    chocolateDepth:15
 }
 
 export function gcode(state = GCODE_INITIALSTATE, action) {
@@ -20,6 +22,10 @@ export function gcode(state = GCODE_INITIALSTATE, action) {
     }
     if (action.type === 'GCODE_SET')
         return { ...state, dirty: false , content: action.payload };
+    if (action.type === 'SET_FORM_DATA')
+        return { ...state,  text: action.payload };
+    if (action.type === 'SET_DEPTH')
+        return { ...state, chocolateDepth: action.payload };        
     else if (action.type === 'GCODE_GENERATION')
         return { ...state, gcoding: action.payload }
     else if (action.type== 'WORKSPACE_RESET') 
