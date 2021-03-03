@@ -19,7 +19,7 @@ import { connect } from 'react-redux';
 import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
-import { addOperation, clearOperations, setOperationAttrs } from '../actions/operation';
+import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth } from '../actions/operation';
 import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
@@ -76,6 +76,8 @@ class Cam extends React.Component {
 
     constructor(props) {
         super(props);
+        this.chocoalteDepthRef;
+    
         this.state = {
             filter: null,
             content: "",
@@ -109,6 +111,7 @@ class Cam extends React.Component {
             layout: [],
             chocolateDepth: 30
         }
+        this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
@@ -168,11 +171,15 @@ class Cam extends React.Component {
         //const ctx = this.refs.canvas.getContext('2d');
         //ctx.fillRect(context);
     }
+
     resetFontSize(e) { // a bug here!!!
         let activeTemplateName = this.state.activeTemplateName;
         this.handleTemplateChange(e, activeTemplateName);
     }
+
     handleDepthChange(e) {
+        this.props.dispatch(setDepth(e.target.value));
+
         this.setState({ chocolateDepth: e.target.value });
 
     }
@@ -193,7 +200,8 @@ class Cam extends React.Component {
                 }
             });
         });
-        
+        this.props.dispatch(setFormData(e.target.value));
+        console.log('depth is',this.chocoalteDepth);
         this.setState({ content: e.target.value });
     }
     handleFontChange(selectedOption) {
@@ -399,6 +407,8 @@ class Cam extends React.Component {
     }
     textWrapping() {
         console.log('our state now ; ', this.state);
+        let globalState = GlobalStore().getState();
+        console.log('globalState', globalState);
         if (this.state.content == '') {
             alert('no text???');
             return;
@@ -679,6 +689,9 @@ class Cam extends React.Component {
         });
     }
     render() {
+
+        let globalState = GlobalStore().getState();
+
         const { selectedOption } = this.state;
 
         //console.log('cam.js this.props: ',this.props);
@@ -836,10 +849,13 @@ class Cam extends React.Component {
                         </div>
                     </div>
                 </FormGroup>
-        Chocoalte Depth mm: <input name='chocoalteDepth' type="number" step="0.1" defaultValue='15' onChange={this.handleDepthChange}></input>
+        Chocolate Depth mm: 
+        <input name='chocoalteDepth' 
+            ref={(el) => this.chocoalteDepthRef = el }
+                    type="number" step="0.1" defaultValue={globalState.gcode.chocolateDepth.data} onChange={this.handleDepthChange} />
         Line Main:<textarea
                     name="content" id="content" ref="content" maxLength="23"
-                    onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={this.state.content}
+                    onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}
                 />
                 {/*<label style={{visibility:  'hidden' }} >Line 2:</label>
         <input type="text" 
