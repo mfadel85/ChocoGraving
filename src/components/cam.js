@@ -39,7 +39,7 @@ import { OperationDiagram } from './operation-diagram';
 import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
-import { layout } from 'makerjs';
+//import { layout } from 'makerjs';
 
 const opentype = require('opentype.js');
 var playing = false;
