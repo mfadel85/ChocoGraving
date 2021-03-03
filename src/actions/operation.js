@@ -13,7 +13,14 @@ export function operationAddDocuments(id, isTab, documents) {
 export function operationRemoveDocument(id, isTab, document) {
     return { type: 'OPERATION_REMOVE_DOCUMENT', payload: { id, isTab, document } };
 }
-
+export function setFormData(data){
+    console.log('sate is ');
+    return { type:'SET_FORM_DATA',payload:{data}};
+}
+export function setDepth(data) {
+    console.log('sate is ');
+    return { type: 'SET_DEPTH', payload: { data } };
+}
 export function setCurrentOperation(id) {
     return { type: 'OPERATION_SET_CURRENT', payload: id };
 }
