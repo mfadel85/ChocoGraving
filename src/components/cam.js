@@ -19,7 +19,7 @@ import { connect } from 'react-redux';
 import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
-import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth } from '../actions/operation';
+import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth,setFont } from '../actions/operation';
 import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
@@ -226,6 +226,7 @@ class Cam extends React.Component {
                 this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21, stepOver: 40});
                 break;
         }
+        this.props.dispatch(setFont(selectedOption.value));
         this.setState({ font: selectedOption.value });
         console.log(`Option selected:`, selectedOption);
     };
@@ -802,7 +803,7 @@ class Cam extends React.Component {
                 <Form onSubmit={this.handleSubmission}>
 
                     Font:
-                    <Select value={this.state.font} onChange={this.handleFontChange} defaultValue={this.state.font} options={Fonts} >
+                    <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
                         <option value="GreatVibes">Great Vibes</option>
                         <option value="Arslan">ArslanFont</option>
                         <option value="chocolatePristina">Pristina</option>
@@ -810,22 +811,16 @@ class Cam extends React.Component {
                         <option value="TrajanPro-Bold">TrajanPro-B</option>
                         <option value="Bevan">Eevan</option>
                     </Select>
-                    <br />
-            Text: <br />
-
+                    <br /> Text: <br />
                 </Form>
                 <FormGroup>
                     <div>
                         <div className="form-check" >
                             <label htmlFor="Oval">
-                                <input
-                                    type="radio" name="template"
-                                    value="Oval"
+                                <input  type="radio" name="template" value="Oval"
                                     onChange={this.handleTemplateChange}
-                                    className="form-check-input"
-                                />
-                        Oval
-                    </label>
+                                    className="form-check-input"/>
+                        Oval </label>
                             <img src="oval.jpg" height="40" width="80" />
                         </div>
                         <div className="form-check">
@@ -834,22 +829,18 @@ class Cam extends React.Component {
                                     onChange={this.handleTemplateChange}
                                     className="form-check-input"
                                 />
-                    Rectangle
-                    </label>
+                            Rectangle </label>
                             <img src="rectangle.jpg" height="40" width="80" />
                         </div>
                         <div className="form-check">
                             <label htmlFor="Square">
-                                <input type="radio" name="template" value="Square"
-                                    onChange={this.handleTemplateChange}
-                                    className="form-check-input"
-                                />
-                        Square
-                    </label>
-                            <img src="rectangle.jpg" height="50" width="50" />
-                        </div>
-                    </div>
-                </FormGroup>
+                                <input type="radio" name="template" value="Square" onChange={this.handleTemplateChange}
+                                    className="form-check-input"/>
+                            Square </label>
+                        <img src="rectangle.jpg" height="50" width="50" />
+                </div>
+            </div>
+        </FormGroup>
         Chocolate Depth mm: 
         <input name='chocoalteDepth' 
             ref={(el) => this.chocoalteDepthRef = el }

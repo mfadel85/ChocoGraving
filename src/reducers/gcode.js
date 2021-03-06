@@ -4,7 +4,8 @@ export const GCODE_INITIALSTATE = {
     content: '',
     dirty:false,
     text:'',
-    chocolateDepth:15
+    chocolateDepth:15,
+    chocolateFont:'Almarai-Bold.ttf'
 }
 
 export function gcode(state = GCODE_INITIALSTATE, action) {
@@ -26,6 +27,8 @@ export function gcode(state = GCODE_INITIALSTATE, action) {
         return { ...state,  text: action.payload };
     if (action.type === 'SET_DEPTH')
         return { ...state, chocolateDepth: action.payload };        
+    if (action.type === 'SET_FONT')
+        return { ...state, chocolateFont: action.payload };          
     else if (action.type === 'GCODE_GENERATION')
         return { ...state, gcoding: action.payload }
     else if (action.type== 'WORKSPACE_RESET') 

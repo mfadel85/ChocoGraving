@@ -21,6 +21,10 @@ export function setDepth(data) {
     console.log('sate is ');
     return { type: 'SET_DEPTH', payload: { data } };
 }
+export function setFont(data) {
+    console.log('sateu is ');
+    return { type: 'SET_FONT', payload: { data } };
+}
 export function setCurrentOperation(id) {
     return { type: 'OPERATION_SET_CURRENT', payload: id };
 }
