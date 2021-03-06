@@ -406,13 +406,15 @@ class Cam extends React.Component {
         return [parseFloat(width), parseFloat(height)];
     }
     textWrapping() {
+        let text = GlobalStore().getState().gcode.text.data;
+
         console.log('our state now ; ', this.state);
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
-        if (this.state.content == '') {
+        if (text == '') {
             alert('no text???');
             return;
-        }
+        } //globalState.gcode.text.data
         console.log('Text Wrapping started directoin', this.state.direction, 'fontsize', this.state.fontSize);
 
         var that = this;
@@ -420,7 +422,6 @@ class Cam extends React.Component {
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
         console.log('this.state.font', font);
-        let text = this.state.content;
         var lines = text.split("\n");
         console.log('text: ', text, lines);
         let models = {};
