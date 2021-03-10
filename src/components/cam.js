@@ -85,29 +85,29 @@ class Cam extends React.Component {
             font: 'Bubble.otf',
             width: 0,
             lineHeight: 0,
-            activeTemplateName: 'Oval',
+            activeTemplateName: 'Square',
             activeTemplate: {
-                "id": "OvalModel",
-                "maxHeight": 17,
+                "id": "SquareModel",
+                "maxHeight": 32,
                 "maxWidth": 25,
-                "maxLines": 2,
-                "maxWordsAr": 3,
+                "maxLines": 3,
+                "maxWordsAr": 4,
                 "maxWordsEn": 3,
-                "shiftX": 8,
-                "shiftY": 11,
-                "file": "../Oval.svg",
-                "scale": 0.029,
-                fontSize: 18
+                "shiftX": 10,
+                "shiftY": 10,
+                "file": "../Square.svg",
+                "scale": 0.001,
+                fontSize: 25
             },
             marginX: 0,
             marginY: 0,
             scale: 0.012695775,
-            fontSize: 18,
+            fontSize: 25,
             fontchange: 0,
             textDocID: '',
             templateDocID: '',
             direction: 'LTR',
-            stepOver: 40,
+            stepOver: 80,
             layout: [],
             chocolateDepth: 30
         }
@@ -211,19 +211,19 @@ class Cam extends React.Component {
 
             case 'Almarai-Bold.ttf':
                 console.log('Almaarai is chosen');
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21 ,stepOver:40});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26 ,stepOver:80});
                 break;
             case 'ITCKRIST.TTF':
-                this.setState({ font: 'ITCKRIST.TTF', fontSize: 20, stepOver: 40});
+                this.setState({ font: 'ITCKRIST.TTF', fontSize: 20, stepOver: 80});
                 break;
             case 'TrajanPro-Bold.otf':
-                this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 22, stepOver: 35});
+                this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 22, stepOver: 80});
                 break;
             case 'Bevan.ttf':
-                this.setState({ font: 'Bevan.ttf', fontSize: 17 ,stepOver:60});
+                this.setState({ font: 'Bevan.ttf', fontSize: 17 ,stepOver:80});
                 break;
             default:
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 21, stepOver: 40});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26, stepOver: 80});
                 break;
         }
         this.props.dispatch(setFont(selectedOption.value));
@@ -265,7 +265,11 @@ class Cam extends React.Component {
                 console.log('Template Change Square');
                 break;
             default:
-                break;
+                this.setState({
+                    activeTemplate: chocoTemplates.templates[2]
+                });
+                console.log('Template Change Square');
+            break;
         }
     };
 
@@ -820,7 +824,7 @@ class Cam extends React.Component {
                                 <input  type="radio" name="template" value="Oval"
                                     onChange={this.handleTemplateChange}
                                     className="form-check-input"/>
-                        Oval </label>
+                            Oval </label>
                             <img src="oval.jpg" height="40" width="80" />
                         </div>
                         <div className="form-check">
