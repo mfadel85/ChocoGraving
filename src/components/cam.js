@@ -587,7 +587,7 @@ class Cam extends React.Component {
                 });
 
             }
-            const moldShifts = [65, 70];//[105,96];
+            const moldShifts = [65, 65];//[105,96];
             /// testlertestler testytyq
             try {
                 let output = makerjs.exporter.toSVG(models, {/*origin:[-70.95,0]*/ accuracy: 0.001 });
