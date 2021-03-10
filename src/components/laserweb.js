@@ -26,7 +26,7 @@ import Workspace from './workspace'
 
 // Inner components
 import Com from './com'
-import Creator from './creator'
+//import Creator from './creator'
 
 import Jog from './jog'
 import Cam from './cam'
@@ -179,6 +179,10 @@ class LaserWeb extends React.Component {
                 <h1>OpenGL won't start. This app can't run without it.</h1>
             );
         }
+        //<Creator id="creator" title="Creator" icon="pencil-square-o" /><Settings id="settings" title="Settings" icon="cogs" />                            
+        //<About id="about" title="About" icon="question" />
+
+
 
         return (
             <AllowCapture style={{ height: '100%' }}>
@@ -186,11 +190,8 @@ class LaserWeb extends React.Component {
                     <div style={{ display: 'flex', flexDirection: 'row', height: '100%' }}>
                         <Sidebar ref="sidebar" style={{ flexGrow: 0, flexShrink: 0 }}>
                             <Cam id="cam" title="Files" icon="pencil-square-o" />
-                            <Creator id="creator" title="Creator" icon="pencil-square-o" />
                             <Com id="com" title="Comms" icon="plug" />
                             <Jog id="jog" title="Control" icon="arrows-alt" />
-                            <Settings id="settings" title="Settings" icon="cogs" />
-                            <About id="about" title="About" icon="question" />
                         </Sidebar>
                         <Workspace style={{ flexGrow: 1, position: "relative" }} />
                     </div>
