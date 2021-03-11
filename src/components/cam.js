@@ -140,7 +140,7 @@ class Cam extends React.Component {
                 that.props.dispatch(generatingGcode(true, isNaN(percent) ? 0 : Number(percent)));
             }, 100)
             settings.stepOver = that.state.stepOver;
-            console.log("settings are: ", settings);
+            console.log("settings are: ", settings,'documents',documents);
             let QE = getGcode(settings, documents, operations, that.props.documentCacheHolder,
                 (msg, level) => { CommandHistory.write(msg, level); },
                 (gcode) => {
@@ -160,18 +160,12 @@ class Cam extends React.Component {
 
         this.generateGcode.bind(this);
         this.stopGcode.bind(this);
-
     }
     generateGcode() {
+        console.log("game started now!");
         this.QE = window.generateGcode();
     }
-    componentDidMount() {
-        this.updateCanvas();
-    }
-    updateCanvas(context) {
-        //const ctx = this.refs.canvas.getContext('2d');
-        //ctx.fillRect(context);
-    }
+
 
     resetFontSize(e) { // a bug here!!!
         let activeTemplateName = this.state.activeTemplateName;
@@ -180,12 +174,9 @@ class Cam extends React.Component {
 
     handleDepthChange(e) {
         this.props.dispatch(setDepth(e.target.value));
-
         this.setState({ chocolateDepth: e.target.value });
-
     }
     handleChange(e) {
-
         this.resetFontSize(e);
         var lines = e.target.value.split("\n");
         lines.forEach((line, i) => {
@@ -202,16 +193,13 @@ class Cam extends React.Component {
             });
         });
         this.props.dispatch(setFormData(e.target.value));
-        console.log('depth is',this.chocoalteDepth);
         this.setState({ content: e.target.value,textEnabled:true });
     }
     handleFontChange(selectedOption) {
         //this.resetFontSize(e);
-        console.log('our state', selectedOption);
         switch (selectedOption.value) {
 
             case 'Almarai-Bold.ttf':
-                console.log('Almaarai is chosen');
                 this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26 ,stepOver:80});
                 break;
             case 'ITCKRIST.TTF':
@@ -229,7 +217,6 @@ class Cam extends React.Component {
         }
         this.props.dispatch(setFont(selectedOption.value));
         this.setState({ font: selectedOption.value });
-        console.log(`Option selected:`, selectedOption);
     };
 
     handleKeyDown(e) {
@@ -252,25 +239,21 @@ class Cam extends React.Component {
                 this.setState({
                     activeTemplate: chocoTemplates.templates[0]
                 });
-                console.log(' Template Change Oval');
                 break;
             case "Rectangle":
                 this.setState({
                     activeTemplate: chocoTemplates.templates[1]
                 });
-                console.log('Template Change Recatngle');
                 break;
             case "Square":
                 this.setState({
                     activeTemplate: chocoTemplates.templates[2]
                 });
-                console.log('Template Change Square');
                 break;
             default:
                 this.setState({
                     activeTemplate: chocoTemplates.templates[2]
                 });
-                console.log('Template Change Square');
             break;
         }
     };
@@ -378,6 +361,7 @@ class Cam extends React.Component {
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
     }
+
     changeFont(amount) {
         console.log('amount', amount);
         if (amount > 0)
@@ -389,27 +373,23 @@ class Cam extends React.Component {
 
         this.textWrapping();
     }
+
     updateFontChangeAmount(amount) {
         let fontchange = this.state.fontchange;
-        console.log('before  fontChange', this.state.fontchange);
-
         this.setState({ fontchange: fontchange + amount });
-        console.log('new fontChange', this.state.fontchange);
     }
     getPosition(string, subString, index) {
         return string.split(subString, index).join(subString).length;
     }
-    getDimension(output) {
 
-        let widthStart = this.getPosition(output, '"', 1);
-        let widthFin = this.getPosition(output, '"', 2);
-        let width = output.slice(widthStart + 1, widthFin)
-        let heightStart = this.getPosition(output, '"', 3);
-        let heightEnd = this.getPosition(output, '"', 4);
-        let height = output.slice(heightStart + 1, heightEnd)
-
+    getDimension(svgObject) {
+        let widthStart = this.getPosition(svgObject, '"', 1);
+        let widthFin = this.getPosition(svgObject, '"', 2);
+        let width = svgObject.slice(widthStart + 1, widthFin)
+        let heightStart = this.getPosition(svgObject, '"', 3);
+        let heightEnd = this.getPosition(svgObject, '"', 4);
+        let height = svgObject.slice(heightStart + 1, heightEnd)
         console.log('width : ', width, 'height:', height);
-
         return [parseFloat(width), parseFloat(height)];
     }
     textWrapping() {
@@ -426,7 +406,6 @@ class Cam extends React.Component {
         let font = this.state.font;
         console.log('this.state.font', font);
         var lines = text.split("\n");
-        console.log('text: ', text, lines);
         let models = {};
         let fontSize;
         this.init();
@@ -448,11 +427,8 @@ class Cam extends React.Component {
                 width: finalWidth / scale,
                 mode: 'nowrap'
             };
-            console.log('Final Width: ', finalWidth);
-            console.log('fontsize', that.state.fontSize);
-            console.log('modified scale', scale);
-            console.log('unitsPerEm : ', font.unitsPerEm);
-            console.log('layout widht is ', finalWidth / scale);
+            //console.log('Final Width: ', finalWidth);
+            //console.log('fontsize', that.state.fontSize);
             if (that.state.direction == 'RTL') {
                 layout = computeLayout(font, text, layoutOptions);
 
@@ -570,8 +546,6 @@ class Cam extends React.Component {
                 layout.glyphs.forEach((glyph, i) => {
                     let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                     character.origin = makerjs.point.scale(glyph.position, scale);
-
-                    console.log('origin origin yaho: ', character.origin);
                     makerjs.model.addModel(models, character, i);
                 });
 
@@ -579,11 +553,20 @@ class Cam extends React.Component {
             const moldShifts = [65, 65];//[105,96];
             /// testlertestler testytyq
             try {
+                const operator = 3.7798;// the division of unit per mm
+                let firstX = 75;
+                let standardMargin = 52; // margin between two pieces of the mo
+                let shiftedX = 348.47;
+                let ourMargin = (firstX - shiftedX) * operator;
+                let secondMargin = (firstX + standardMargin - shiftedX) * operator;
+                let thirdMargin = (firstX + 2 * standardMargin - shiftedX) * operator;
                 var t0 = performance.now()
-                let output = makerjs.exporter.toSVG(models,  { origin: [0,-44.27], accuracy: 0.001 });
+                let output = makerjs.exporter.toSVG(models, { origin: [thirdMargin, 180], accuracy: 0.001 });
 
                 let dims = that.getDimension(output);
-                let mmDims = dims.map(n => n / 3.777);
+                let mmDims = dims.map(n => n / 3.7798);
+                
+
                 //// get layout.lines, the  max value of them, get the number of letters in that line
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
@@ -592,27 +575,27 @@ class Cam extends React.Component {
                 const letterWidth = mmDims[0] / letterCount;
                 let generalState = GlobalStore().getState();
 
-                console.log('Output', output);
+                //console.log('Output', output);
 
-                console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
+                //console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
                 let margin = [0, -52];
                 /* */
-                let output6 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
-                that.parseSVG(output6, that, margin);
+                let output6 = makerjs.exporter.toSVG(models, { origin: [ourMargin, 0], accuracy: 0.001 });
+                that.parseSVG(output6, that, margin,'file6.svg',0);
                 margin = [52, 0];
-                let output5 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
-                that.parseSVG(output5, that, margin);
+                let output5 = makerjs.exporter.toSVG(models, { origin: [secondMargin, 0], accuracy: 0.001 });
+                that.parseSVG(output5, that, margin, 'file5.svg',3);
                 margin = [52, 0];
-                let output4 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
-                that.parseSVG(output4, that, margin);
+                let output4 = makerjs.exporter.toSVG(models, { origin: [thirdMargin, 0], accuracy: 0.001 });
+                that.parseSVG(output4, that, margin, 'file4.svg',6);
                 margin = [-52, 52];
-                let output3 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
-                that.parseSVG(output3, that, margin);
+                let output3 = makerjs.exporter.toSVG(models, { origin: [secondMargin, 185], accuracy: 0.001 });
+                that.parseSVG(output3, that, margin, 'file3.svg',9);
                 margin = [52, 0];
-                that.parseSVG(output, that, margin);/* */
+                that.parseSVG(output, that, margin, 'file2.svg',12);/* */
                 margin = [65, 65];
-                let output2 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
-                that.parseSVG(output2, that, margin);
+                let output2 = makerjs.exporter.toSVG(models, { origin: [ourMargin, 185], accuracy: 0.001 });
+                that.parseSVG(output2, that, margin, 'file1.svg',15);
                 var t1 = performance.now()
                 console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.")
                 let templateDoc = that.props.documents.map(() => that.props.documents.id);
@@ -620,18 +603,13 @@ class Cam extends React.Component {
                 that.props.dispatch(toggleSelectDocument(templateDoc[3]));
                 console.log('Template Doc is : ', GlobalStore().getState());
                 that.props.dispatch(selectDocuments(true));
-
-                /*that.props.dispatch(selectDocument(that.props.documents[0].id));
-                that.props.dispatch(selectDocuments(true));
-                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0] + 52, moldShifts[1]]));*/
-
             }
             catch (Exception) {
                 console.log(Exception);
             }
         })
     }
-    parseSVG(svg,that,margin){
+    parseSVG(svg,that,margin,fileName,n){
         const moldShifts = [65, 65];//[105,96];
         let activeTemplate = that.state.activeTemplate;
         var mainsvgID = '';
@@ -651,7 +629,7 @@ class Cam extends React.Component {
                 CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
 
             let file = {
-                name: "file.svg",
+                name: fileName,
                 type: "image/svg+xml"
             };
 
@@ -659,19 +637,12 @@ class Cam extends React.Component {
             imageTagPromise(tags).then((tags) => {
                 that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                 that.props.dispatch(selectDocuments(true));
-                let globalState = GlobalStore().getState();
-                console.log('that.propts', that.props.op, ' global state', globalState);
-                let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
+                let documents = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
                 that.props.dispatch(selectDocument(documents));
-
-                console.log('the docs are : ', that.props.documents);
                 mainsvgID = documents;
-                console.log('DocId is:', documents);
                 that.setState({ textDocID: documents });
                 that.props.dispatch(addOperation({ documents }));
-                // we need two shiftX shifty one for Arabic and one for English
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
-                //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 10, 10]));
 
                 that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
             }).then(() => {
@@ -679,6 +650,8 @@ class Cam extends React.Component {
                     name: "template.svg",
                     type: "image/svg+xml"
                 };
+                that.props.dispatch(selectDocuments(true));
+                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
                     .then(content => {
