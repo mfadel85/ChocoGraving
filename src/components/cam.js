@@ -109,7 +109,8 @@ class Cam extends React.Component {
             direction: 'LTR',
             stepOver: 80,
             layout: [],
-            chocolateDepth: 30
+            chocolateDepth: 30,
+            textEnabled:true
         }
         this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
@@ -202,7 +203,7 @@ class Cam extends React.Component {
         });
         this.props.dispatch(setFormData(e.target.value));
         console.log('depth is',this.chocoalteDepth);
-        this.setState({ content: e.target.value });
+        this.setState({ content: e.target.value,textEnabled:true });
     }
     handleFontChange(selectedOption) {
         //this.resetFontSize(e);
@@ -232,6 +233,7 @@ class Cam extends React.Component {
     };
 
     handleKeyDown(e) {
+        
         var words = e.target.value.split(" ");
         if (words.length > this.state.activeTemplate.maxWordsEn) {
         }
@@ -279,11 +281,11 @@ class Cam extends React.Component {
             rtlChars = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC',
             rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']');
         if (rtlDirCheck.test(s.target.value)) {
-            this.setState({ direction: 'RTL' });
+            this.setState({ direction: 'RTL',textEnabled:true });
         }
 
         else
-            this.setState({ direction: 'LTR' });
+            this.setState({ direction: 'LTR',textEnabled:true });
         return rtlDirCheck.test(s.target.value);
     };
     stopGcode() {
@@ -412,18 +414,14 @@ class Cam extends React.Component {
     }
     textWrapping() {
         let text = GlobalStore().getState().gcode.text.data;
-
-        console.log('our state now ; ', this.state);
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
         if (text == '') {
             alert('no text???');
             return;
-        } //globalState.gcode.text.data
+        } 
         console.log('Text Wrapping started directoin', this.state.direction, 'fontsize', this.state.fontSize);
-
         var that = this;
-        // const toggleSelectDocument  = this.props.toggleSelectDocument ;
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
         console.log('this.state.font', font);
@@ -432,9 +430,6 @@ class Cam extends React.Component {
         let models = {};
         let fontSize;
         this.init();
-        var mainsvgID = '';
-        const release = captureConsole();
-        const parser = new Parser({});
         const makerjs = require('makerjs');
         let layout;
         opentype.load(font, function (err, font) {//for arabic fonst we will see
@@ -534,13 +529,8 @@ class Cam extends React.Component {
                 catch (ex) {
                     console.log(ex);
                 }
-                console.log("we are here 1");
-                console.log('Layout is like this: ', layout, 'Layout options', layoutOptions);
                 let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
-                console.log("we are here 2");
-
                 console.log('first layout evaluation result is ', result);
-
                 while (!result) {
                     console.log("we get here!!!");
                     that.setState({
@@ -583,18 +573,15 @@ class Cam extends React.Component {
 
                     console.log('origin origin yaho: ', character.origin);
                     makerjs.model.addModel(models, character, i);
-                    /*let aCharacter = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                    aCharacter.origin = makerjs.point.scale(glyph.position, scale);
-                    aCharacter.origin[0] = aCharacter.origin[0] + 44 * 3.78;
-                    //aCharacter.origin.map((item) => item+44*3.78);
-                    makerjs.model.addModel(models, aCharacter, i);*/
                 });
 
             }
             const moldShifts = [65, 65];//[105,96];
             /// testlertestler testytyq
             try {
-                let output = makerjs.exporter.toSVG(models, {/*origin:[-70.95,0]*/ accuracy: 0.001 });
+                var t0 = performance.now()
+                let output = makerjs.exporter.toSVG(models,  { origin: [0,-44.27], accuracy: 0.001 });
+
                 let dims = that.getDimension(output);
                 let mmDims = dims.map(n => n / 3.777);
                 //// get layout.lines, the  max value of them, get the number of letters in that line
@@ -605,88 +592,131 @@ class Cam extends React.Component {
                 const letterWidth = mmDims[0] / letterCount;
                 let generalState = GlobalStore().getState();
 
+                console.log('Output', output);
+
                 console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
+                let margin = [0, -52];
+                /* */
+                let output6 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
+                that.parseSVG(output6, that, margin);
+                margin = [52, 0];
+                let output5 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
+                that.parseSVG(output5, that, margin);
+                margin = [52, 0];
+                let output4 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
+                that.parseSVG(output4, that, margin);
+                margin = [-52, 52];
+                let output3 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
+                that.parseSVG(output3, that, margin);
+                margin = [52, 0];
+                that.parseSVG(output, that, margin);/* */
+                margin = [65, 65];
+                let output2 = makerjs.exporter.toSVG(models, { origin: [0, -44.27], accuracy: 0.001 });
+                that.parseSVG(output2, that, margin);
+                var t1 = performance.now()
+                console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.")
+                let templateDoc = that.props.documents.map(() => that.props.documents.id);
+                that.props.dispatch(toggleSelectDocument(templateDoc[0]));
+                that.props.dispatch(toggleSelectDocument(templateDoc[3]));
+                console.log('Template Doc is : ', GlobalStore().getState());
+                that.props.dispatch(selectDocuments(true));
 
-                parser.parse(output).then((tags) => {
-                    let captures = release(true);
-                    let warns = captures.filter(i => i.method == 'warn')
-                    let errors = captures.filter(i => i.method == 'errors')
+                /*that.props.dispatch(selectDocument(that.props.documents[0].id));
+                that.props.dispatch(selectDocuments(true));
+                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0] + 52, moldShifts[1]]));*/
 
-                    if (warns.length)
-                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-
-                    if (errors.length)
-                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-
-                    let file = {
-                        name: "file.svg",
-                        type: "image/svg+xml"
-                    };
-
-                    const modifiers = {};
-                    imageTagPromise(tags).then((tags) => {
-                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                        that.props.dispatch(selectDocuments(true));
-                        let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
-                        console.log('the docs are : ', that.props.documents);
-                        mainsvgID = documents;
-                        console.log('DocId is:', documents);
-                        that.setState({ textDocID: documents });
-                        that.props.dispatch(addOperation({ documents }));
-                        // we need two shiftX shifty one for Arabic and one for English
-                        that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
-
-                        let globalState = GlobalStore().getState();
-                        console.log('that.propts', that.props.op, 'state', globalState);
-                        that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
-                    }).then(() => {
-                        file = {
-                            name: "template.svg",
-                            type: "image/svg+xml"
-                        };
-                        fetch(activeTemplate.file)
-                            .then(resp => resp.text())
-                            .then(content => {
-                                parser.parse(content).then((tags) => {
-                                    let captures = release(true);
-                                    let warns = captures.filter(i => i.method == 'warn')
-                                    let errors = captures.filter(i => i.method == 'errors')
-
-                                    if (warns.length)
-                                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                                    if (errors.length)
-                                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                                    imageTagPromise(tags).then((tags) => { // this is for chocolate template  
-                                        let templateDoc = that.props.documents.map(() => that.props.documents[1].id).slice(0, 1);
-                                        that.setState({ templateDocID: templateDoc });
-                                        console.log('templateDoc:', templateDoc);
-                                        that.props.dispatch(selectDocument(templateDoc));
-                                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                                        that.props.dispatch(selectDocument(that.state.textDocID));
-                                        that.props.dispatch(selectDocuments(true));
-                                        console.log("applied twice");
-                                        that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0], moldShifts[1]]));
-
-                                        console.log('text doc id ', that.state.textDocID, 'template doc id ', that.state.templateDocID, templateDoc);
-                                        that.props.dispatch(selectDocuments(false));
-                                        that.props.dispatch(selectDocument(that.state.textDocID));
-                                        that.props.dispatch(toggleSelectDocument(that.state.textDocID));
-                                        that.props.dispatch(toggleSelectDocument(templateDoc[0]));
-                                    }).then(() => {
-                                        console.log(that.state);
-
-                                    })
-                                });
-                            });
-                    })
-                });
             }
             catch (Exception) {
                 console.log(Exception);
             }
         })
     }
+    parseSVG(svg,that,margin){
+        const moldShifts = [65, 65];//[105,96];
+        let activeTemplate = that.state.activeTemplate;
+        var mainsvgID = '';
+        const release = captureConsole();
+        const parser = new Parser({});
+        const makerjs = require('makerjs');
+        let layout;
+        parser.parse(svg).then((tags) => {
+            let captures = release(true);
+            let warns = captures.filter(i => i.method == 'warn')
+            let errors = captures.filter(i => i.method == 'errors')
 
+            if (warns.length)
+                CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+
+            if (errors.length)
+                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+
+            let file = {
+                name: "file.svg",
+                type: "image/svg+xml"
+            };
+
+            const modifiers = {};
+            imageTagPromise(tags).then((tags) => {
+                that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                that.props.dispatch(selectDocuments(true));
+                let globalState = GlobalStore().getState();
+                console.log('that.propts', that.props.op, ' global state', globalState);
+                let documents = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
+                that.props.dispatch(selectDocument(documents));
+
+                console.log('the docs are : ', that.props.documents);
+                mainsvgID = documents;
+                console.log('DocId is:', documents);
+                that.setState({ textDocID: documents });
+                that.props.dispatch(addOperation({ documents }));
+                // we need two shiftX shifty one for Arabic and one for English
+                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
+                //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 10, 10]));
+
+                that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
+            }).then(() => {
+                file = {
+                    name: "template.svg",
+                    type: "image/svg+xml"
+                };
+                fetch(activeTemplate.file)
+                    .then(resp => resp.text())
+                    .then(content => {
+                        parser.parse(content).then((tags) => {
+                            let captures = release(true);
+                            let warns = captures.filter(i => i.method == 'warn')
+                            let errors = captures.filter(i => i.method == 'errors')
+
+                            if (warns.length)
+                                CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                            if (errors.length)
+                                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                            imageTagPromise(tags).then((tags) => { // this is for chocolate template  
+                                /// I got to understand those and work on them well
+                                let templateDoc = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
+                                that.setState({ templateDocID: templateDoc });
+                                console.log('templateDoc:', templateDoc);
+                                that.props.dispatch(selectDocument(templateDoc));
+                                that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                                that.props.dispatch(selectDocument(templateDoc));
+                                that.props.dispatch(selectDocuments(true));
+                                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
+                                console.log('text doc id ', that.state.textDocID, 'template doc id ', that.state.templateDocID, templateDoc);
+                                that.props.dispatch(selectDocument(that.state.textDocID));
+                                that.props.dispatch(toggleSelectDocument(that.state.textDocID));
+                                that.props.dispatch(toggleSelectDocument(templateDoc[0]));
+                                that.props.dispatch(selectDocuments(false));
+                            }).then(() => {
+                                console.log(that.state);
+
+
+                            })
+                        });
+                    });
+            })
+        });
+
+    }
     handleSubmission(e) {
         e.preventDefault();
         var text = e.target.content.value;
@@ -868,7 +898,7 @@ class Cam extends React.Component {
                 <div>
                     {/*<Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>
             <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >R</Button>*/}
-                    <Button name="textWrapping" onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
+                    <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
                     <Button name="fontplus" onClick={() => { this.changeFont(1) }} bsSize="small" bsStyle="primary">Bigger ++</Button>
                     <Button name="fontminus" onClick={() => { this.changeFont(-1) }} bsSize="small" bsStyle="primary">Smaller --</Button>
                 </div>

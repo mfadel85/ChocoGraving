@@ -425,7 +425,7 @@ class FloatingControls extends React.Component {
                                 <td></td>
                                 <td>Rot</td>
                                 <td rowSpan={3} className="origin-controls">
-                                    <table>
+                                    <table style={{ display: "none" }}>
                                     <tbody>
                                     <tr>
                                     <td><button className="btn btn-xs" onClick={ e => { this.setZeroX(true); this.setZeroY(false); } } title="Align northwest of origin">&#x2198;</button></td>
