@@ -75,8 +75,8 @@ function calcCamera({ viewportWidth, viewportHeight, fovy, near, far, eye, cente
     return { fovy, perspective, view, viewInv };
 }
 
-const MAJOR_GRID_SPACING = 50;
-const MINOR_GRID_SPACING = 10;
+const MAJOR_GRID_SPACING = 20;
+const MINOR_GRID_SPACING = 5;
 const CROSSHAIR = 5
 
 class LightenMachineBounds {
@@ -748,6 +748,7 @@ class WorkspaceContent extends React.Component {
                 this.props.dispatch(setWorkspaceAttrs({ width: this.props.width, height: this.props.height }));
                 if (!this.props.workspace.initialZoom) {
                     let x = this.props.settings.machineBottomLeftX;
+                    x = 75;
                     let y = this.props.settings.machineBottomLeftY;
                     if (!this.props.settings.showMachine) {
                         x = 0;
@@ -757,8 +758,8 @@ class WorkspaceContent extends React.Component {
                     this.props.dispatch(zoomArea(
                         x - 10,
                         y - 10,
-                        x + this.props.settings.machineWidth + 10,
-                        y + this.props.settings.machineHeight + 10
+                        x + this.props.settings.machineWidth/2,
+                        y + this.props.settings.machineHeight
                     ));
                 }
             }
@@ -1306,10 +1307,10 @@ class Workspace extends React.Component {
             y = 0;
         }
         this.props.dispatch(zoomArea(
-            x - 10 - this.props.workspace.workOffsetX,
-            y - 10 - this.props.workspace.workOffsetY,
-            x + this.props.settings.machineWidth + 10 - this.props.workspace.workOffsetX,
-            y + this.props.settings.machineHeight + 10 - this.props.workspace.workOffsetY
+            x - 100 - this.props.workspace.workOffsetX,
+            y - 100 - this.props.workspace.workOffsetY,
+            x + this.props.settings.machineWidth + 100 - this.props.workspace.workOffsetX,
+            y + this.props.settings.machineHeight + 100 - this.props.workspace.workOffsetY
         ));
     }
 

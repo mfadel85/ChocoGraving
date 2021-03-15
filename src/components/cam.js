@@ -39,6 +39,7 @@ import { OperationDiagram } from './operation-diagram';
 import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
+import { OutRec } from 'clipper-lib';
 //import { layout } from 'makerjs';
 
 const opentype = require('opentype.js');
@@ -556,12 +557,12 @@ class Cam extends React.Component {
                 const operator = 3.7798;// the division of unit per mm
                 let firstX = 75;
                 let standardMargin = 52; // margin between two pieces of the mo
-                let shiftedX = 348.47;
+                let shiftedX = 182.19;// 
                 let ourMargin = (firstX - shiftedX) * operator;
                 let secondMargin = (firstX + standardMargin - shiftedX) * operator;
                 let thirdMargin = (firstX + 2 * standardMargin - shiftedX) * operator;
                 var t0 = performance.now()
-                let output = makerjs.exporter.toSVG(models, { origin: [thirdMargin, 180], accuracy: 0.001 });
+                let output = makerjs.exporter.toSVG(models, { origin: [thirdMargin, -230], accuracy: 0.001 });
 
                 let dims = that.getDimension(output);
                 let mmDims = dims.map(n => n / 3.7798);
@@ -571,17 +572,19 @@ class Cam extends React.Component {
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
                 );
+                let extraMargin = (42-mmDims[0])/2;
                 const letterCount = max.end - max.start;
                 const letterWidth = mmDims[0] / letterCount;
                 let generalState = GlobalStore().getState();
 
                 //console.log('Output', output);
 
-                //console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
+                console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
                 let margin = [0, -52];
-                /* */
+                console.log("ourMargin",ourMargin);
                 let output6 = makerjs.exporter.toSVG(models, { origin: [ourMargin, 0], accuracy: 0.001 });
                 that.parseSVG(output6, that, margin,'file6.svg',0);
+                
                 margin = [52, 0];
                 let output5 = makerjs.exporter.toSVG(models, { origin: [secondMargin, 0], accuracy: 0.001 });
                 that.parseSVG(output5, that, margin, 'file5.svg',3);
@@ -589,20 +592,15 @@ class Cam extends React.Component {
                 let output4 = makerjs.exporter.toSVG(models, { origin: [thirdMargin, 0], accuracy: 0.001 });
                 that.parseSVG(output4, that, margin, 'file4.svg',6);
                 margin = [-52, 52];
-                let output3 = makerjs.exporter.toSVG(models, { origin: [secondMargin, 185], accuracy: 0.001 });
+                let output3 = makerjs.exporter.toSVG(models, { origin: [secondMargin, -230], accuracy: 0.001 });
                 that.parseSVG(output3, that, margin, 'file3.svg',9);
                 margin = [52, 0];
-                that.parseSVG(output, that, margin, 'file2.svg',12);/* */
+                that.parseSVG(output, that, margin, 'file2.svg',12);
                 margin = [65, 65];
-                let output2 = makerjs.exporter.toSVG(models, { origin: [ourMargin, 185], accuracy: 0.001 });
+                let output2 = makerjs.exporter.toSVG(models, { origin: [ourMargin, -230], accuracy: 0.001 });
                 that.parseSVG(output2, that, margin, 'file1.svg',15);
                 var t1 = performance.now()
-                console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.")
-                let templateDoc = that.props.documents.map(() => that.props.documents.id);
-                that.props.dispatch(toggleSelectDocument(templateDoc[0]));
-                that.props.dispatch(toggleSelectDocument(templateDoc[3]));
-                console.log('Template Doc is : ', GlobalStore().getState());
-                that.props.dispatch(selectDocuments(true));
+                console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.");
             }
             catch (Exception) {
                 console.log(Exception);
@@ -634,15 +632,16 @@ class Cam extends React.Component {
             };
 
             const modifiers = {};
+            var documents = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+
             imageTagPromise(tags).then((tags) => {
                 that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                 that.props.dispatch(selectDocuments(true));
-                let documents = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
                 that.props.dispatch(selectDocument(documents));
                 mainsvgID = documents;
                 that.setState({ textDocID: documents });
                 that.props.dispatch(addOperation({ documents }));
-                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
+                //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
 
                 that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
             }).then(() => {
@@ -665,20 +664,40 @@ class Cam extends React.Component {
                             if (errors.length)
                                 CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
                             imageTagPromise(tags).then((tags) => { // this is for chocolate template  
-                                /// I got to understand those and work on them well
-                                let templateDoc = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
+                                /// I got to choose the two files that have been generated recently. : get the last two files
+                                /*let templateDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
                                 that.setState({ templateDocID: templateDoc });
                                 console.log('templateDoc:', templateDoc);
                                 that.props.dispatch(selectDocument(templateDoc));
                                 that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                                that.props.dispatch(selectDocument(templateDoc));
-                                that.props.dispatch(selectDocuments(true));
+                                //that.props.dispatch(selectDocuments(true));
                                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
-                                console.log('text doc id ', that.state.textDocID, 'template doc id ', that.state.templateDocID, templateDoc);
-                                that.props.dispatch(selectDocument(that.state.textDocID));
-                                that.props.dispatch(toggleSelectDocument(that.state.textDocID));
-                                that.props.dispatch(toggleSelectDocument(templateDoc[0]));
-                                that.props.dispatch(selectDocuments(false));
+                                console.log('text doc id ', that.state.textDocID, 'template doc id ', that.state.templateDocID, templateDoc);*/
+                                //that.props.dispatch(selectDocuments(false));
+
+                                if(n > 14){
+                                    /*let svg1 = that.props.documents.map(() => that.props.documents[18].id).slice(0, 1);
+                                    that.props.dispatch(toggleSelectDocument(svg1[0]));*/
+                                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0], moldShifts[1]]));
+                                   // that.props.dispatch(toggleSelectDocument(svg1[0]));
+                                    /*let doc1 = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
+                                    that.props.dispatch(toggleSelectDocument(doc1[0]));
+                                    let doc2 = that.props.documents.map(() => that.props.documents[3].id).slice(0, 1);
+                                    that.props.dispatch(toggleSelectDocument(doc2[0]));
+                                    let doc3 = that.props.documents.map(() => that.props.documents[6].id).slice(0, 1);
+                                    that.props.dispatch(toggleSelectDocument(doc3[0]));
+                                    let doc4 = that.props.documents.map(() => that.props.documents[9].id).slice(0, 1);
+                                    that.props.dispatch(toggleSelectDocument(doc4[0]));
+                                    let doc5 = that.props.documents.map(() => that.props.documents[12].id).slice(0, 1);
+                                    that.props.dispatch(toggleSelectDocument(doc5[0]));
+                                    let doc6 = that.props.documents.map(() => that.props.documents[15].id).slice(0, 1);
+                                    that.props.dispatch(toggleSelectDocument(doc6[0]));*/
+
+
+                                }
+
+                                
+
                             }).then(() => {
                                 console.log(that.state);
 
@@ -720,6 +739,67 @@ class Cam extends React.Component {
 
         return (
             <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div className="panel panel-danger">
+                    <Form onSubmit={this.handleSubmission}>
+
+                        Font:
+                    <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
+                            <option value="GreatVibes">Great Vibes</option>
+                            <option value="Arslan">ArslanFont</option>
+                            <option value="chocolatePristina">Pristina</option>
+                            <option value="ITCKRIST">ITCKRIST</option>
+                            <option value="TrajanPro-Bold">TrajanPro-B</option>
+                            <option value="Bevan">Eevan</option>
+                        </Select>
+                        <br /> Text: <br />
+                    </Form>
+                    <FormGroup>
+                        <div>
+                            <div className="form-check" >
+                                <label htmlFor="Oval">
+                                    <input type="radio" name="template" value="Oval"
+                                        onChange={this.handleTemplateChange}
+                                        className="form-check-input" />
+                            Oval </label>
+                                <img src="oval.jpg" height="40" width="80" />
+                            </div>
+                            <div className="form-check">
+                                <label htmlFor="Rectangle">
+                                    <input type="radio" name="template" value="Rectangle"
+                                        onChange={this.handleTemplateChange}
+                                        className="form-check-input"
+                                    />
+                            Rectangle </label>
+                                <img src="rectangle.jpg" height="40" width="80" />
+                            </div>
+                            <div className="form-check">
+                                <label htmlFor="Square">
+                                    <input type="radio" name="template" value="Square" onChange={this.handleTemplateChange}
+                                        className="form-check-input" />
+                            Square </label>
+                                <img src="rectangle.jpg" height="50" width="50" />
+                            </div>
+                        </div>
+                        <div>
+                            Chocolate Depth mm:<br />
+                            <input name='chocoalteDepth'
+                                ref={(el) => this.chocoalteDepthRef = el}
+                                type="number" step="0.1" defaultValue={globalState.gcode.chocolateDepth.data} onChange={this.handleDepthChange} />
+                        </div>
+                        <div>
+                            Line Main:<br/>
+                            <textarea
+                                name="content" id="content" ref="content" maxLength="23"
+                                onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
+                        </div>    
+                    <div>
+
+                        <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
+                        <Button name="fontplus" onClick={() => { this.changeFont(1) }} bsSize="small" bsStyle="primary">Bigger ++</Button>
+                        <Button name="fontminus" onClick={() => { this.changeFont(-1) }} bsSize="small" bsStyle="primary">Smaller --</Button>
+                    </div>
+                    </FormGroup>
+                </div>
                 <div className="panel panel-danger" style={{ marginBottom: 0 }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
@@ -805,77 +885,6 @@ class Cam extends React.Component {
                     style={{ flexGrow: 2, display: "flex", flexDirection: "column" }}
                 /*genGCode = {this./*generateGcode*//*docuementAdded}*/
                 />
-
-
-                <Form onSubmit={this.handleSubmission}>
-
-                    Font:
-                    <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
-                        <option value="GreatVibes">Great Vibes</option>
-                        <option value="Arslan">ArslanFont</option>
-                        <option value="chocolatePristina">Pristina</option>
-                        <option value="ITCKRIST">ITCKRIST</option>
-                        <option value="TrajanPro-Bold">TrajanPro-B</option>
-                        <option value="Bevan">Eevan</option>
-                    </Select>
-                    <br /> Text: <br />
-                </Form>
-                <FormGroup>
-                    <div>
-                        <div className="form-check" >
-                            <label htmlFor="Oval">
-                                <input  type="radio" name="template" value="Oval"
-                                    onChange={this.handleTemplateChange}
-                                    className="form-check-input"/>
-                            Oval </label>
-                            <img src="oval.jpg" height="40" width="80" />
-                        </div>
-                        <div className="form-check">
-                            <label htmlFor="Rectangle">
-                                <input type="radio" name="template" value="Rectangle"
-                                    onChange={this.handleTemplateChange}
-                                    className="form-check-input"
-                                />
-                            Rectangle </label>
-                            <img src="rectangle.jpg" height="40" width="80" />
-                        </div>
-                        <div className="form-check">
-                            <label htmlFor="Square">
-                                <input type="radio" name="template" value="Square" onChange={this.handleTemplateChange}
-                                    className="form-check-input"/>
-                            Square </label>
-                        <img src="rectangle.jpg" height="50" width="50" />
-                </div>
-            </div>
-        </FormGroup>
-        Chocolate Depth mm: 
-        <input name='chocoalteDepth' 
-            ref={(el) => this.chocoalteDepthRef = el }
-                    type="number" step="0.1" defaultValue={globalState.gcode.chocolateDepth.data} onChange={this.handleDepthChange} />
-        Line Main:<textarea
-                    name="content" id="content" ref="content" maxLength="23"
-                    onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}
-                />
-                {/*<label style={{visibility:  'hidden' }} >Line 2:</label>
-        <input type="text" 
-            name="line2"  id="line2" ref = "line2"   maxLength="25"    
-            style={{visibility:  'hidden' }}          
-            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
-        />
-        <label style={{visibility:  'hidden' }} >Line 3:</label>
-        <input type="text" 
-            name="line3"  id="line3" ref = "line3"   maxLength="25"     
-            style={{visibility:  'hidden' }}          
-            onKeyDown={this.handleKeyDown} onChange={ this.handleChange } onKeyPress={this.checkRTL} defaultValue ={this.state.content}
-        />*/}
-                <div>
-                    {/*<Button name="checkWrapping" onClick={ this.wordWrapped} bsSize="small" bsStyle="primary">Check</Button>
-            <Button name="runJob" onClick={ this.runJob} bsSize="small" bsStyle="warning" >R</Button>*/}
-                    <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
-                    <Button name="fontplus" onClick={() => { this.changeFont(1) }} bsSize="small" bsStyle="primary">Bigger ++</Button>
-                    <Button name="fontminus" onClick={() => { this.changeFont(-1) }} bsSize="small" bsStyle="primary">Smaller --</Button>
-                </div>
-
             </div>);
     }
 };
