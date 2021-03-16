@@ -19,7 +19,7 @@ import { connect } from 'react-redux';
 import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
-import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth,setFont } from '../actions/operation';
+import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
 import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
@@ -582,29 +582,24 @@ class Cam extends React.Component {
                 const letterWidth = mmDims[0] / letterCount;
                 let generalState = GlobalStore().getState();
 
-                //console.log('Output', output);
-
                 console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
-                let margin = [moldShifts[0]+extraMarginX, moldShifts[1]+extraMarginY];
-                let output6 = makerjs.exporter.toSVG(models, { /*origin: [ourMargin, 0],*/ accuracy: 0.001 });
-                that.parseSVG(output6, that, margin,'file6.svg',0);
-                
-                margin = [moldShifts[0]+stdMargin+extraMarginX, moldShifts[1]+extraMarginY];
-                let output5 = makerjs.exporter.toSVG(models, { /*origin: [secondMargin, 0],*/ accuracy: 0.001 });
-                that.parseSVG(output5, that, margin, 'file5.svg',3);
-                margin = [moldShifts[0] + 2 * stdMargin + extraMarginX, moldShifts[1] + extraMarginY];
-                let output4 = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, 0],*/ accuracy: 0.001 });
-                that.parseSVG(output4, that, margin, 'file4.svg',6);
-                margin = [moldShifts[0] + extraMarginX, moldShifts[1] + stdMargin + extraMarginY];
-                let output3 = makerjs.exporter.toSVG(models, { /*origin: [secondMargin, -230],*/ accuracy: 0.001 });
-                that.parseSVG(output3, that, margin, 'file3.svg',9);
-                margin = [moldShifts[0] + stdMargin + extraMarginX, moldShifts[1] + stdMargin + extraMarginY];
-                that.parseSVG(output, that, margin, 'file2.svg',12);
-                margin = [moldShifts[0] + 2 * stdMargin + extraMarginX, moldShifts[1] + stdMargin + extraMarginY];
-                let output2 = makerjs.exporter.toSVG(models, { /*origin: [ourMargin, -230],*/ accuracy: 0.001 });
-                that.parseSVG(output2, that, margin, 'file1.svg',15);
-                var t1 = performance.now()
-                console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.");
+                let promise = new Promise( (resolve,reject) => 
+                    {
+                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX, moldShifts[1] + extraMarginY], 'file6.svg', 0);
+                    that.parseSVG(output, that, [moldShifts[0] + stdMargin + extraMarginX, moldShifts[1] + extraMarginY], 'file5.svg', 3);
+                    that.parseSVG(output, that, [moldShifts[0] + 2 * stdMargin + extraMarginX, moldShifts[1] + extraMarginY], 'file4.svg', 6);
+
+                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX, moldShifts[1] + extraMarginY + stdMargin], 'file3.svg', 9);
+                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX + stdMargin, moldShifts[1] + extraMarginY + stdMargin], 'file2.svg', 12);
+                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX + 2 * stdMargin, moldShifts[1] + extraMarginY + stdMargin], 'file1.svg', 15);
+                    }
+                );
+                promise.then(
+                    ()=> console.log('test'),
+                    () => console.log('failure')
+                );
+
+
             }
             catch (Exception) {
                 console.log(Exception);
@@ -642,21 +637,33 @@ class Cam extends React.Component {
                 that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                 that.props.dispatch(selectDocuments(true));
                 that.props.dispatch(selectDocument(documents));
+                console.log('documents is', documents);
                 mainsvgID = documents;
                 that.setState({ textDocID: documents });
-                that.props.dispatch(addOperation({ documents }));
+                //that.props.dispatch(addOperation({ documents }));
+                //that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id));
+
                 //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
 
-                that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id))
             }).then(() => {
                 file = {
                     name: "template.svg",
                     type: "image/svg+xml"
                 };
                 let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+                
                 that.props.dispatch(selectDocuments(false));
                 that.props.dispatch(selectDocument(doc1[0]));
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
+
+                let stuff = doc1[0];//{ documents: [doc] }
+                //that.props.dispatch(addOperation({ stuff} ));
+
+                console.log('stuff is', stuff);
+
+                //that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id));
+                //this.props.dispatch(operationAddDocuments(that.props.operations[0].id, doc1  ));
+
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
                     .then(content => {
