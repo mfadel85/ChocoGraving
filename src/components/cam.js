@@ -554,6 +554,7 @@ class Cam extends React.Component {
             const moldShifts = [75, 65];//[105,96];
             /// testlertestler testytyq
             try {
+                let maxDim = 34;
                 const operator = 3.7798;// the division of unit per mm
                 let firstX = 75;
                 let stdMargin = 52; // margin between two pieces of the mo
@@ -563,8 +564,12 @@ class Cam extends React.Component {
                 let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
 
                 let dims = that.getDimension(output);
+               
                 let mmDims = dims.map(n => n / 3.7798);
-                
+                if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
+                    alert("The size of the words shouldn't be more than 34mm!!!")
+                    return;
+                }
 
                 //// get layout.lines, the  max value of them, get the number of letters in that line
                 const max = layout.lines.reduce(
