@@ -58,8 +58,8 @@ export const SETTINGS_INITIALSTATE = {
     __latestRelease: null,
 
     showMachine: true,
-    machineWidth: 200,
-    machineHeight: 200,
+    machineWidth: 250,
+    machineHeight: 190,
     machineBeamDiameter: 0.2,
     machineBottomLeftX: 0,// maybe we can change this to set the text inside the chocolae template
     machineBottomLeftY: 0,// maybe we can change this to set the text inside the chocolae template

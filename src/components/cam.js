@@ -376,8 +376,8 @@ class Cam extends React.Component {
     }
 
     updateFontChangeAmount(amount) {
-        let fontchange = this.state.fontchange;
-        this.setState({ fontchange: fontchange + amount });
+        let fontSize = this.state.fontSize;
+        this.setState({ fontSize: fontSize + amount });
     }
     getPosition(string, subString, index) {
         return string.split(subString, index).join(subString).length;
@@ -551,18 +551,16 @@ class Cam extends React.Component {
                 });
 
             }
-            const moldShifts = [65, 65];//[105,96];
+            const moldShifts = [75, 65];//[105,96];
             /// testlertestler testytyq
             try {
                 const operator = 3.7798;// the division of unit per mm
                 let firstX = 75;
-                let standardMargin = 52; // margin between two pieces of the mo
-                let shiftedX = 182.19;// 
-                let ourMargin = (firstX - shiftedX) * operator;
-                let secondMargin = (firstX + standardMargin - shiftedX) * operator;
-                let thirdMargin = (firstX + 2 * standardMargin - shiftedX) * operator;
+                let stdMargin = 52; // margin between two pieces of the mo
+
+
                 var t0 = performance.now()
-                let output = makerjs.exporter.toSVG(models, { origin: [thirdMargin, -230], accuracy: 0.001 });
+                let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
 
                 let dims = that.getDimension(output);
                 let mmDims = dims.map(n => n / 3.7798);
@@ -572,7 +570,9 @@ class Cam extends React.Component {
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
                 );
-                let extraMargin = (42-mmDims[0])/2;
+                let extraMarginX = (44  -mmDims[0])/2;
+                let extraMarginY = (44 - mmDims[1])/2;
+
                 const letterCount = max.end - max.start;
                 const letterWidth = mmDims[0] / letterCount;
                 let generalState = GlobalStore().getState();
@@ -580,24 +580,23 @@ class Cam extends React.Component {
                 //console.log('Output', output);
 
                 console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
-                let margin = [0, -52];
-                console.log("ourMargin",ourMargin);
-                let output6 = makerjs.exporter.toSVG(models, { origin: [ourMargin, 0], accuracy: 0.001 });
+                let margin = [moldShifts[0]+extraMarginX, moldShifts[1]+extraMarginY];
+                let output6 = makerjs.exporter.toSVG(models, { /*origin: [ourMargin, 0],*/ accuracy: 0.001 });
                 that.parseSVG(output6, that, margin,'file6.svg',0);
                 
-                margin = [52, 0];
-                let output5 = makerjs.exporter.toSVG(models, { origin: [secondMargin, 0], accuracy: 0.001 });
+                margin = [moldShifts[0]+stdMargin+extraMarginX, moldShifts[1]+extraMarginY];
+                let output5 = makerjs.exporter.toSVG(models, { /*origin: [secondMargin, 0],*/ accuracy: 0.001 });
                 that.parseSVG(output5, that, margin, 'file5.svg',3);
-                margin = [52, 0];
-                let output4 = makerjs.exporter.toSVG(models, { origin: [thirdMargin, 0], accuracy: 0.001 });
+                margin = [moldShifts[0] + 2 * stdMargin + extraMarginX, moldShifts[1] + extraMarginY];
+                let output4 = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, 0],*/ accuracy: 0.001 });
                 that.parseSVG(output4, that, margin, 'file4.svg',6);
-                margin = [-52, 52];
-                let output3 = makerjs.exporter.toSVG(models, { origin: [secondMargin, -230], accuracy: 0.001 });
+                margin = [moldShifts[0] + extraMarginX, moldShifts[1] + stdMargin + extraMarginY];
+                let output3 = makerjs.exporter.toSVG(models, { /*origin: [secondMargin, -230],*/ accuracy: 0.001 });
                 that.parseSVG(output3, that, margin, 'file3.svg',9);
-                margin = [52, 0];
+                margin = [moldShifts[0] + stdMargin + extraMarginX, moldShifts[1] + stdMargin + extraMarginY];
                 that.parseSVG(output, that, margin, 'file2.svg',12);
-                margin = [65, 65];
-                let output2 = makerjs.exporter.toSVG(models, { origin: [ourMargin, -230], accuracy: 0.001 });
+                margin = [moldShifts[0] + 2 * stdMargin + extraMarginX, moldShifts[1] + stdMargin + extraMarginY];
+                let output2 = makerjs.exporter.toSVG(models, { /*origin: [ourMargin, -230],*/ accuracy: 0.001 });
                 that.parseSVG(output2, that, margin, 'file1.svg',15);
                 var t1 = performance.now()
                 console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.");
@@ -608,7 +607,7 @@ class Cam extends React.Component {
         })
     }
     parseSVG(svg,that,margin,fileName,n){
-        const moldShifts = [65, 65];//[105,96];
+        const moldShifts = [75, 65];//[105,96];
         let activeTemplate = that.state.activeTemplate;
         var mainsvgID = '';
         const release = captureConsole();
@@ -649,7 +648,9 @@ class Cam extends React.Component {
                     name: "template.svg",
                     type: "image/svg+xml"
                 };
-                that.props.dispatch(selectDocuments(true));
+                let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+                that.props.dispatch(selectDocuments(false));
+                that.props.dispatch(selectDocument(doc1[0]));
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
@@ -665,7 +666,7 @@ class Cam extends React.Component {
                                 CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
                             imageTagPromise(tags).then((tags) => { // this is for chocolate template  
                                 /// I got to choose the two files that have been generated recently. : get the last two files
-                                /*let templateDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+                               /* let templateDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
                                 that.setState({ templateDocID: templateDoc });
                                 console.log('templateDoc:', templateDoc);
                                 that.props.dispatch(selectDocument(templateDoc));
@@ -673,7 +674,6 @@ class Cam extends React.Component {
                                 //that.props.dispatch(selectDocuments(true));
                                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
                                 console.log('text doc id ', that.state.textDocID, 'template doc id ', that.state.templateDocID, templateDoc);*/
-                                //that.props.dispatch(selectDocuments(false));
 
                                 if(n > 14){
                                     /*let svg1 = that.props.documents.map(() => that.props.documents[18].id).slice(0, 1);
@@ -692,7 +692,6 @@ class Cam extends React.Component {
                                     that.props.dispatch(toggleSelectDocument(doc5[0]));
                                     let doc6 = that.props.documents.map(() => that.props.documents[15].id).slice(0, 1);
                                     that.props.dispatch(toggleSelectDocument(doc6[0]));*/
-
 
                                 }
 
@@ -795,8 +794,8 @@ class Cam extends React.Component {
                     <div>
 
                         <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
-                        <Button name="fontplus" onClick={() => { this.changeFont(1) }} bsSize="small" bsStyle="primary">Bigger ++</Button>
-                        <Button name="fontminus" onClick={() => { this.changeFont(-1) }} bsSize="small" bsStyle="primary">Smaller --</Button>
+                        <Button name="fontplus" onClick={() => { this.changeFont(0.5) }} bsSize="small" bsStyle="primary">Bigger ++</Button>
+                        <Button name="fontminus" onClick={() => { this.changeFont(-0.5) }} bsSize="small" bsStyle="primary">Smaller --</Button>
                     </div>
                     </FormGroup>
                 </div>

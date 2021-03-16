@@ -17,7 +17,7 @@ export function zoomArea(camera, settings, workspace, { x1, y1, x2, y2 }) {
     let cx = (x1 + x2) / 2 - settings.machineBottomLeftX + workspace.workOffsetX;
     let cy = (y1 + y2) / 2 - settings.machineBottomLeftY + workspace.workOffsetY;
     let fovy = 2 * Math.atan2(Math.max(Math.abs(y2 - y1), Math.abs(x2 - x1) * workspace.height / workspace.width) / 2, d);
-    fovy = 0.85;
+    fovy = 0.90;
     console.log('fovy is',fovy);
     return {
         eye: [cx, cy, d],
