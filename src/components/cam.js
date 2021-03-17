@@ -640,11 +640,6 @@ class Cam extends React.Component {
                 console.log('documents is', documents);
                 mainsvgID = documents;
                 that.setState({ textDocID: documents });
-                //that.props.dispatch(addOperation({ documents }));
-                //that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id));
-
-                //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, activeTemplate.shiftX, activeTemplate.shiftY]));
-
             }).then(() => {
                 file = {
                     name: "template.svg",
@@ -704,15 +699,15 @@ class Cam extends React.Component {
                                     that.props.dispatch(toggleSelectDocument(doc5[0]));
                                     let doc6 = that.props.documents.map(() => that.props.documents[15].id).slice(0, 1);
                                     that.props.dispatch(toggleSelectDocument(doc6[0]));*/
-
                                 }
-
-                                
-
                             }).then(() => {
+                                let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+                                let stuff = doc1[0];
+                                that.props.dispatch(selectDocument(doc1[0]));
+                                console.log("The Moment of Truth");
                                 console.log(that.state);
-
-
+                                that.props.dispatch(addOperation({ documents:[stuff]} ));
+                                console.log("let's see now!!");
                             })
                         });
                     });
