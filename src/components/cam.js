@@ -108,7 +108,7 @@ class Cam extends React.Component {
             textDocID: '',
             templateDocID: '',
             direction: 'LTR',
-            stepOver: 80,
+            stepOver: 100,
             layout: [],
             chocolateDepth: 30,
             textEnabled:true
@@ -201,19 +201,19 @@ class Cam extends React.Component {
         switch (selectedOption.value) {
 
             case 'Almarai-Bold.ttf':
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26 ,stepOver:80});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26 ,stepOver:100});
                 break;
             case 'ITCKRIST.TTF':
-                this.setState({ font: 'ITCKRIST.TTF', fontSize: 20, stepOver: 80});
+                this.setState({ font: 'ITCKRIST.TTF', fontSize: 20, stepOver: 100});
                 break;
             case 'TrajanPro-Bold.otf':
-                this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 22, stepOver: 80});
+                this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 22, stepOver: 100});
                 break;
             case 'Bevan.ttf':
-                this.setState({ font: 'Bevan.ttf', fontSize: 17 ,stepOver:80});
+                this.setState({ font: 'Bevan.ttf', fontSize: 18 ,stepOver:100});
                 break;
             default:
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26, stepOver: 80});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26, stepOver: 100});
                 break;
         }
         this.props.dispatch(setFont(selectedOption.value));
@@ -551,7 +551,7 @@ class Cam extends React.Component {
                 });
 
             }
-            const moldShifts = [75, 65];//[105,96];
+            const moldShifts = [70, 65];//[105,96];
             /// testlertestler testytyq
             try {
                 let maxDim = 34;
@@ -607,7 +607,7 @@ class Cam extends React.Component {
         })
     }
     parseSVG(svg,that,margin,fileName,n){
-        const moldShifts = [75, 65];//[105,96];
+        const moldShifts = [72, 65];//[105,96];
         let activeTemplate = that.state.activeTemplate;
         var mainsvgID = '';
         const release = captureConsole();
@@ -699,15 +699,25 @@ class Cam extends React.Component {
                                     that.props.dispatch(toggleSelectDocument(doc5[0]));
                                     let doc6 = that.props.documents.map(() => that.props.documents[15].id).slice(0, 1);
                                     that.props.dispatch(toggleSelectDocument(doc6[0]));*/
+                                    let allDocs = [
+                                        that.props.documents.map(() => that.props.documents[0].id).slice(0, 1)[0],
+                                        that.props.documents.map(() => that.props.documents[3].id).slice(0, 1)[0],
+                                        that.props.documents.map(() => that.props.documents[6].id).slice(0, 1)[0],
+                                        that.props.documents.map(() => that.props.documents[9].id).slice(0, 1)[0],
+                                        that.props.documents.map(() => that.props.documents[12].id).slice(0, 1)[0],
+                                        that.props.documents.map(() => that.props.documents[15].id).slice(0, 1)[0]
+                                    ];
+                                    //that.props.dispatch(addOperation({ documents: allDocs }));
+
+
                                 }
                             }).then(() => {
-                                let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
-                                let stuff = doc1[0];
-                                that.props.dispatch(selectDocument(doc1[0]));
-                                console.log("The Moment of Truth");
-                                console.log(that.state);
-                                that.props.dispatch(addOperation({ documents:[stuff]} ));
-                                console.log("let's see now!!");
+                                let ourDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1)[0]
+                                that.props.dispatch(addOperation({ documents: [ourDoc] }));
+
+                                //let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+                                //let stuff = doc1[0];
+                                //that.props.dispatch(selectDocument(doc1[0]));
                             })
                         });
                     });
