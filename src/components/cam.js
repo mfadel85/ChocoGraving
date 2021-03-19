@@ -732,18 +732,18 @@ class Cam extends React.Component {
                                             that.props.documents[0].id,
                                             that.props.documents[3].id,
                                             that.props.documents[6].id,
+                                            
                                         ] }));
                                    
                                     that.props.dispatch(addOperation({
                                         documents: [
                                             that.props.documents[9].id,
+                                        ] }));
+                                    that.props.dispatch(addOperation({
+                                        documents: [
                                             that.props.documents[12].id,
                                             that.props.documents[15].id
                                         ] }));
-                                    /*that.props.dispatch(addOperation({
-                                        documents: [
-                                            
-                                        ] }));*/
 
                                 }
                                 //that.props.dispatch(selectDocuments(false));
