@@ -27,7 +27,7 @@ export const OPERATION_INITIALSTATE = {
     passes: 1,
     cutWidth: 0,
     toolSpeed: 0,
-    stepOver: 40,
+    stepOver: 100,
     passDepth: 0,
     startHeight: '',
     millRapidZ: 0,

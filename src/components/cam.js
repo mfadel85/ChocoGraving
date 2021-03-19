@@ -557,7 +557,7 @@ class Cam extends React.Component {
                 let maxDim = 34;
                 const operator = 3.7798;// the division of unit per mm
                 let firstX = 75;
-                let stdMargin = 52; // margin between two pieces of the mo
+                let stdMargin = 50; // margin between two pieces of the mo
 
 
                 var t0 = performance.now()
@@ -577,23 +577,27 @@ class Cam extends React.Component {
                 );
                 let extraMarginX = (44  -mmDims[0])/2;
                 let extraMarginY = (44 - mmDims[1])/2;
-
+                let extraMargin = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
                 const letterCount = max.end - max.start;
                 const letterWidth = mmDims[0] / letterCount;
                 let generalState = GlobalStore().getState();
 
                 console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
-                let promise = new Promise( (resolve,reject) => 
-                    {
-                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX, moldShifts[1] + extraMarginY], 'file6.svg', 0);
-                    that.parseSVG(output, that, [moldShifts[0] + stdMargin + extraMarginX, moldShifts[1] + extraMarginY], 'file5.svg', 3);
-                    that.parseSVG(output, that, [moldShifts[0] + 2 * stdMargin + extraMarginX, moldShifts[1] + extraMarginY], 'file4.svg', 6);
+                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
+                /*that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 1);
+                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 2);
+                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 3);
+                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 4);
+                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 5);*/
 
-                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX, moldShifts[1] + extraMarginY + stdMargin], 'file3.svg', 9);
-                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX + stdMargin, moldShifts[1] + extraMarginY + stdMargin], 'file2.svg', 12);
-                    that.parseSVG(output, that, [moldShifts[0] + extraMarginX + 2 * stdMargin, moldShifts[1] + extraMarginY + stdMargin], 'file1.svg', 15);
-                    }
-                );
+                let promise = new Promise( (resolve,reject) =>  {
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 0);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 1);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 2);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 3);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 4);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);
+                });
                 promise.then(
                     ()=> console.log('test'),
                     () => console.log('failure')
@@ -606,13 +610,53 @@ class Cam extends React.Component {
             }
         })
     }
-    parseSVG(svg,that,margin,fileName,n){
-        const moldShifts = [72, 65];//[105,96];
-        let activeTemplate = that.state.activeTemplate;
-        var mainsvgID = '';
+    loadSVGChocoTemplate(margin,n){
+        const modifiers = {};
         const release = captureConsole();
         const parser = new Parser({});
-        const makerjs = require('makerjs');
+        let file = {
+            name: "template.svg",
+            type: "image/svg+xml"
+        };
+
+        var stdMarginY = 0;
+        if (n > 2)
+            stdMarginY = 1;
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1] + stdMarginY * margin[2]]));
+        let that  = this;
+        fetch(that.state.activeTemplate.file)
+            .then(resp => resp.text())
+            .then(content => {
+                parser.parse(content).then((tags) => {
+                    let captures = release(true);
+                    let warns = captures.filter(i => i.method == 'warn')
+                    let errors = captures.filter(i => i.method == 'errors')
+                    if (warns.length)
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                    if (errors.length)
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                    imageTagPromise(tags).then((tags) => {
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                    }).then(() => {
+                        that.props.dispatch(addOperation({ documents: [that.props.documents[0].id] }));
+
+                        that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
+                        that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] + stdMarginY * margin[2]]));
+                        that.props.dispatch(selectDocuments(false));
+                        //that.props.dispatch(toggleSelectDocument(that.props.documents[0].id));
+
+
+                    })
+                });
+            });
+
+
+    }
+    parseSVG(svg,that,margin,fileName,n){
+        let mainsvgID
+        let activeTemplate = that.state.activeTemplate;
+        const release = captureConsole();
+        const parser = new Parser({});
         let layout;
         parser.parse(svg).then((tags) => {
             let captures = release(true);
@@ -631,7 +675,7 @@ class Cam extends React.Component {
             };
 
             const modifiers = {};
-            var documents = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+            var documents = that.props.documents.map(() => that.props.documents[n*3].id).slice(0, 1);
 
             imageTagPromise(tags).then((tags) => {
                 that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
@@ -645,19 +689,21 @@ class Cam extends React.Component {
                     name: "template.svg",
                     type: "image/svg+xml"
                 };
-                let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
+                let doc1 = that.props.documents.map(() => that.props.documents[n*3].id).slice(0, 1);
                 
                 that.props.dispatch(selectDocuments(false));
                 that.props.dispatch(selectDocument(doc1[0]));
-                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
+                //that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 0);
+                var stdMarginY= 0;
+                if(n>2)
+                    stdMarginY = 1;
+                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1]+stdMarginY*margin[2]]));
 
                 let stuff = doc1[0];//{ documents: [doc] }
-                //that.props.dispatch(addOperation({ stuff} ));
 
                 console.log('stuff is', stuff);
 
-                //that.props.dispatch(setOperationAttrs({ expanded: false }, that.props.operations[0].id));
-                //this.props.dispatch(operationAddDocuments(that.props.operations[0].id, doc1  ));
+
 
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
@@ -671,53 +717,32 @@ class Cam extends React.Component {
                                 CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
                             if (errors.length)
                                 CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                            imageTagPromise(tags).then((tags) => { // this is for chocolate template  
-                                /// I got to choose the two files that have been generated recently. : get the last two files
-                               /* let templateDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
-                                that.setState({ templateDocID: templateDoc });
-                                console.log('templateDoc:', templateDoc);
-                                that.props.dispatch(selectDocument(templateDoc));
-                                that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                                //that.props.dispatch(selectDocuments(true));
-                                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0], margin[1]]));
-                                console.log('text doc id ', that.state.textDocID, 'template doc id ', that.state.templateDocID, templateDoc);*/
-
-                                if(n > 14){
-                                    /*let svg1 = that.props.documents.map(() => that.props.documents[18].id).slice(0, 1);
-                                    that.props.dispatch(toggleSelectDocument(svg1[0]));*/
-                                    //that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, moldShifts[0], moldShifts[1]]));
-                                   // that.props.dispatch(toggleSelectDocument(svg1[0]));
-                                    /*let doc1 = that.props.documents.map(() => that.props.documents[0].id).slice(0, 1);
-                                    that.props.dispatch(toggleSelectDocument(doc1[0]));
-                                    let doc2 = that.props.documents.map(() => that.props.documents[3].id).slice(0, 1);
-                                    that.props.dispatch(toggleSelectDocument(doc2[0]));
-                                    let doc3 = that.props.documents.map(() => that.props.documents[6].id).slice(0, 1);
-                                    that.props.dispatch(toggleSelectDocument(doc3[0]));
-                                    let doc4 = that.props.documents.map(() => that.props.documents[9].id).slice(0, 1);
-                                    that.props.dispatch(toggleSelectDocument(doc4[0]));
-                                    let doc5 = that.props.documents.map(() => that.props.documents[12].id).slice(0, 1);
-                                    that.props.dispatch(toggleSelectDocument(doc5[0]));
-                                    let doc6 = that.props.documents.map(() => that.props.documents[15].id).slice(0, 1);
-                                    that.props.dispatch(toggleSelectDocument(doc6[0]));*/
-                                    let allDocs = [
-                                        that.props.documents.map(() => that.props.documents[0].id).slice(0, 1)[0],
-                                        that.props.documents.map(() => that.props.documents[3].id).slice(0, 1)[0],
-                                        that.props.documents.map(() => that.props.documents[6].id).slice(0, 1)[0],
-                                        that.props.documents.map(() => that.props.documents[9].id).slice(0, 1)[0],
-                                        that.props.documents.map(() => that.props.documents[12].id).slice(0, 1)[0],
-                                        that.props.documents.map(() => that.props.documents[15].id).slice(0, 1)[0]
-                                    ];
-                                    //that.props.dispatch(addOperation({ documents: allDocs }));
-
-
-                                }
+                            imageTagPromise(tags).then((tags) => { 
+                                //that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                             }).then(() => {
-                                let ourDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1)[0]
-                                that.props.dispatch(addOperation({ documents: [ourDoc] }));
+                                /*that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
+                                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] +  stdMarginY * margin[2]]));*/
+                                if (n > 0) {
+                                    let allDocs = [
+                                        that.props.documents[0].id,
+                                        that.props.documents[3].id,
+                                        that.props.documents[6].id,
+                                        that.props.documents[9].id,
+                                        that.props.documents[12].id,
+                                        that.props.documents[15].id
+                                    ];
+                                    that.props.dispatch(addOperation({ documents: allDocs }));
+                                }
+                                that.props.dispatch(selectDocuments(false));
+                                this.props.dispatch(toggleSelectDocument(that.props.documents[0].id));
+                                /*let ourDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1)[0]
+                                that.props.dispatch(addOperation({ documents: [ourDoc] }));*/
 
                                 //let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
                                 //let stuff = doc1[0];
                                 //that.props.dispatch(selectDocument(doc1[0]));
+                                //that.props.dispatch(selectDocuments(true));
+
                             })
                         });
                     });
@@ -816,7 +841,7 @@ class Cam extends React.Component {
                     </div>
                     </FormGroup>
                 </div>
-                <div className="panel panel-danger" style={{ marginBottom: 0 }}>
+                <div className="panel panel-danger" style={{ marginBottom: 0,display:"none" }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
                             <tbody>
@@ -835,7 +860,7 @@ class Cam extends React.Component {
                     </div>
                 </div>
                 <div className="Resizer horizontal" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
-                <div className="panel panel-info" style={{ marginBottom: 3 }}>
+                <div className="panel panel-info" style={{ marginBottom: 3,display:"none" }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
                             <tbody>
@@ -875,7 +900,7 @@ class Cam extends React.Component {
                         </ButtonToolbar> : undefined}
                     </div>
                 </Splitter>
-                <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7 }}>
+                <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7,display:"block" }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
@@ -896,9 +921,9 @@ class Cam extends React.Component {
                         </tbody>
                     </table>
                 </Alert>
-                <OperationDiagram {...{ operations, currentOperation }} />
+                <OperationDiagram {...{ operations, currentOperation }}  style={{display:"none"}} />
                 <Operations
-                    style={{ flexGrow: 2, display: "flex", flexDirection: "column" }}
+                    style={{ flexGrow: 2, display: "flex", flexDirection: "column",display:"none" }}
                 /*genGCode = {this./*generateGcode*//*docuementAdded}*/
                 />
             </div>);
