@@ -59,7 +59,7 @@ const types = {
 
 export class OperationDiagram extends React.Component {
     componentWillMount() {
-        fetch('cnctoolpath.svg')
+        /*fetch('cnctoolpath.svg')
             .then(resp => resp.text())
             .then(content => {
                 //console.log(content);
@@ -68,7 +68,7 @@ export class OperationDiagram extends React.Component {
                 this.svg.style.height = 'inherit';
                 ReactDOM.findDOMNode(this).appendChild(this.svg);
                 this.updateSvg();
-            });
+            });*/
     }
 
     updateSvg(props) {

@@ -583,21 +583,17 @@ class Cam extends React.Component {
                 let generalState = GlobalStore().getState();
 
                 console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
-                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
-                /*that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 1);
-                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 2);
-                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 3);
-                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 4);
-                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 5);*/
 
                 let promise = new Promise( (resolve,reject) =>  {
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 0);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 1);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 2);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 3);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 4);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file3.svg', 2);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file4.svg', 3);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file5.svg', 4);
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);
                 });
+                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
+
                 promise.then(
                     ()=> console.log('test'),
                     () => console.log('failure')
@@ -638,8 +634,25 @@ class Cam extends React.Component {
                     imageTagPromise(tags).then((tags) => {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                     }).then(() => {
-                        that.props.dispatch(addOperation({ documents: [that.props.documents[0].id] }));
+                        /*if (n > 0) {
 
+                            that.props.dispatch(addOperation({
+                                documents: [
+                                    that.props.documents[0].id,
+                                    that.props.documents[3].id,
+                                    that.props.documents[6].id,
+                                ]
+                            }));
+
+                            that.props.dispatch(addOperation({
+                                documents: [
+                                    that.props.documents[9].id,
+                                    that.props.documents[12].id,
+                                    that.props.documents[15].id
+                                ]
+                            }));
+                            //that.props.dispatch(addOperation({documents: [] }));
+                        }*/
                         that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
                         that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] + stdMarginY * margin[2]]));
                         that.props.dispatch(selectDocuments(false));
@@ -653,11 +666,9 @@ class Cam extends React.Component {
 
     }
     parseSVG(svg,that,margin,fileName,n){
-        let mainsvgID
         let activeTemplate = that.state.activeTemplate;
         const release = captureConsole();
         const parser = new Parser({});
-        let layout;
         parser.parse(svg).then((tags) => {
             let captures = release(true);
             let warns = captures.filter(i => i.method == 'warn')
@@ -682,7 +693,6 @@ class Cam extends React.Component {
                 that.props.dispatch(selectDocuments(true));
                 that.props.dispatch(selectDocument(documents));
                 console.log('documents is', documents);
-                mainsvgID = documents;
                 that.setState({ textDocID: documents });
             }).then(() => {
                 file = {
@@ -698,13 +708,6 @@ class Cam extends React.Component {
                 if(n>2)
                     stdMarginY = 1;
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1]+stdMarginY*margin[2]]));
-
-                let stuff = doc1[0];//{ documents: [doc] }
-
-                console.log('stuff is', stuff);
-
-
-
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
                     .then(content => {
@@ -722,21 +725,31 @@ class Cam extends React.Component {
                             }).then(() => {
                                 /*that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
                                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] +  stdMarginY * margin[2]]));*/
-                                if (n > 0) {
-                                    let allDocs = [
-                                        that.props.documents[0].id,
-                                        that.props.documents[3].id,
-                                        that.props.documents[6].id,
-                                        that.props.documents[9].id,
-                                        that.props.documents[12].id,
-                                        that.props.documents[15].id
-                                    ];
-                                    that.props.dispatch(addOperation({ documents: allDocs }));
+                                if (n > 4) {
+                                    
+                                    that.props.dispatch(addOperation({
+                                        documents: [
+                                            that.props.documents[0].id,
+                                            that.props.documents[3].id,
+                                            that.props.documents[6].id,
+                                        ] }));
+                                   
+                                    that.props.dispatch(addOperation({
+                                        documents: [
+                                            that.props.documents[9].id,
+                                            that.props.documents[12].id,
+                                            that.props.documents[15].id
+                                        ] }));
+                                    /*that.props.dispatch(addOperation({
+                                        documents: [
+                                            
+                                        ] }));*/
+
                                 }
-                                that.props.dispatch(selectDocuments(false));
-                                this.props.dispatch(toggleSelectDocument(that.props.documents[0].id));
-                                /*let ourDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1)[0]
-                                that.props.dispatch(addOperation({ documents: [ourDoc] }));*/
+                                //that.props.dispatch(selectDocuments(false));
+                                //this.props.dispatch(toggleSelectDocument(that.props.documents[0].id));
+                                //let ourDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1)[0]
+                                //that.props.dispatch(addOperation({ documents: [that.props.documents[n*3].id] }));
 
                                 //let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
                                 //let stuff = doc1[0];
@@ -821,14 +834,9 @@ class Cam extends React.Component {
                                 <img src="rectangle.jpg" height="50" width="50" />
                             </div>
                         </div>
+                       
                         <div>
-                            Chocolate Depth mm:<br />
-                            <input name='chocoalteDepth'
-                                ref={(el) => this.chocoalteDepthRef = el}
-                                type="number" step="0.1" defaultValue={globalState.gcode.chocolateDepth.data} onChange={this.handleDepthChange} />
-                        </div>
-                        <div>
-                            Line Main:<br/>
+                            Text:<br/>
                             <textarea
                                 name="content" id="content" ref="content" maxLength="23"
                                 onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
@@ -836,8 +844,8 @@ class Cam extends React.Component {
                     <div>
 
                         <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
-                        <Button name="fontplus" onClick={() => { this.changeFont(0.5) }} bsSize="small" bsStyle="primary">Bigger ++</Button>
-                        <Button name="fontminus" onClick={() => { this.changeFont(-0.5) }} bsSize="small" bsStyle="primary">Smaller --</Button>
+                            <Button name="fontplus" onClick={() => { this.changeFont(0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
+                            <Button name="fontminus" onClick={() => { this.changeFont(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
                     </div>
                     </FormGroup>
                 </div>
