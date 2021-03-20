@@ -393,218 +393,223 @@ class Cam extends React.Component {
         console.log('width : ', width, 'height:', height);
         return [parseFloat(width), parseFloat(height)];
     }
-    textWrapping() {
+    async generateLayout(){
         let text = GlobalStore().getState().gcode.text.data;
         let globalState = GlobalStore().getState();
-        console.log('globalState', globalState);
         if (text == '') {
             alert('no text???');
             return;
         } 
-        console.log('Text Wrapping started directoin', this.state.direction, 'fontsize', this.state.fontSize);
+        const that = this;
+        const computeLayout = require('opentype-layout');
+        const lines = text.split("\n");
+        let models = {};
+        let fontSize;
+        this.init();
+        const makerjs = require('makerjs');
+        let layout ;
+        const font = await opentype.load(this.state.font);
+        let activeTemplate = that.state.activeTemplate;
+        let lineHeight = 1.3 * font.unitsPerEm;
+        fontSize = that.state.fontSize;
+        let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
+        let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
+        let layoutOptions = {
+            "align": "center",
+            lineHeight: lineHeight,
+            width: finalWidth / scale,
+            mode: 'nowrap'
+        };
+        if (that.state.direction == 'RTL') {
+            layout = computeLayout(font, text, layoutOptions);
+
+            console.log('started RTL');
+            let wordModel = '';
+
+            let wordWidths = [];// line widths
+            let wordHeigths = [];
+            let svgWords = [];
+
+            let shiftX,shiftY;
+            let shifts = [shiftX, shiftY];
+            models = {};
+            svgWords = [];
+            lines.forEach((line, i) => {
+                wordModel = new makerjs.models.Text(font, line, fontSize);
+                makerjs.model.addModel(models, wordModel);
+                svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                models = {};
+                let parts = svgWords[i].split("\"");
+                wordWidths[i] = parseFloat(parts[1]);
+                wordHeigths[i] = parseFloat(parts[3]);
+            });
+            let maxWHeight = Math.max(...wordHeigths);
+            console.log('widths', wordWidths, 'heights', wordHeigths);//  
+
+            models = {};
+            lines.forEach((line, i) => {
+                wordModel = new makerjs.models.Text(font, line, fontSize, true);
+                let count = 0;
+                for (var c in wordModel.models)
+                    count++;
+                console.log('count', count);
+                shiftY = shiftY + maxWHeight + 3;
+                shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * 3.78));/// what is this equation?
+                let shiftingFactor = 0;
+                if (i > 0) {
+                    shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
+                    console.log('shifting factor is', shiftingFactor, wordWidths[0], wordWidths[1]);
+                }
+                for (let index = 0; index < count; index++) {
+                    shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
+                    wordModel.models[index].origin = [shifts[0], shifts[1]];
+                }
+                console.log('shiftX is ', shiftX, 'shiftY is:', shiftY, 'word model is:', wordModel.models[0].origin);
+                console.log('xShiftFinal', shifts);
+
+                //var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
+                makerjs.model.addModel(models, wordModel);
+            });
+            console.log('models', models);
+            prevWordWidth = 0;
+        }
+        else {// LTR
+            console.log("we are here 0");
+            try {
+                layout = computeLayout(font, text, layoutOptions);
+            }
+            catch (ex) {
+                console.log(ex);
+            }
+            let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
+            console.log('first layout evaluation result is ', result);
+            while (!result) {
+                console.log("we get here!!!");
+                that.setState({
+                    activeTemplate: activeTemplate
+                });
+                //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
+                console.log('new unitsPerEm : ', font.unitsPerEm);
+
+                fontSize = that.state.fontSize * 0.8; /// we should change font size
+                activeTemplate.fontSize = fontSize;
+                that.setState({ activeTemplate: activeTemplate });
+                let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
+                //let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
+                let finalWidth = 120;// should be maxMM * 301 (which is point in mm) 5000
+                //finalWidht depends on the font
+
+
+                let layoutOptions = {
+                    "align": "center",
+                    lineHeight: lineHeight,
+                    width: finalWidth / scale
+                };
+                layoutOptions = { // depends on the situation we change the layout option
+                    "align": "center",
+                    lineHeight: lineHeight,
+                    width: finalWidth / scale
+                }
+                layout = computeLayout(font, text, layoutOptions);
+                if (layout.lines.length > 1)
+                    activeTemplate.shiftY -= 2;
+                activeTemplate.shiftX -= 3;
+                console.log('new layout is ', layout);
+                result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
+            }
+        }
+        return layout;
+    }
+    async  textWrapping() {
+        let text = GlobalStore().getState().gcode.text.data;
+        let globalState = GlobalStore().getState();
+        if (text == '') {
+            alert('no text???');
+            return;
+        } 
         var that = this;
         const computeLayout = require('opentype-layout');
-        let font = this.state.font;
-        console.log('this.state.font', font);
+        //let font = this.state.font;
         var lines = text.split("\n");
         let models = {};
         let fontSize;
         this.init();
         const makerjs = require('makerjs');
         let layout;
-        opentype.load(font, function (err, font) {//for arabic fonst we will see
+        const font = await opentype.load(this.state.font);
+        let activeTemplate = that.state.activeTemplate;
+        let lineHeight = 1.3 * font.unitsPerEm;
 
-            let activeTemplate = that.state.activeTemplate;
-            console.log(font);
-            let lineHeight = 1.3 * font.unitsPerEm;
+        fontSize = that.state.fontSize;
+        let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
+        let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
 
-            fontSize = that.state.fontSize;
-            let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-            let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
+        let layoutOptions = {
+            "align": "center",
+            lineHeight: lineHeight,
+            width: finalWidth / scale,
+            mode: 'nowrap'
+        };
 
-            let layoutOptions = {
-                "align": "center",
-                lineHeight: lineHeight,
-                width: finalWidth / scale,
-                mode: 'nowrap'
-            };
-            //console.log('Final Width: ', finalWidth);
-            //console.log('fontsize', that.state.fontSize);
-            if (that.state.direction == 'RTL') {
-                layout = computeLayout(font, text, layoutOptions);
+        layout = await this.generateLayout();
+        that.setState({ layout: layout });
+        layout.glyphs.forEach((glyph, i) => {
+            let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+            character.origin = makerjs.point.scale(glyph.position, scale);
+            makerjs.model.addModel(models, character, i);
+        });
+        const moldShifts = [70, 65];//[105,96];
+        try {
+            let maxDim = 34;
+            const operator = 3.7798;// the division of unit per mm
+            let firstX = 75;
+            let stdMargin = 50; // margin between two pieces of the mo
 
-                console.log('started RTL');
-                let wordModel = '';
-                /*let wordModel = new makerjs.models.Text(font, text, fontSize);
-                makerjs.model.addModel(models, wordModel); 
-                //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
-                // console.log(testOutput);
-                let wordWidths = [];// line widths
-                let wordHeigths = [];
-                let svgWords = [];
 
-                let shiftX = 0;
-                let shiftY = 0;
-                let shifts = [shiftX, shiftY];
-                let prevWordWidth = 0;
-                let pervWordOrigin = 0;
+            var t0 = performance.now()
+            let output = makerjs.exporter.toSVG(models, {  accuracy: 0.001 });
 
-                models = {};
-
-                console.log('lines are : ', layout.lines);
-                svgWords = [];
-                lines.forEach((line, i) => {
-                    wordModel = new makerjs.models.Text(font, line, fontSize);
-                    makerjs.model.addModel(models, wordModel);
-                    svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
-                    models = {};
-                    let parts = svgWords[i].split("\"");
-                    wordWidths[i] = parseFloat(parts[1]);
-                    wordHeigths[i] = parseFloat(parts[3]);
-                    //console.log('width',wordWidths[i],'line',line,svgWords[i]);
-                });
-                let maxWHeight = Math.max(...wordHeigths);
-                console.log('widths', wordWidths, 'heights', wordHeigths);//  
-
-                models = {};
-                lines.forEach((line, i) => {
-                    wordModel = new makerjs.models.Text(font, line, fontSize, true);
-                    let count = 0;
-                    for (var c in wordModel.models)
-                        count++;
-                    // calcaulate shiftX and shiftY in a suitable way
-                    console.log('count', count);
-                    shiftY = shiftY + maxWHeight + 3;
-                    shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * 3.78));/// what is this equation?
-                    let firstLineShift = that.state.activeTemplate.shiftX * 9 - (wordWidths[0] / (2 * 3.78));
-                    //shiftX=0;
-                    console.log('shiftX', shiftX, ' wordWidths[i]', wordWidths[i] / (2 * 3.78), 'activetempalte.shiftx',
-                        that.state.activeTemplate.shiftX);
-                    let shiftingFactor = 0;
-                    if (i > 0) {
-                        shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
-                        console.log('shifting factor is', shiftingFactor, wordWidths[0], wordWidths[1]);
-                    }
-                    for (let index = 0; index < count; index++) {
-                        shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
-                        wordModel.models[index].origin = [shifts[0], shifts[1]];
-                    }
-                    console.log('shiftX is ', shiftX, 'shiftY is:', shiftY, 'word model is:', wordModel.models[0].origin);
-                    console.log('xShiftFinal', shifts);
-
-                    //var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
-                    makerjs.model.addModel(models, wordModel);
-                });
-                console.log('models', models);
-                prevWordWidth = 0;
+            let dims = that.getDimension(output);
+            
+            let mmDims = dims.map(n => n / 3.7798);
+            if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
+                alert("The size of the words shouldn't be more than 34mm!!!")
+                return;
             }
-            else {// LTR
-                console.log("we are here 0");
-                try {
-                    layout = computeLayout(font, text, layoutOptions);
-                }
-                catch (ex) {
-                    console.log(ex);
-                }
-                let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
-                console.log('first layout evaluation result is ', result);
-                while (!result) {
-                    console.log("we get here!!!");
-                    that.setState({
-                        activeTemplate: activeTemplate
-                    });
-                    //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
-                    console.log('new unitsPerEm : ', font.unitsPerEm);
 
-                    fontSize = that.state.fontSize * 0.8; /// we should change font size
-                    activeTemplate.fontSize = fontSize;
-                    that.setState({ activeTemplate: activeTemplate });
-                    let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
-                    //let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-                    let finalWidth = 120;// should be maxMM * 301 (which is point in mm) 5000
-                    //finalWidht depends on the font
+            //// get layout.lines, the  max value of them, get the number of letters in that line
+            const max = layout.lines.reduce(
+                (prev, current) => (prev.width > current.width) ? prev : current
+            );
+            let extraMarginX = (44  -mmDims[0])/2;
+            let extraMarginY = (44 - mmDims[1])/2;
+            let extraMargin = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
+            const letterCount = max.end - max.start;
+            const letterWidth = mmDims[0] / letterCount;
+            let generalState = GlobalStore().getState();
 
+            console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
 
-                    let layoutOptions = {
-                        "align": "center",
-                        lineHeight: lineHeight,
-                        width: finalWidth / scale
-                    };
-                    layoutOptions = { // depends on the situation we change the layout option
-                        "align": "center",
-                        lineHeight: lineHeight,
-                        width: finalWidth / scale
-                    }
-                    layout = computeLayout(font, text, layoutOptions);
-                    if (layout.lines.length > 1)
-                        activeTemplate.shiftY -= 2;
-                    activeTemplate.shiftX -= 3;
-                    console.log('new layout is ', layout);
-                    result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
-                }
+            let promise = new Promise( (resolve,reject) =>  {
+                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
+                /*that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
+                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file3.svg', 2);
+                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file4.svg', 3);
+                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file5.svg', 4);
+                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);*/
+            });
+            that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
 
-                that.setState({ layout: layout })
-                layout.glyphs.forEach((glyph, i) => {
-                    let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                    character.origin = makerjs.point.scale(glyph.position, scale);
-                    makerjs.model.addModel(models, character, i);
-                });
-
-            }
-            const moldShifts = [70, 65];//[105,96];
-            /// testlertestler testytyq
-            try {
-                let maxDim = 34;
-                const operator = 3.7798;// the division of unit per mm
-                let firstX = 75;
-                let stdMargin = 50; // margin between two pieces of the mo
+            promise.then(
+                ()=> console.log('test'),
+                () => console.log('failure')
+            );
 
 
-                var t0 = performance.now()
-                let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
-
-                let dims = that.getDimension(output);
-               
-                let mmDims = dims.map(n => n / 3.7798);
-                if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
-                    alert("The size of the words shouldn't be more than 34mm!!!")
-                    return;
-                }
-
-                //// get layout.lines, the  max value of them, get the number of letters in that line
-                const max = layout.lines.reduce(
-                    (prev, current) => (prev.width > current.width) ? prev : current
-                );
-                let extraMarginX = (44  -mmDims[0])/2;
-                let extraMarginY = (44 - mmDims[1])/2;
-                let extraMargin = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
-                const letterCount = max.end - max.start;
-                const letterWidth = mmDims[0] / letterCount;
-                let generalState = GlobalStore().getState();
-
-                console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
-
-                let promise = new Promise( (resolve,reject) =>  {
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file3.svg', 2);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file4.svg', 3);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file5.svg', 4);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);
-                });
-                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
-
-                promise.then(
-                    ()=> console.log('test'),
-                    () => console.log('failure')
-                );
-
-
-            }
-            catch (Exception) {
-                console.log(Exception);
-            }
-        })
+        }
+        catch (Exception) {
+            console.log(Exception);
+        }
     }
     loadSVGChocoTemplate(margin,n){
         const modifiers = {};
@@ -725,7 +730,7 @@ class Cam extends React.Component {
                             }).then(() => {
                                 /*that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
                                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] +  stdMarginY * margin[2]]));*/
-                                if (n > 4) {
+                                if (n > -1) {
                                     
                                     that.props.dispatch(addOperation({
                                         documents: [
