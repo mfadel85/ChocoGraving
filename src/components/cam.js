@@ -395,11 +395,6 @@ class Cam extends React.Component {
     }
     async generateLayout(){
         let text = GlobalStore().getState().gcode.text.data;
-        let globalState = GlobalStore().getState();
-        if (text == '') {
-            alert('no text???');
-            return;
-        } 
         const that = this;
         const computeLayout = require('opentype-layout');
         const lines = text.split("\n");
@@ -522,35 +517,19 @@ class Cam extends React.Component {
     }
     async  textWrapping() {
         let text = GlobalStore().getState().gcode.text.data;
-        let globalState = GlobalStore().getState();
         if (text == '') {
             alert('no text???');
             return;
         } 
         var that = this;
-        const computeLayout = require('opentype-layout');
-        //let font = this.state.font;
-        var lines = text.split("\n");
         let models = {};
         let fontSize;
         this.init();
         const makerjs = require('makerjs');
         let layout;
         const font = await opentype.load(this.state.font);
-        let activeTemplate = that.state.activeTemplate;
-        let lineHeight = 1.3 * font.unitsPerEm;
-
         fontSize = that.state.fontSize;
         let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-        let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
-
-        let layoutOptions = {
-            "align": "center",
-            lineHeight: lineHeight,
-            width: finalWidth / scale,
-            mode: 'nowrap'
-        };
-
         layout = await this.generateLayout();
         that.setState({ layout: layout });
         layout.glyphs.forEach((glyph, i) => {
@@ -562,50 +541,29 @@ class Cam extends React.Component {
         try {
             let maxDim = 34;
             const operator = 3.7798;// the division of unit per mm
-            let firstX = 75;
             let stdMargin = 50; // margin between two pieces of the mo
-
-
-            var t0 = performance.now()
             let output = makerjs.exporter.toSVG(models, {  accuracy: 0.001 });
-
             let dims = that.getDimension(output);
-            
             let mmDims = dims.map(n => n / 3.7798);
             if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
                 alert("The size of the words shouldn't be more than 34mm!!!")
                 return;
             }
-
-            //// get layout.lines, the  max value of them, get the number of letters in that line
             const max = layout.lines.reduce(
                 (prev, current) => (prev.width > current.width) ? prev : current
             );
-            let extraMarginX = (44  -mmDims[0])/2;
-            let extraMarginY = (44 - mmDims[1])/2;
-            let extraMargin = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
+
+            let extraMargin = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];// x,y
             const letterCount = max.end - max.start;
-            const letterWidth = mmDims[0] / letterCount;
+            const letterWidth = mmDims[0] / letterCount;// based on letter width we may change stepOver
             let generalState = GlobalStore().getState();
-
-            console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
-
-            let promise = new Promise( (resolve,reject) =>  {
-                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
-                /*that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
-                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file3.svg', 2);
-                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file4.svg', 3);
-                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file5.svg', 4);
-                that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);*/
-            });
+            that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
+            /*that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
+            that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file3.svg', 2);
+            that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file4.svg', 3);
+            that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file5.svg', 4);
+            that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);*/
             that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
-
-            promise.then(
-                ()=> console.log('test'),
-                () => console.log('failure')
-            );
-
-
         }
         catch (Exception) {
             console.log(Exception);
@@ -619,10 +577,8 @@ class Cam extends React.Component {
             name: "template.svg",
             type: "image/svg+xml"
         };
+        var stdMarginY= n>2 ? 1 : 0;
 
-        var stdMarginY = 0;
-        if (n > 2)
-            stdMarginY = 1;
         this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1] + stdMarginY * margin[2]]));
         let that  = this;
         fetch(that.state.activeTemplate.file)
@@ -639,31 +595,9 @@ class Cam extends React.Component {
                     imageTagPromise(tags).then((tags) => {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                     }).then(() => {
-                        /*if (n > 0) {
-
-                            that.props.dispatch(addOperation({
-                                documents: [
-                                    that.props.documents[0].id,
-                                    that.props.documents[3].id,
-                                    that.props.documents[6].id,
-                                ]
-                            }));
-
-                            that.props.dispatch(addOperation({
-                                documents: [
-                                    that.props.documents[9].id,
-                                    that.props.documents[12].id,
-                                    that.props.documents[15].id
-                                ]
-                            }));
-                            //that.props.dispatch(addOperation({documents: [] }));
-                        }*/
                         that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
                         that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] + stdMarginY * margin[2]]));
                         that.props.dispatch(selectDocuments(false));
-                        //that.props.dispatch(toggleSelectDocument(that.props.documents[0].id));
-
-
                     })
                 });
             });
@@ -708,10 +642,8 @@ class Cam extends React.Component {
                 
                 that.props.dispatch(selectDocuments(false));
                 that.props.dispatch(selectDocument(doc1[0]));
-                //that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 0);
-                var stdMarginY= 0;
-                if(n>2)
-                    stdMarginY = 1;
+                var stdMarginY= n>2 ? 1 : 0;
+
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1]+stdMarginY*margin[2]]));
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
@@ -731,7 +663,7 @@ class Cam extends React.Component {
                                 /*that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
                                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] +  stdMarginY * margin[2]]));*/
                                 if (n > -1) {
-                                    
+                                
                                     that.props.dispatch(addOperation({
                                         documents: [
                                             that.props.documents[0].id,
