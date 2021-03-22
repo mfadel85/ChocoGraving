@@ -14,15 +14,12 @@ export function operationRemoveDocument(id, isTab, document) {
     return { type: 'OPERATION_REMOVE_DOCUMENT', payload: { id, isTab, document } };
 }
 export function setFormData(data){
-    console.log('sate is ');
     return { type:'SET_FORM_DATA',payload:{data}};
 }
 export function setDepth(data) {
-    console.log('sate is ');
     return { type: 'SET_DEPTH', payload: { data } };
 }
 export function setFont(data) {
-    console.log('sateu is ');
     return { type: 'SET_FONT', payload: { data } };
 }
 export function setCurrentOperation(id) {

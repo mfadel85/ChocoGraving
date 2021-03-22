@@ -8,7 +8,6 @@ import uuidv4 from 'uuid/v4';
 // attrs:       e.g. {type: 'pocket', depth: 7}
 // id
 export function setAttrs(objectType) {
-    //console.log('setAttrs');
     let type = objectType.toUpperCase() + '_SET_ATTRS';
     return (attrs, id) => ({ type, payload: { id, attrs } });
 };
@@ -21,7 +20,6 @@ export function setAttrs(objectType) {
 export function add(objectType, defaults=function(){return {}}) {
     
     let type = objectType.toUpperCase() + '_ADD';
-    console.log("16Feb: ",objectType,defaults);
     return (attrs) => ({ type, payload: { attrs: { ...defaults(), ...attrs, id: attrs.id || uuidv4() } } });
 };
 

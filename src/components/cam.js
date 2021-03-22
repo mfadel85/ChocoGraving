@@ -109,9 +109,15 @@ class Cam extends React.Component {
             templateDocID: '',
             direction: 'LTR',
             stepOver: 100,
-            layout: [],
+            svgOutpout:[],
+            svgModels:[],
+            layout:[],
             chocolateDepth: 30,
-            textEnabled:true
+            textEnabled:true,
+            generalAllEnable:false,
+            moldShifts: [70, 65],
+            stdMargin:  50
+
         }
         this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
@@ -122,7 +128,9 @@ class Cam extends React.Component {
         this.generateGcode = this.generateGcode.bind(this);
         this.docuementAdded = this.docuementAdded.bind(this);
         this.textWrapping = this.textWrapping.bind(this);
+        this.generateAll = this.generateAll.bind(this);
         this.runJob = this.runJob.bind(this);
+
         this.wordWrapped = this.wordWrapped.bind(this);
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
@@ -319,38 +327,21 @@ class Cam extends React.Component {
     /// to test this I guess there are some conditions to be solved
     isWrappedWord(layout, text) {
         let result = true;
-        // for each word check if it is in the same line
         var words = text.split(" ");
-        // compare the words with 
-
-        // re write this code it is not working
         words.forEach((word) => {
             layout.lines.forEach((line, j) => {
                 console.log('end', layout.lines[j].end, 'start', layout.lines[j].start, 'word length:', word.length);
                 if (layout.lines[j].end - layout.lines[j].start < word.length) {
-                    console.log('şerefsiz misiniz? I dont know !!!')
                     result = false;
                 }
-
             })
         })
-        //return true;
         return true;
     }
     /// to bet tested this I guess there are some conditions to be solved
 
     validateLayout(layout, text, maxLines) { //// add another condition which is if the number of lines is bigger than the number of words
-        var result = true;
-        console.log('Comparing layout then max lines: ', layout.lines.length, maxLines);
-        if (layout.lines.length > maxLines) {
-            console.log("get here for this reason not entering wrappedWord");
-            return false;
-        }
-
-        else if (!this.isWrappedWord(layout, text))
-            return false;
-        return true;
-
+        return layout.lines.length > maxLines ? false:true;        
     }
     init() {
         console.log('clean everything before you start again: delete documents,clean gcode');
@@ -393,6 +384,22 @@ class Cam extends React.Component {
         console.log('width : ', width, 'height:', height);
         return [parseFloat(width), parseFloat(height)];
     }
+    generateAll(){
+        console.log('ttt',this.state);
+        let margins = this.calcMargins(this.state.svgOutpout);
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);
+    }
+    calcMargins(svgOutput){
+
+        let dims = this.getDimension(svgOutput);
+        let mmDims = dims.map(n => n / 3.7798);
+        let margins = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
+        return margins;
+    }
     textWrapping() {
         let text = GlobalStore().getState().gcode.text.data;
         let globalState = GlobalStore().getState();
@@ -428,17 +435,13 @@ class Cam extends React.Component {
                 width: finalWidth / scale,
                 mode: 'nowrap'
             };
-            //console.log('Final Width: ', finalWidth);
-            //console.log('fontsize', that.state.fontSize);
+
             if (that.state.direction == 'RTL') {
                 layout = computeLayout(font, text, layoutOptions);
 
                 console.log('started RTL');
                 let wordModel = '';
-                /*let wordModel = new makerjs.models.Text(font, text, fontSize);
-                makerjs.model.addModel(models, wordModel); 
-                //let testOutput = makerjs.exporter.toSVG(models);/*,{origin:[-70.95,0]}*/
-                // console.log(testOutput);
+
                 let wordWidths = [];// line widths
                 let wordHeigths = [];
                 let svgWords = [];
@@ -461,7 +464,6 @@ class Cam extends React.Component {
                     let parts = svgWords[i].split("\"");
                     wordWidths[i] = parseFloat(parts[1]);
                     wordHeigths[i] = parseFloat(parts[3]);
-                    //console.log('width',wordWidths[i],'line',line,svgWords[i]);
                 });
                 let maxWHeight = Math.max(...wordHeigths);
                 console.log('widths', wordWidths, 'heights', wordHeigths);//  
@@ -472,12 +474,10 @@ class Cam extends React.Component {
                     let count = 0;
                     for (var c in wordModel.models)
                         count++;
-                    // calcaulate shiftX and shiftY in a suitable way
                     console.log('count', count);
                     shiftY = shiftY + maxWHeight + 3;
                     shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * 3.78));/// what is this equation?
                     let firstLineShift = that.state.activeTemplate.shiftX * 9 - (wordWidths[0] / (2 * 3.78));
-                    //shiftX=0;
                     console.log('shiftX', shiftX, ' wordWidths[i]', wordWidths[i] / (2 * 3.78), 'activetempalte.shiftx',
                         that.state.activeTemplate.shiftX);
                     let shiftingFactor = 0;
@@ -499,7 +499,6 @@ class Cam extends React.Component {
                 prevWordWidth = 0;
             }
             else {// LTR
-                console.log("we are here 0");
                 try {
                     layout = computeLayout(font, text, layoutOptions);
                 }
@@ -507,22 +506,17 @@ class Cam extends React.Component {
                     console.log(ex);
                 }
                 let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
-                console.log('first layout evaluation result is ', result);
                 while (!result) {
                     console.log("we get here!!!");
                     that.setState({
                         activeTemplate: activeTemplate
                     });
-                    //font.unitsPerEm = font.unitsPerEm*0.85; // maybe we should cancel this or make it dynamic
-                    console.log('new unitsPerEm : ', font.unitsPerEm);
 
                     fontSize = that.state.fontSize * 0.8; /// we should change font size
                     activeTemplate.fontSize = fontSize;
                     that.setState({ activeTemplate: activeTemplate });
                     let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
-                    //let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
                     let finalWidth = 120;// should be maxMM * 301 (which is point in mm) 5000
-                    //finalWidht depends on the font
 
 
                     let layoutOptions = {
@@ -551,18 +545,19 @@ class Cam extends React.Component {
                 });
 
             }
-            const moldShifts = [70, 65];//[105,96];
+            const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];
             /// testlertestler testytyq
             try {
                 let maxDim = 34;
                 const operator = 3.7798;// the division of unit per mm
                 let firstX = 75;
                 let stdMargin = 50; // margin between two pieces of the mo
-
-
-                var t0 = performance.now()
                 let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
-
+                that.setState({
+                    svgOutpout:output,
+                    svgModels:models,
+                    layout:layout
+                });
                 let dims = that.getDimension(output);
                
                 let mmDims = dims.map(n => n / 3.7798);
@@ -570,8 +565,6 @@ class Cam extends React.Component {
                     alert("The size of the words shouldn't be more than 34mm!!!")
                     return;
                 }
-
-                //// get layout.lines, the  max value of them, get the number of letters in that line
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
                 );
@@ -586,20 +579,20 @@ class Cam extends React.Component {
 
                 let promise = new Promise( (resolve,reject) =>  {
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
+                    /*that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file3.svg', 2);
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file4.svg', 3);
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file5.svg', 4);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);
+                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);*/
                 });
                 that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
 
                 promise.then(
                     ()=> console.log('test'),
-                    () => console.log('failure')
+                    () => console.log('faiLUre')
                 );
 
-
+                that.setState({generalAllEnable:true});
             }
             catch (Exception) {
                 console.log(Exception);
@@ -634,29 +627,11 @@ class Cam extends React.Component {
                     imageTagPromise(tags).then((tags) => {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                     }).then(() => {
-                        /*if (n > 0) {
-
-                            that.props.dispatch(addOperation({
-                                documents: [
-                                    that.props.documents[0].id,
-                                    that.props.documents[3].id,
-                                    that.props.documents[6].id,
-                                ]
-                            }));
-
-                            that.props.dispatch(addOperation({
-                                documents: [
-                                    that.props.documents[9].id,
-                                    that.props.documents[12].id,
-                                    that.props.documents[15].id
-                                ]
-                            }));
-                            //that.props.dispatch(addOperation({documents: [] }));
-                        }*/
-                        that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
+ 
+                        that.props.dispatch(selectDocument(that.props.documents[3].id));
                         that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] + stdMarginY * margin[2]]));
                         that.props.dispatch(selectDocuments(false));
-                        //that.props.dispatch(toggleSelectDocument(that.props.documents[0].id));
+                        that.props.dispatch(selectDocument(that.props.documents[0].id));
 
 
                     })
@@ -686,32 +661,32 @@ class Cam extends React.Component {
             };
 
             const modifiers = {};
-            var documents = that.props.documents.map(() => that.props.documents[n*3].id).slice(0, 1);
 
             imageTagPromise(tags).then((tags) => {
                 that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                that.props.dispatch(selectDocuments(true));
-                that.props.dispatch(selectDocument(documents));
-                console.log('documents is', documents);
-                that.setState({ textDocID: documents });
             }).then(() => {
                 file = {
                     name: "template.svg",
                     type: "image/svg+xml"
                 };
-                let doc1 = that.props.documents.map(() => that.props.documents[n*3].id).slice(0, 1);
                 
+                let index = n == 0 ? 0 : n * 3 + 30;
+                let doc1 = that.props.documents.map(() => that.props.documents[index].id).slice(0, 1);
+
                 that.props.dispatch(selectDocuments(false));
                 that.props.dispatch(selectDocument(doc1[0]));
                 //that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 0);
-                var stdMarginY= 0;
-                if(n>2)
+                var stdMarginY = 0;
+                if (n > 2)
                     stdMarginY = 1;
-                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1]+stdMarginY*margin[2]]));
+                let margins = [margin[0][0] + margin[1][0] + (n % 3) * that.state.stdMargin, margin[0][1] + margin[1][1] + stdMarginY * that.state.stdMargin];
+                console.log('margins are ', margins);
+                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margins[0], margins[1]]));
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
                     .then(content => {
                         parser.parse(content).then((tags) => {
+                            
                             let captures = release(true);
                             let warns = captures.filter(i => i.method == 'warn')
                             let errors = captures.filter(i => i.method == 'errors')
@@ -723,22 +698,23 @@ class Cam extends React.Component {
                             imageTagPromise(tags).then((tags) => { 
                                 //that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                             }).then(() => {
+
                                 if (n > 4) {
                                     
                                     that.props.dispatch(addOperation({
                                         documents: [
                                             that.props.documents[0].id,
-                                            that.props.documents[3].id,
+                                            that.props.documents[33].id,
                                         ] }));
                                     that.props.dispatch(addOperation({
                                         documents: [
-                                            that.props.documents[6].id,
-                                            that.props.documents[9].id,
+                                            that.props.documents[36].id,
+                                            that.props.documents[39].id,
                                         ] }));
                                     that.props.dispatch(addOperation({
                                         documents: [
-                                            that.props.documents[12].id,
-                                            that.props.documents[15].id
+                                            that.props.documents[42].id,
+                                            that.props.documents[45].id
                                         ] }));
                                 }
                             })
@@ -827,10 +803,10 @@ class Cam extends React.Component {
                                 onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
                         </div>    
                     <div>
-
-                        <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >Generate</Button>
-                            <Button name="fontplus" onClick={() => { this.changeFont(0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
-                            <Button name="fontminus" onClick={() => { this.changeFont(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
+                        <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One</Button>
+                        <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >All</Button>
+                        <Button name="fontplus" onClick={() => { this.changeFont(0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
+                        <Button name="fontminus" onClick={() => { this.changeFont(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
                     </div>
                     </FormGroup>
                 </div>

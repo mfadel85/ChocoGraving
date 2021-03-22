@@ -22,7 +22,7 @@ export function toggleVisibleDocument(id) {
 };
 
 export function transform2dSelectedDocuments(transform2d) {
-    //console.log('transform2dSelectedDocuments being called',transform2d);
+    console.log('transform2dSelectedDocuments being called',transform2d);
 
     return { type: 'DOCUMENT_TRANSFORM2D_SELECTED', payload: transform2d };
 }
