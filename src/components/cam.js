@@ -132,6 +132,13 @@ class Cam extends React.Component {
         this.runJob = this.runJob.bind(this);
 
         this.wordWrapped = this.wordWrapped.bind(this);
+        this.moveDown = this.moveDown.bind(this);
+        this.moveUp = this.moveUp.bind(this);
+        this.moveLeft = this.moveLeft.bind(this);
+        this.moveRight = this.moveRight.bind(this);
+        this.scaleUp = this.scaleUp.bind(this);
+        this.scaleDown = this.scaleDown.bind(this);
+
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
         this.checkRTL = this.checkRTL.bind(this);
@@ -549,7 +556,7 @@ class Cam extends React.Component {
             /// testlertestler testytyq
             try {
                 let maxDim = 34;
-                const operator = 3.7798;// the division of unit per mm
+                const operator = 100/25.4;// the division of unit per mm
                 let firstX = 75;
                 let stdMargin = 50; // margin between two pieces of the mo
                 let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
@@ -560,7 +567,7 @@ class Cam extends React.Component {
                 });
                 let dims = that.getDimension(output);
                
-                let mmDims = dims.map(n => n / 3.7798);
+                let mmDims = dims.map(n => n / operator);
                 if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
                     alert("The size of the words shouldn't be more than 34mm!!!")
                     return;
@@ -599,6 +606,35 @@ class Cam extends React.Component {
             }
         })
     }
+
+    moveUp(){
+        // now calc???
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1,0,1]));
+    }
+
+    moveDown() {
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, -1]));    
+    }
+  
+    moveLeft() {
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, -1, 0]));      
+    }
+
+    moveRight() {
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 1, 0]));
+    }
+    scaleUp(){
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 1, 0]));
+    }
+    scaleDown(){
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 1, 0]));
+    }
     loadSVGChocoTemplate(margin,n){
         const modifiers = {};
         const release = captureConsole();
@@ -627,13 +663,10 @@ class Cam extends React.Component {
                     imageTagPromise(tags).then((tags) => {
                         that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                     }).then(() => {
- 
                         that.props.dispatch(selectDocument(that.props.documents[3].id));
                         that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] + stdMarginY * margin[2]]));
                         that.props.dispatch(selectDocuments(false));
                         that.props.dispatch(selectDocument(that.props.documents[0].id));
-
-
                     })
                 });
             });
@@ -803,10 +836,19 @@ class Cam extends React.Component {
                                 onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
                         </div>    
                     <div>
-                        <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One</Button>
-                        <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >All</Button>
-                        <Button name="fontplus" onClick={() => { this.changeFont(0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
-                        <Button name="fontminus" onClick={() => { this.changeFont(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
+                        <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
+                        <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >All Pieces</Button>
+                        <div>
+                            <br /> 
+                            <Button title="Bigger" name="fontplus" onClick={() => { this.scaleUp() }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
+                            <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
+                            <Button title="smaller" name="fontminus" onClick={() => { this.scaleDown() }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
+                            <br />
+                            <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
+                            <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
+                            <Button title="to the right" name="fontminus" onClick={() => { this.moveRight(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-right"} ></Button>
+                        </div>
+
                     </div>
                     </FormGroup>
                 </div>
