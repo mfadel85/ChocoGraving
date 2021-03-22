@@ -723,18 +723,13 @@ class Cam extends React.Component {
                             imageTagPromise(tags).then((tags) => { 
                                 //that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                             }).then(() => {
-                                /*that.props.dispatch(selectDocument(that.props.documents[n * 30 + 18].id));
-                                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] +  stdMarginY * margin[2]]));*/
                                 if (n > 4) {
                                     
                                     that.props.dispatch(addOperation({
                                         documents: [
                                             that.props.documents[0].id,
                                             that.props.documents[3].id,
-                                            
-                                            
                                         ] }));
-                                   
                                     that.props.dispatch(addOperation({
                                         documents: [
                                             that.props.documents[6].id,
@@ -745,18 +740,7 @@ class Cam extends React.Component {
                                             that.props.documents[12].id,
                                             that.props.documents[15].id
                                         ] }));
-
                                 }
-                                //that.props.dispatch(selectDocuments(false));
-                                //this.props.dispatch(toggleSelectDocument(that.props.documents[0].id));
-                                //let ourDoc = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1)[0]
-                                //that.props.dispatch(addOperation({ documents: [that.props.documents[n*3].id] }));
-
-                                //let doc1 = that.props.documents.map(() => that.props.documents[n].id).slice(0, 1);
-                                //let stuff = doc1[0];
-                                //that.props.dispatch(selectDocument(doc1[0]));
-                                //that.props.dispatch(selectDocuments(true));
-
                             })
                         });
                     });
