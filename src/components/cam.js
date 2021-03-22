@@ -629,11 +629,11 @@ class Cam extends React.Component {
     }
     scaleUp(){
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 1, 0]));
+        this.props.dispatch(transform2dSelectedDocuments([1.05, 0, 0, 1.05, -0.5, -0.5]));
     }
     scaleDown(){
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 1, 0]));
+        this.props.dispatch(transform2dSelectedDocuments([0.95, 0, 0, 0.95, 0, 0]));
     }
     loadSVGChocoTemplate(margin,n){
         const modifiers = {};
