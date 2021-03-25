@@ -116,8 +116,10 @@ class Cam extends React.Component {
             textEnabled:true,
             generalAllEnable:false,
             moldShifts: [70, 65],
-            stdMargin:  50
-
+            stdMargin:  50,
+            svgDim:[],
+            changesXY:[1,0,0,1,0,0],
+            changesScaling: [1, 0, 0, 1, 0, 0]
         }
         this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
@@ -136,8 +138,7 @@ class Cam extends React.Component {
         this.moveUp = this.moveUp.bind(this);
         this.moveLeft = this.moveLeft.bind(this);
         this.moveRight = this.moveRight.bind(this);
-        this.scaleUp = this.scaleUp.bind(this);
-        this.scaleDown = this.scaleDown.bind(this);
+        this.scale = this.scale.bind(this);
 
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
@@ -359,6 +360,11 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocuments(true));
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
+        this.setState({ 
+            changesXY:[1,0,0,1,0,0],
+            changesScaling:[1,0,0,1,0,0]
+
+        });
     }
 
     changeFont(amount) {
@@ -394,16 +400,19 @@ class Cam extends React.Component {
     generateAll(){
         console.log('ttt',this.state);
         let margins = this.calcMargins(this.state.svgOutpout);
+        console.log('calc margins', margins);
+
         this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
+        /*this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
         this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
         this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);*/
     }
     calcMargins(svgOutput){
 
-        let dims = this.getDimension(svgOutput);
-        let mmDims = dims.map(n => n / 3.7798);
+        let dims = this.getDimension(this.state.svgOutpout);
+        const operator = 100 / 25.4;// the division of unit per mm
+        let mmDims = dims.map(n => n / operator);
         let margins = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
         return margins;
     }
@@ -555,23 +564,26 @@ class Cam extends React.Component {
             const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];
             /// testlertestler testytyq
             try {
-                let maxDim = 34;
+                let maxDim = 28;
                 const operator = 100/25.4;// the division of unit per mm
                 let firstX = 75;
                 let stdMargin = 50; // margin between two pieces of the mo
                 let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
-                that.setState({
-                    svgOutpout:output,
-                    svgModels:models,
-                    layout:layout
-                });
+                
                 let dims = that.getDimension(output);
                
                 let mmDims = dims.map(n => n / operator);
+               
                 if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
-                    alert("The size of the words shouldn't be more than 34mm!!!")
+                    alert("The size of the words shouldn't be more than 28mm!!!")
                     return;
                 }
+                that.setState({
+                    svgOutpout: output,
+                    svgModels: models,
+                    layout: layout,
+                    dims: mmDims
+                });
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
                 );
@@ -582,7 +594,10 @@ class Cam extends React.Component {
                 const letterWidth = mmDims[0] / letterCount;
                 let generalState = GlobalStore().getState();
 
-                console.log('general state', generalState, "Letters:  ", dims, max, mmDims, 'letter count:', letterCount, 'letter width', letterWidth, layout);
+                console.log(
+                    'general state', generalState,
+                     "Letters:  ", dims, max, mmDims, 'letter count:',
+                 letterCount, 'letter width', letterWidth, layout);
 
                 let promise = new Promise( (resolve,reject) =>  {
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
@@ -608,33 +623,51 @@ class Cam extends React.Component {
     }
 
     moveUp(){
-        // now calc???
+        let chagnes = this.state.changesXY;
+        changes[5] += 0.3;
+        this.setState({changesXY:changes});
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1,0,1]));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1,0,0.3]));
     }
 
     moveDown() {
+        let changes = this.state.changesXY;
+        changes[5] -= 0.3;
+        this.setState({ changesXY: changes });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, -1]));    
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, -0.3]));    
     }
   
     moveLeft() {
+        let changes = this.state.changesXY;
+        changes[4] -= 0.3;
+        this.setState({ changesXY: changes });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, -1, 0]));      
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, -0.3, 0]));      
     }
 
     moveRight() {
+        let changes = this.state.changesXY;
+        changes[4] += 0.3;
+        this.setState({ changesXY: changes });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 1, 0]));
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0.3, 0]));
     }
-    scaleUp(){
+    scale(s){
+        let x = this.state.moldShifts[0] + (44 - this.state.dims[0]) / 2;
+        let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2 ;
+        let cx = (2 * x + this.state.dims[0])  / 2;
+        let cy = (2 * y + this.state.dims[1])  / 2;
+        let changes = this.state.changesScaling;
+        changes[0] *= s;
+        changes[3] *= s;
+        changes[4] += cx - s * cx;
+        changes[5] += cy - s * cy;
+        this.setState({ changesScaling: changes });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1.05, 0, 0, 1.05, -0.5, -0.5]));
+        this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
     }
-    scaleDown(){
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([0.95, 0, 0, 0.95, 0, 0]));
-    }
+
     loadSVGChocoTemplate(margin,n){
         const modifiers = {};
         const release = captureConsole();
@@ -715,6 +748,9 @@ class Cam extends React.Component {
                 let margins = [margin[0][0] + margin[1][0] + (n % 3) * that.state.stdMargin, margin[0][1] + margin[1][1] + stdMarginY * that.state.stdMargin];
                 console.log('margins are ', margins);
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margins[0], margins[1]]));
+                this.props.dispatch(transform2dSelectedDocuments(this.state.changesXY));
+                this.props.dispatch(transform2dSelectedDocuments(this.state.changesScaling));
+
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
                     .then(content => {
@@ -840,9 +876,9 @@ class Cam extends React.Component {
                         <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >All Pieces</Button>
                         <div>
                             <br /> 
-                            <Button title="Bigger" name="fontplus" onClick={() => { this.scaleUp() }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
+                            <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
                             <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
-                            <Button title="smaller" name="fontminus" onClick={() => { this.scaleDown() }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
+                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.95) }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
                             <br />
                             <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
                             <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
