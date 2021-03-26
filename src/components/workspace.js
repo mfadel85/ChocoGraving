@@ -412,7 +412,7 @@ class FloatingControls extends React.Component {
         }
 
         return (
-            <Draggable bounds="parent" style={{display:"none"}} position={constraint(this.state.drag ? this.state.drag : { x, y })} onStart={detach} onStop={this.handleStop} onDrag={this.handleDrag} disabled={hidden} handle=".handle">
+            <Draggable bounds="parent" position={constraint(this.state.drag ? this.state.drag : { x, y })} onStart={detach} onStop={this.handleStop} onDrag={this.handleDrag} disabled={hidden} handle=".handle">
                 <div style={{ position: "absolute", pointerEvents: hidden ? 'none' : 'all', display: hidden ? 'none' : 'none' }}>
                     <table style={{ border: '2px solid #ccc', margin: '1px', padding: '2px', backgroundColor: '#eee', }} className="floating-controls" >
                         <tbody>

@@ -119,7 +119,8 @@ class Cam extends React.Component {
             stdMargin:  50,
             svgDim:[],
             changesXY:[1,0,0,1,0,0],
-            changesScaling: [1, 0, 0, 1, 0, 0]
+            changesScaling: [1, 0, 0, 1, 0, 0],
+            scalingCount:0
         }
         this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
@@ -403,10 +404,10 @@ class Cam extends React.Component {
         console.log('calc margins', margins);
 
         this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
-        /*this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
         this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
         this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);*/
+        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);
     }
     calcMargins(svgOutput){
 
@@ -621,7 +622,10 @@ class Cam extends React.Component {
             }
         })
     }
+    deleteDocuments(){
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
 
+    }
     moveUp(){
         let chagnes = this.state.changesXY;
         changes[5] += 0.3;
@@ -654,6 +658,9 @@ class Cam extends React.Component {
         this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0.3, 0]));
     }
     scale(s){
+        let scalingCount = this.state.scalingCount;
+        
+        this.setState({scalingCount:scalingCount});
         let x = this.state.moldShifts[0] + (44 - this.state.dims[0]) / 2;
         let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2 ;
         let cx = (2 * x + this.state.dims[0])  / 2;
@@ -667,7 +674,24 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
     }
+    scaleSec(s,n) {
+        let scalingCount = this.state.scalingCount;
+        let index = n == 0 ? 0 : n * 3 + 30;
+        var stdMarginY = 0;
+        if (n > 2)
+            stdMarginY = 1;
+        let margins = [(n % 3) * this.state.stdMargin, stdMarginY * this.state.stdMargin];
 
+        this.setState({ scalingCount: scalingCount });
+        let x = this.state.moldShifts[0] + (44 - this.state.dims[0]) / 2 + margins[0];
+        let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2 + margins[1];
+        let cx = (2 * x + this.state.dims[0]) / 2;
+        let cy = (2 * y + this.state.dims[1]) / 2;
+        let changes = this.state.changesScaling;
+        this.setState({ changesScaling: changes });
+        this.props.dispatch(selectDocument(this.props.documents[index].id));
+        this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
+    }
     loadSVGChocoTemplate(margin,n){
         const modifiers = {};
         const release = captureConsole();
@@ -748,8 +772,12 @@ class Cam extends React.Component {
                 let margins = [margin[0][0] + margin[1][0] + (n % 3) * that.state.stdMargin, margin[0][1] + margin[1][1] + stdMarginY * that.state.stdMargin];
                 console.log('margins are ', margins);
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margins[0], margins[1]]));
-                this.props.dispatch(transform2dSelectedDocuments(this.state.changesXY));
-                this.props.dispatch(transform2dSelectedDocuments(this.state.changesScaling));
+                that.props.dispatch(transform2dSelectedDocuments(that.state.changesXY));
+                let scaling = that.state.changesScaling;
+                //scaling[4] *= that.state.scalingCount * scaling[0];
+                //scaling[5] *= that.state.scalingCount * scaling[0];
+                that.scaleSec(that.state.changesScaling[0], n);
+                //that.props.dispatch(transform2dSelectedDocuments(scaling));
 
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
@@ -835,7 +863,6 @@ class Cam extends React.Component {
                             <option value="TrajanPro-Bold">TrajanPro-B</option>
                             <option value="Bevan">Eevan</option>
                         </Select>
-                        <br /> Text: <br />
                     </Form>
                     <FormGroup>
                         <div>
@@ -873,7 +900,7 @@ class Cam extends React.Component {
                         </div>    
                     <div>
                         <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
-                        <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >All Pieces</Button>
+                        <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
                         <div>
                             <br /> 
                             <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
