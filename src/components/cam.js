@@ -166,7 +166,7 @@ class Cam extends React.Component {
     componentWillMount() {
         let that = this
         console.log('this', this);
-        window.generateGcode = () => {
+        window.generateGcode = (run) => {
             let { settings, documents, operations } = that.props;
             let percent = 0;
             __interval = setInterval(() => {
@@ -181,8 +181,7 @@ class Cam extends React.Component {
                     that.props.dispatch(setGcode(gcode));
                     console.log('gcode is ready');
                     that.props.dispatch(generatingGcode(false))
-                    //this.runJob();
-
+                    run();
                 },
                 (threads) => {
                     percent = ((Array.isArray(threads)) ? (threads.reduce((a, b) => a + b, 0) / threads.length) : threads).toFixed(2);
@@ -194,9 +193,9 @@ class Cam extends React.Component {
         this.generateGcode.bind(this);
         this.stopGcode.bind(this);
     }
-    generateGcode() {
+    generateGcode(run) {
         console.log("game started now!");
-        this.QE = window.generateGcode();
+        this.QE = window.generateGcode(run);
     }
 
 
@@ -325,9 +324,8 @@ class Cam extends React.Component {
     }
 
     runJob() {/// bug here to be solved
-        /*if(this.state.content == '')
-            return;*/
-        this.generateGcode();
+
+        //this.generateGcode();
 
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
@@ -425,6 +423,7 @@ class Cam extends React.Component {
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);
         await this.props.dispatch(selectDocument(this.props.documents[0].id));
+        //this.runJob();
     }
     calcMargins(svgOutput){
 
@@ -616,7 +615,7 @@ class Cam extends React.Component {
                     'general state', generalState,
                      "Letters:  ", dims, max, mmDims, 'letter count:',
                  letterCount, 'letter width', letterWidth, layout);
-
+                //this.resolve(); resolve this means deepwork
                 let promise = new Promise( (resolve,reject) =>  {
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
                     /*that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
@@ -831,8 +830,9 @@ class Cam extends React.Component {
                                             that.props.documents[45].id
                                         ] }));
                                     that.props.dispatch(selectDocument(that.props.documents[0].id));
-                                    that.generateGcode();
-                                
+                                    that.generateGcode(function(){
+                                        that.runJob();
+                                    });
                                 }
                             })
                         });
@@ -871,7 +871,7 @@ class Cam extends React.Component {
 
         return (
             <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div className="panel panel-danger">
+                <div className="panel panel-danger well well-sm" style={{ marginBottom: 7 }}>
                     <Form onSubmit={this.handleSubmission}>
 
                         Font:
@@ -917,30 +917,29 @@ class Cam extends React.Component {
                             <textarea
                                 name="content" id="content" ref="content" maxLength="23"
                                 onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
-                        </div>    
-                    <div>
-                        <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
-                        <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
-                        <div>
-                            <br /> 
-                            <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="small" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
-                            <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
-                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.95) }} bsSize="small" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
-                            <br />
-                            <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
-                            <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
-                            <Button title="to the right" name="fontminus" onClick={() => { this.moveRight(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-right"} ></Button>
-                        </div>
-                        <div>
-                                <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={(e) => { this.runJob(e) }} title={this.state.warnings} >
-                                    <span className="fa-stack fa-1x">
-                                        <i id="playicon" className="fa fa-play fa-stack-1x"></i>
-                                    </span>
-                                </button>
+                        </div>  
+                        <div>  
+                            <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
+                            <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
+                            &nbsp;&nbsp;
+                            <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={(e) => { this.runJob(e) }} title={this.state.warnings} >
+                                <span className="fa-stack fa-1x">
+                                    <i id="playicon" className="fa fa-play fa-stack-1x"></i>
+                                </span>
+                            </button>
+                            <div>
+                                <br /> 
+                                <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
+                                <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
+                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.95) }} bsSize="large" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
+                                <br />
+                                <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
+                                <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
+                                <Button title="to the right" name="fontminus" onClick={() => { this.moveRight(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-right"} ></Button>
+                            </div>
+                       
 
                         </div>
-
-                    </div>
                     </FormGroup>
                 </div>
                 <div className="panel panel-danger" style={{ marginBottom: 0,display:"none" }}>
