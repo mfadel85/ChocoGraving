@@ -1358,7 +1358,7 @@ class Workspace extends React.Component {
                 <SetSize id="workspace-top">
                     <WorkspaceContent gcodePreview={this.gcodePreview} laserPreview={this.laserPreview} />
                 </SetSize>
-                <div id="workspace-controls">
+                <div id="workspace-controls" style={{display:'none'}}>
                     <div style={{ display: 'flex' }}>
                         <table>
                             <tbody>
@@ -1378,7 +1378,7 @@ class Workspace extends React.Component {
                                 </tr>
                                 <tr>
                                     <td>Show Laser</td>
-                                    <td><input checked={workspace.showLaser} onChange={setShowLaser} type="checkbox" /></td>
+                                    <td><input checked={false} onChange={setShowLaser} type="checkbox" /></td>
                                 </tr>
                                 <tr>
                                     <td>Show Documents</td>

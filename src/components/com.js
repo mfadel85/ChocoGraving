@@ -49,10 +49,11 @@ class Com extends React.Component {
         if (!socket && !serverConnected) {
             this.handleConnectServer();
             // MFH I added this
-            CommandHistory.write('Connecting Machine @ USB,/dev/ttyUSB0,115200baud', CommandHistory.INFO);
+            CommandHistory.write('Connecting Machine @ USB,COM3,115200baud', CommandHistory.INFO);
             let server = settings.comServerIP;
             socket = io('ws://' + server);
-            socket.emit('connectTo', 'USB' + ',' + '/dev/ttyUSB0' + ',' + '115200');       
+            socket.emit('connectTo', 'USB' + ',' + 'COM3' + ',' + '115200');
+            this.handleConnectMachine();
         }       
     }
 
@@ -69,7 +70,7 @@ class Com extends React.Component {
                 console.log('Main Testler');
                 let server = settings.comServerIP;
                 socket = io('ws://' + server);
-                socket.emit('connectTo', 'USB' + ',' + '/dev/ttyUSB0' + ',' + '115200');       
+                socket.emit('connectTo', 'USB' + ',' + 'COM3' + ',' + '115200');
             }
         } else {
             $('#connectS').addClass('disabled');
@@ -515,7 +516,7 @@ class Com extends React.Component {
 
         return (
             <div style={{paddingTop: 2}}>
-                <PanelGroup>
+                <PanelGroup style={{display:'none'}}>
                     <Panel collapsible header="Server Connection" bsStyle="primary" eventKey="1" defaultExpanded={false}>
                         <TextField {...{ object: settings, field: 'comServerIP', setAttrs: setSettingsAttrs, description: 'Server IP' }} />
                         <ButtonGroup>
@@ -524,7 +525,7 @@ class Com extends React.Component {
                         </ButtonGroup>
                     </Panel>
 
-                    <Panel collapsible header="Machine Connection" bsStyle="primary" eventKey="2" defaultExpanded={true}>
+                    <Panel collapsible header="Machine Connection" bsStyle="primary" eventKey="2" defaultExpanded={false}>
                         <SelectField {...{ object: settings, field: 'connectVia', setAttrs: setSettingsAttrs, data: this.state.comInterfaces, defaultValue: '', description: 'Machine Connection', selectProps: { clearable: false } }} />
                         <Collapse in={settings.connectVia == 'USB'}>
                             <div>

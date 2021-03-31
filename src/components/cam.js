@@ -25,7 +25,7 @@ import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
-import { runJob } from './com.js';
+import { runJob/*, handleConnectServer */} from './com.js';
 import CommandHistory from './command-history';
 import { Documents } from './document';
 import { withDocumentCache } from './document-cache';
@@ -40,7 +40,11 @@ import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
 import { OutRec } from 'clipper-lib';
+import Com from './com.js'
 //import { layout } from 'makerjs';
+import io from 'socket.io-client';
+var socket, connectVia;
+var serverConnected = false;
 
 const opentype = require('opentype.js');
 var playing = false;
@@ -122,6 +126,17 @@ class Cam extends React.Component {
             changesScaling: [1, 0, 0, 1, 0, 0],
             scalingCount:0
         }
+
+        /*if (!socket && !serverConnected) {
+            handleConnectServer();
+            // MFH I added this
+            CommandHistory.write('Connecting Machine @ USB,/dev/ttyUSB0,115200baud', CommandHistory.INFO);
+            let server = settings.comServerIP;
+            socket = io('ws://' + server);
+            socket.emit('connectTo', 'USB' + ',' + '/dev/ttyUSB0' + ',' + '115200');
+        }*/
+        let { settings, documents, operations } = this.props;
+
         this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -221,7 +236,7 @@ class Cam extends React.Component {
                 this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26 ,stepOver:100});
                 break;
             case 'ITCKRIST.TTF':
-                this.setState({ font: 'ITCKRIST.TTF', fontSize: 20, stepOver: 100});
+                this.setState({ font: 'ITCKRIST.TTF', fontSize: 28, stepOver: 100});
                 break;
             case 'TrajanPro-Bold.otf':
                 this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 22, stepOver: 100});
@@ -398,16 +413,18 @@ class Cam extends React.Component {
         console.log('width : ', width, 'height:', height);
         return [parseFloat(width), parseFloat(height)];
     }
-    generateAll(){
+    async generateAll(){
+        this.setState({ textEnabled:false});
         console.log('ttt',this.state);
         let margins = this.calcMargins(this.state.svgOutpout);
         console.log('calc margins', margins);
 
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
-        this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);
+        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
+        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
+        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
+        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
+        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);
+        await this.props.dispatch(selectDocument(this.props.documents[0].id));
     }
     calcMargins(svgOutput){
 
@@ -813,6 +830,9 @@ class Cam extends React.Component {
                                             that.props.documents[42].id,
                                             that.props.documents[45].id
                                         ] }));
+                                    that.props.dispatch(selectDocument(that.props.documents[0].id));
+                                    that.generateGcode();
+                                
                                 }
                             })
                         });
@@ -834,7 +854,7 @@ class Cam extends React.Component {
 
         const { selectedOption } = this.state;
 
-        //console.log('cam.js this.props: ',this.props);
+        console.log('cam.js this.props: ',this.props);
         let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument, bounds } = this.props;
         let validator = ValidateSettings(false)
         let valid = validator.passes();
@@ -911,6 +931,14 @@ class Cam extends React.Component {
                             <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
                             <Button title="to the right" name="fontminus" onClick={() => { this.moveRight(-0.5) }} bsSize="small" bsStyle="primary" className={"fa fa-arrow-right"} ></Button>
                         </div>
+                        <div>
+                                <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={(e) => { this.runJob(e) }} title={this.state.warnings} >
+                                    <span className="fa-stack fa-1x">
+                                        <i id="playicon" className="fa fa-play fa-stack-1x"></i>
+                                    </span>
+                                </button>
+
+                        </div>
 
                     </div>
                     </FormGroup>
@@ -955,8 +983,8 @@ class Cam extends React.Component {
                         </table>
                     </div>
                 </div>
-                <Splitter style={{ flexShrink: 0 }} split="horizontal" initialSize={100} resizerStyle={{ marginTop: 2, marginBottom: 2 }} splitterId="cam-documents">
-                    <div style={{ height: "100%", display: "flex", flexDirection: "column" }} >
+                <Splitter style={{ flexShrink: 0,display:'none' }} split="horizontal" initialSize={100} resizerStyle={{ marginTop: 2, marginBottom: 2 }} splitterId="cam-documents">
+                    <div style={{ height: "100%", display: "flex", flexDirection: "column", display:'none' }} >
                         <div style={{ overflowY: 'auto', flexGrow: 1 }}><Documents documents={documents} filter={this.state.filter} toggleExpanded={toggleDocumentExpanded} /></div>
                         {documents.length ? <ButtonToolbar bsSize="xsmall" bsStyle="default">
 
@@ -970,7 +998,7 @@ class Cam extends React.Component {
                                 <ColorPicker to="rgba" icon="pencil" bsSize="xsmall" disabled={!someSelected} onClick={v => this.props.dispatch(colorDocumentSelected({ strokeColor: v || [0, 0, 0, 1] }))} />
                                 <ColorPicker to="rgba" icon="paint-brush" bsSize="xsmall" disabled={!someSelected} onClick={v => this.props.dispatch(colorDocumentSelected({ fillColor: v || [0, 0, 0, 0] }))} />
                             </ButtonGroup>
-                            <SearchButton bsStyle="primary" bsSize="xsmall" search={this.state.filter} onSearch={filter => { this.setState({ filter }) }} placement="bottom"><Icon name="search" /></SearchButton>
+                            <SearchButton  bsStyle="primary" bsSize="xsmall" search={this.state.filter} onSearch={filter => { this.setState({ filter }) }} placement="bottom"><Icon name="search" /></SearchButton>
                         </ButtonToolbar> : undefined}
                     </div>
                 </Splitter>
@@ -981,15 +1009,15 @@ class Cam extends React.Component {
                                 <th>GCODE</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
-                                        <button title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
+                                        <button style={{ display: 'none' }} title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
                                         <ButtonGroup>
-                                            <button title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
-                                            <button title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
-                                            <FileField onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
+                                            <button style={{ display: 'none' }} title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
+                                            <button style={{ display: 'none' }} title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
+                                            <FileField style={{ display: 'none' }} onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
                                                 <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
                                             </FileField>
                                         </ButtonGroup>
-                                        <button title="Clear" className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
+                                        <button title="Clear" style={{ display: 'none' }} className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
                                     </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}</td>
                             </tr>
                         </tbody>
@@ -1000,6 +1028,8 @@ class Cam extends React.Component {
                     style={{ flexGrow: 2, display: "flex", flexDirection: "column",display:"none" }}
                 /*genGCode = {this./*generateGcode*//*docuementAdded}*/
                 />
+                <Com id="com" title="Comms" icon="plug" />
+
             </div>);
     }
 };
