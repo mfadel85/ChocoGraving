@@ -688,20 +688,26 @@ class WorkspaceContent extends React.Component {
         this.onPointerUp = this.onPointerUp.bind(this);
         this.onPointerCancel = this.onPointerCancel.bind(this);
 
+
         this.handleMouseOver = this.handleMouseOver.bind(this)
         this.handleMouseOut = this.handleMouseOut.bind(this)
 
         this.contextMenu = this.contextMenu.bind(this);
         this.wheel = this.wheel.bind(this);
         this.setCamera(this.props);
+        document.addEventListener("keydown", this.handleKeyDown);
 
-        bindKeys(this.bindings, 'workspace')
+        //bindKeys(this.bindings, 'workspace')
     }
 
     componentWillUnmount() {
         unbindKeys(this.bindings, 'workspace')
     }
-
+    handleKeyDown(e){
+        if (e.keyCode == 36 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39) {
+            console.log('Ne kadar severiz sizi?');
+        }
+    }
     removeSelected(e) {
         e.preventDefault();
         if (this.props.mode === 'jog') return;
@@ -1249,7 +1255,9 @@ class WorkspaceContent extends React.Component {
     render() {
         return (
             <div style={{ touchAction: 'none', userSelect: 'none' }} >
-                <Pointable tagName='div' touchAction="none"
+                <Pointable
+                    
+                 tagName='div' touchAction="none"
                     onPointerDown={this.onPointerDown} onPointerMove={this.onPointerMove}
                     onPointerUp={this.onPointerUp} onPointerCancel={this.onPointerCancel}
                     onWheel={this.wheel} onContextMenu={this.contextMenu}
@@ -1296,6 +1304,8 @@ class Workspace extends React.Component {
                 this.props.dispatch(setWorkspaceAttrs({ simTime: +e.target.value }));
         };
         this.zoomMachine = this.zoomMachine.bind(this);
+        this.onKeyPressed = this.onKeyPressed.bind(this);
+
         this.zoomDoc = this.zoomDoc.bind(this);
     }
 
@@ -1344,7 +1354,9 @@ class Workspace extends React.Component {
         if (found)
             this.props.dispatch(zoomArea(bounds.x1, bounds.y1, bounds.x2, bounds.y2));
     }
-
+    onKeyPressed() {
+        console.log('test');
+    }
     render() {
         let { camera, gcode, workspace, settings, setG0Rate, setRotaryDiameter, setShowPerspective, setShowGcode, setShowLaser, setShowDocuments, setShowRotary, setShowWebcam, setRasterPreview, enableVideo } = this.props;
         if (this.gcode !== gcode) {
@@ -1354,11 +1366,17 @@ class Workspace extends React.Component {
             this.laserPreview.setParsedGcode(parsedGcode);
         }
         return (
-            <div id="workspace" className="full-height" style={this.props.style}>
-                <SetSize id="workspace-top">
-                    <WorkspaceContent gcodePreview={this.gcodePreview} laserPreview={this.laserPreview} />
+            <div 
+                id="workspace" 
+                className="full-height" 
+                style={this.props.style} 
+                
+            >
+                <SetSize id="workspace-top" >
+                    <WorkspaceContent gcodePreview={this.gcodePreview} laserPreview={this.laserPreview} tabIndex="0"
+                        onKeyDown={this.onKeyPressed}/>
                 </SetSize>
-                <div id="workspace-controls" style={{display:'none'}}>
+                <div id="workspace-controls" style={{display:'block'}}>
                     <div style={{ display: 'flex' }}>
                         <table>
                             <tbody>

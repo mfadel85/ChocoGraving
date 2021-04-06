@@ -102,7 +102,7 @@ class Cam extends React.Component {
                 "shiftY": 10,
                 "file": "../Square.svg",
                 "scale": 0.001,
-                fontSize: 25
+                fontSize: 24
             },
             marginX: 0,
             marginY: 0,
@@ -148,7 +148,7 @@ class Cam extends React.Component {
         this.textWrapping = this.textWrapping.bind(this);
         this.generateAll = this.generateAll.bind(this);
         this.runJob = this.runJob.bind(this);
-
+        this.handleMoves = this.handleMoves(this);
         this.wordWrapped = this.wordWrapped.bind(this);
         this.moveDown = this.moveDown.bind(this);
         this.moveUp = this.moveUp.bind(this);
@@ -189,6 +189,7 @@ class Cam extends React.Component {
             );
             return QE;
         }
+        document.addEventListener("keydown", this.handleKeyDown);
 
         this.generateGcode.bind(this);
         this.stopGcode.bind(this);
@@ -232,19 +233,16 @@ class Cam extends React.Component {
         switch (selectedOption.value) {
 
             case 'Almarai-Bold.ttf':
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26 ,stepOver:100});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 23 ,stepOver:100});
                 break;
             case 'ITCKRIST.TTF':
-                this.setState({ font: 'ITCKRIST.TTF', fontSize: 28, stepOver: 100});
-                break;
-            case 'TrajanPro-Bold.otf':
-                this.setState({ font: 'TrajanPro-Bold.otf', fontSize: 22, stepOver: 100});
+                this.setState({ font: 'ITCKRIST.TTF', fontSize: 20, stepOver: 100});
                 break;
             case 'Bevan.ttf':
-                this.setState({ font: 'Bevan.ttf', fontSize: 18 ,stepOver:100});
+                this.setState({ font: 'Bevan.ttf', fontSize: 16 ,stepOver:100});
                 break;
             default:
-                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 26, stepOver: 100});
+                this.setState({ font: 'Almarai-Bold.ttf', fontSize: 23, stepOver: 100});
                 break;
         }
         this.props.dispatch(setFont(selectedOption.value));
@@ -253,9 +251,18 @@ class Cam extends React.Component {
 
     handleKeyDown(e) {
         
-        var words = e.target.value.split(" ");
-        if (words.length > this.state.activeTemplate.maxWordsEn) {
+        if(e.keyCode == 40 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39){
+            console.log('Ne kadar severiz sizi?');
+            switch(e.keyCode){
+                case 40:this.moveDown();break;
+                case 38:this.moveUp();break;
+                case 37:this.moveLeft();break;
+                case 39: this.moveRight();break;
+            }
         }
+        /*var words = e.target.value.split(" ");
+        if (words.length > this.state.activeTemplate.maxWordsEn) {
+        }*/
     }
     handleTemplateChange(e, templateName = null) {
         let { value } = e.target;
@@ -642,10 +649,13 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[0].id));
 
     }
+    handleMoves(){
+        console.log('testyyyy');
+    }
     moveUp(){
-        let chagnes = this.state.changesXY;
+        let changes = this.state.changesXY;
         changes[5] += 0.3;
-        this.setState({changesXY:changes});
+        this.setState({ changesXY: changes});
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1,0,0.3]));
     }
@@ -818,20 +828,22 @@ class Cam extends React.Component {
                                         documents: [
                                             that.props.documents[0].id,
                                             that.props.documents[33].id,
-                                        ] }));
-                                    that.props.dispatch(addOperation({
-                                        documents: [
                                             that.props.documents[36].id,
-                                            that.props.documents[39].id,
                                         ] }));
                                     that.props.dispatch(addOperation({
                                         documents: [
+                                            that.props.documents[39].id,
                                             that.props.documents[42].id,
                                             that.props.documents[45].id
                                         ] }));
+                                    /*that.props.dispatch(addOperation({
+                                        documents: [
+                                            
+                                            
+                                        ] }));*/
                                     that.props.dispatch(selectDocument(that.props.documents[0].id));
                                     that.generateGcode(function(){
-                                        that.runJob();
+                                        //that.runJob();
                                     });
                                 }
                             })
@@ -849,11 +861,8 @@ class Cam extends React.Component {
         });
     }
     render() {
-
         let globalState = GlobalStore().getState();
-
         const { selectedOption } = this.state;
-
         console.log('cam.js this.props: ',this.props);
         let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument, bounds } = this.props;
         let validator = ValidateSettings(false)
@@ -863,28 +872,19 @@ class Cam extends React.Component {
         const Fonts = [
             { value: 'Almarai-Bold.ttf', label: 'Arslan' },
             { value: 'ITCKRIST.TTF', label: 'ITCKRIST' },
-            { value: 'TrajanPro-Bold.otf', label: 'TrajanPro-B' },
             { value: 'Bevan.ttf', label: 'Bevan' },
         ];
 
-
-
         return (
-            <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div className="panel panel-danger well well-sm" style={{ marginBottom: 7 }}>
+            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                >
+                <div id="main2" className="panel panel-danger well well-sm" style={{ marginBottom: 7 }}  >
                     <Form onSubmit={this.handleSubmission}>
-
-                        Font:
+                    Font:
                     <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
-                            <option value="GreatVibes">Great Vibes</option>
-                            <option value="Arslan">ArslanFont</option>
-                            <option value="chocolatePristina">Pristina</option>
-                            <option value="ITCKRIST">ITCKRIST</option>
-                            <option value="TrajanPro-Bold">TrajanPro-B</option>
-                            <option value="Bevan">Eevan</option>
-                        </Select>
-                    </Form>
-                    <FormGroup>
+                    </Select>
+                    
+                    <FormGroup  >
                         <div>
                             <div className="form-check" >
                                 <label htmlFor="Oval">
@@ -900,19 +900,21 @@ class Cam extends React.Component {
                                         onChange={this.handleTemplateChange}
                                         className="form-check-input"
                                     />
-                            Rectangle </label>
+                                Rectangle 
+                                </label>
                                 <img src="rectangle.jpg" height="40" width="80" />
                             </div>
                             <div className="form-check">
                                 <label htmlFor="Square">
                                     <input type="radio" name="template" value="Square" onChange={this.handleTemplateChange}
                                         className="form-check-input" />
-                            Square </label>
+                                Square 
+                                 </label>
                                 <img src="rectangle.jpg" height="50" width="50" />
                             </div>
                         </div>
                        
-                        <div>
+                            <div >
                             Text:<br/>
                             <textarea
                                 name="content" id="content" ref="content" maxLength="23"
@@ -941,6 +943,7 @@ class Cam extends React.Component {
 
                         </div>
                     </FormGroup>
+                </Form>
                 </div>
                 <div className="panel panel-danger" style={{ marginBottom: 0,display:"none" }}>
                     <div className="panel-heading" style={{ padding: 2 }}>

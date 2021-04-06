@@ -53,7 +53,7 @@ class Com extends React.Component {
             let server = settings.comServerIP;
             socket = io('ws://' + server);
             socket.emit('connectTo', 'USB' + ',' + 'COM3' + ',' + '115200');
-            this.handleConnectMachine();
+            //this.handleConnectMachine();
         }       
     }
 
