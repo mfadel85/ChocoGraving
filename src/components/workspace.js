@@ -1043,6 +1043,8 @@ class WorkspaceContent extends React.Component {
                         result = cachedDocument;
             }
         });
+        if (this.props.documents[0].id != undefined)
+            result = this.props.documents[0].id;
         return result;
     }
 
@@ -1227,8 +1229,9 @@ class WorkspaceContent extends React.Component {
     }
 
     wheel(e) {
+        console.log('e is ',e);
         e.preventDefault();
-        this.zoom(e.pageX, e.pageY, Math.exp(e.deltaY / 2000));
+        //this.zoom(e.pageX, e.pageY, Math.exp(e.deltaY / 2000));
     }
 
     contextMenu(e) {

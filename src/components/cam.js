@@ -155,6 +155,7 @@ class Cam extends React.Component {
         this.moveLeft = this.moveLeft.bind(this);
         this.moveRight = this.moveRight.bind(this);
         this.scale = this.scale.bind(this);
+        this.wheel = this.wheel.bind(this);
 
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
@@ -190,6 +191,7 @@ class Cam extends React.Component {
             return QE;
         }
         document.addEventListener("keydown", this.handleKeyDown);
+        document.addEventListener("wheel", this.wheel);
 
         this.generateGcode.bind(this);
         this.stopGcode.bind(this);
@@ -248,7 +250,12 @@ class Cam extends React.Component {
         this.props.dispatch(setFont(selectedOption.value));
         this.setState({ font: selectedOption.value });
     };
-
+    wheel(e) {
+        console.log('e is ', e);
+        //e.preventDefault();
+        this.scale(Math.exp(e.deltaY / 2000));
+        //this.zoom(e.pageX, e.pageY, Math.exp(e.deltaY / 2000));
+    }
     handleKeyDown(e) {
         
         if(e.keyCode == 40 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39){
