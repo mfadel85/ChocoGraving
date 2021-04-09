@@ -1043,7 +1043,7 @@ class WorkspaceContent extends React.Component {
                         result = cachedDocument;
             }
         });
-        if (this.props.documents[0].id != undefined)
+        if (this.props.documents[0].id != undefined) // MFH
             result = this.props.documents[0].id;
         return result;
     }
@@ -1095,14 +1095,14 @@ class WorkspaceContent extends React.Component {
         let cachedDocument = this.hitTest(e.pageX, e.pageY);
         if (cachedDocument && e.button === 0 && !this.jogMode) {
             this.movingObjects = true;
-            if (cachedDocument.document.selected)
+            /*if (cachedDocument.document.selected)
                 this.needToSelect = cachedDocument.document.id;
             else {
                 if (this.toggle)
                     this.props.dispatch(toggleSelectDocument(cachedDocument.id));
                 else
                     this.props.dispatch(selectDocument(cachedDocument.id));
-            }
+            }*/
         } else {
             this.adjustingCamera = true;
         }
@@ -1130,7 +1130,9 @@ class WorkspaceContent extends React.Component {
         this.pointers = this.pointers.filter(x => x.pointerId !== e.pointerId);
         this.fingers = null;
     }
-
+    registerChange(change){
+        console.log(change);
+    }
     onPointerMove(e) {
         e.preventDefault();
         let pointer = this.pointers.find(x => x.pointerId === e.pointerId);
@@ -1146,8 +1148,14 @@ class WorkspaceContent extends React.Component {
             this.needToSelect = null;
             let p1 = this.xyInterceptFromPoint(e.pageX, e.pageY);
             let p2 = this.xyInterceptFromPoint(pointer.pageX, pointer.pageY);
-            if (p1 && p2)
+            if (p1 && p2){
                 this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]));
+                this.registerChange([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]);
+                this.props.documentCacheHolder.onMovedAway([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]);
+            }
+                
+                // I should save all these moves and put them on the state of cam.js how could I do that?
+                // my work here to register all moves and then apply them to all of the things.
             pointer.pageX = e.pageX;
             pointer.pageY = e.pageY;
         } else if (this.adjustingCamera) {

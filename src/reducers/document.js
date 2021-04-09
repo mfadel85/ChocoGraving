@@ -23,6 +23,7 @@ export const DOCUMENT_INITIALSTATE = {
     selected: false,
     visible: true,
     transform2d: null,
+    changes: [1, 0, 0, 1, 0, 0],
     rawPaths: null,
     strokeColor: null,
     fillColor: null,
@@ -37,8 +38,12 @@ export function document(state, action) {
     //console.log("Action is ",action);
     switch (action.type) {
         case 'DOCUMENT_TRANSFORM2D_SELECTED':
-            if (state.selected && state.transform2d)
-                return { ...state, transform2d: mat2d.multiply([], action.payload, state.transform2d) };
+            if (state.selected && state.transform2d){
+                let newChanges = state.changes;
+                newChanges[4] += action.payload[4];
+                newChanges[5] += action.payload[5];
+                return { ...state, changes: newChanges,transform2d: mat2d.multiply([], action.payload, state.transform2d) };
+            }
             else
                 return state;
         case 'LOADED':
