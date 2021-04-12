@@ -20,7 +20,7 @@ import ReactDOM from 'react-dom';
 
 import { GlobalStore } from '..';
 import { setCameraAttrs, zoomArea } from '../actions/camera'
-import { selectDocument, toggleSelectDocument, transform2dSelectedDocuments, removeDocumentSelected, cloneDocumentSelected } from '../actions/document';
+import { selectDocument, toggleSelectDocument, transform2dSelectedDocuments, transform2dSelectedDocumentsMoving, removeDocumentSelected, cloneDocumentSelected } from '../actions/document';
 import { setWorkspaceAttrs } from '../actions/workspace';
 import { setSettingsAttrs } from '../actions/settings';
 
@@ -1149,7 +1149,7 @@ class WorkspaceContent extends React.Component {
             let p1 = this.xyInterceptFromPoint(e.pageX, e.pageY);
             let p2 = this.xyInterceptFromPoint(pointer.pageX, pointer.pageY);
             if (p1 && p2){
-                this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]));
+                this.props.dispatch(transform2dSelectedDocumentsMoving([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]));
                 this.registerChange([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]);
                 this.props.documentCacheHolder.onMovedAway([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]);
             }
@@ -1387,7 +1387,7 @@ class Workspace extends React.Component {
                     <WorkspaceContent gcodePreview={this.gcodePreview} laserPreview={this.laserPreview} tabIndex="0"
                         onKeyDown={this.onKeyPressed}/>
                 </SetSize>
-                <div id="workspace-controls" style={{display:'block'}}>
+                <div id="workspace-controls" style={{display:'none'}}>
                     <div style={{ display: 'flex' }}>
                         <table>
                             <tbody>
@@ -1407,7 +1407,7 @@ class Workspace extends React.Component {
                                 </tr>
                                 <tr>
                                     <td>Show Laser</td>
-                                    <td><input checked={false} onChange={setShowLaser} type="checkbox" /></td>
+                                    <td><input checked={workspace.showLaser} onChange={setShowLaser} type="checkbox" /></td>
                                 </tr>
                                 <tr>
                                     <td>Show Documents</td>

@@ -39,13 +39,24 @@ export function document(state, action) {
     switch (action.type) {
         case 'DOCUMENT_TRANSFORM2D_SELECTED':
             if (state.selected && state.transform2d){
-                let newChanges = state.changes;
+                /*let newChanges = state.changes;
                 newChanges[4] += action.payload[4];
-                newChanges[5] += action.payload[5];
-                return { ...state, changes: newChanges,transform2d: mat2d.multiply([], action.payload, state.transform2d) };
+                newChanges[5] += action.payload[5];*/
+                return { ...state, transform2d: mat2d.multiply([], action.payload, state.transform2d) };
             }
             else
                 return state;
+        break;
+        case 'DOCUMENT_TRANSFORM2D_SELECTED_MOVEMENT':
+            if (state.selected && state.transform2d) {
+                let newChanges = state.changes;
+                newChanges[4] += action.payload[4];
+                newChanges[5] += action.payload[5];
+                return { ...state, changes: newChanges, transform2d: mat2d.multiply([], action.payload, state.transform2d) };
+            }
+            else
+                return state;
+        break;
         case 'LOADED':
             state = { ...state };
             if (state.translate && state.scale && !state.transform2d) {

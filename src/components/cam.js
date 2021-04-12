@@ -16,7 +16,7 @@
 import React from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, toggleSelectDocument } from '../actions/document';
+import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
 import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
@@ -43,6 +43,7 @@ import { OutRec } from 'clipper-lib';
 import Com from './com.js'
 //import { layout } from 'makerjs';
 import io from 'socket.io-client';
+import { fixupOperations } from '../reducers/operation';
 var socket, connectVia;
 var serverConnected = false;
 
@@ -120,6 +121,8 @@ class Cam extends React.Component {
             textEnabled:true,
             generalAllEnable:false,
             moldShifts: [70, 65],
+            extraShift: [1, 0, 0, 1, 0, 0],
+            originalShift: [0, 0],
             stdMargin:  50,
             svgDim:[],
             changesXY:[1,0,0,1,0,0],
@@ -190,6 +193,7 @@ class Cam extends React.Component {
             );
             return QE;
         }
+
         document.addEventListener("keydown", this.handleKeyDown);
         document.addEventListener("wheel", this.wheel);
 
@@ -259,7 +263,6 @@ class Cam extends React.Component {
     handleKeyDown(e) {
         
         if(e.keyCode == 40 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39){
-            console.log('Ne kadar severiz sizi?');
             switch(e.keyCode){
                 case 40:this.moveDown();break;
                 case 38:this.moveUp();break;
@@ -309,10 +312,8 @@ class Cam extends React.Component {
         var ltrChars = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' + '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF',
             rtlChars = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC',
             rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']');
-        if (rtlDirCheck.test(s.target.value)) {
+        if (rtlDirCheck.test(s.target.value)) 
             this.setState({ direction: 'RTL',textEnabled:true });
-        }
-
         else
             this.setState({ direction: 'LTR',textEnabled:true });
         return rtlDirCheck.test(s.target.value);
@@ -348,7 +349,6 @@ class Cam extends React.Component {
             let cmd = this.props.gcode;
             console.log('runJob(' + cmd.length + ')');
             playing = true;
-
             runJob(cmd);
         }
         else {
@@ -426,6 +426,13 @@ class Cam extends React.Component {
         return [parseFloat(width), parseFloat(height)];
     }
     async generateAll(){
+        this.props.documents.forEach((element,index) => {
+            if(index >32){
+                this.props.dispatch(selectDocument(this.props.documents[index].id));
+                this.props.dispatch(removeDocumentSelected(this.props.documents[index].id));
+            }
+        });
+        /// remove all documents
         this.setState({ textEnabled:false});
         console.log('ttt',this.state);
         let margins = this.calcMargins(this.state.svgOutpout);
@@ -447,6 +454,11 @@ class Cam extends React.Component {
         let margins = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
         return margins;
     }
+
+    updateShifts(){
+        console.log('test');
+    }
+
     textWrapping() {
         let text = GlobalStore().getState().gcode.text.data;
         let globalState = GlobalStore().getState();
@@ -652,7 +664,8 @@ class Cam extends React.Component {
             }
         })
     }
-    deleteDocuments(){
+
+    deleteDocuments(){// to delete all documents except the first one
         this.props.dispatch(selectDocument(this.props.documents[0].id));
 
     }
@@ -803,14 +816,30 @@ class Cam extends React.Component {
                 if (n > 2)
                     stdMarginY = 1;
                 let margins = [margin[0][0] + margin[1][0] + (n % 3) * that.state.stdMargin, margin[0][1] + margin[1][1] + stdMarginY * that.state.stdMargin];
-                console.log('margins are ', margins);
+                console.log('marGins are ', margins);
                 that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margins[0], margins[1]]));
                 that.props.dispatch(transform2dSelectedDocuments(that.state.changesXY));
+                //let moves = array();
+                /**/
+
                 let scaling = that.state.changesScaling;
                 //scaling[4] *= that.state.scalingCount * scaling[0];
                 //scaling[5] *= that.state.scalingCount * scaling[0];
                 that.scaleSec(that.state.changesScaling[0], n);
                 //that.props.dispatch(transform2dSelectedDocuments(scaling));
+                
+                if (n == 1) { ///  
+                    let newExtraShift = that.state.extraShift;
+                    newExtraShift[4] = that.props.documents[32].changes[4] - that.state.originalShift[0] - that.state.changesXY[4]/* - margins[0]*/;
+                    newExtraShift[5] = that.props.documents[32].changes[5] - that.state.originalShift[1] - that.state.changesXY[5]/* - margins[1]*/;
+                    that.setState({ extraShift: newExtraShift},() =>{
+                        that.props.dispatch(transform2dSelectedDocuments(newExtraShift));
+                    })
+                }
+                if(n > 1){
+                    that.props.dispatch(transform2dSelectedDocuments(that.state.extraShift));
+
+                }
 
                 fetch(activeTemplate.file)
                     .then(resp => resp.text())
@@ -828,7 +857,9 @@ class Cam extends React.Component {
                             imageTagPromise(tags).then((tags) => { 
                                 //that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                             }).then(() => {
-
+                                if (n == 0) {
+                                    that.setState({ originalShift: [that.props.documents[32].changes[4], that.props.documents[32].changes[5]] })
+                                }
                                 if (n > 4) {
                                     
                                     that.props.dispatch(addOperation({

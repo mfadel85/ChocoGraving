@@ -17,7 +17,7 @@ export function toggleSelectDocument(id) {
 };
 
 export function toggleVisibleDocument(id) {
-    //console.log('toggleVisibleDocument being called',id);
+    
     return { type: 'DOCUMENT_TOGGLE_VISIBLE', payload: { id } };
 };
 
@@ -25,6 +25,10 @@ export function transform2dSelectedDocuments(transform2d) {
     console.log('transform2dSelectedDocuments being called',transform2d);
 
     return { type: 'DOCUMENT_TRANSFORM2D_SELECTED', payload: transform2d };
+}
+//
+export function transform2dSelectedDocumentsMoving(transform2d) {
+    return { type: 'DOCUMENT_TRANSFORM2D_SELECTED_MOVEMENT', payload: transform2d };
 }
 
 export function loadDocument(file, content, modifiers = {}, context = undefined) {
