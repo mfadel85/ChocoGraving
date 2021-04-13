@@ -1151,7 +1151,6 @@ class WorkspaceContent extends React.Component {
             if (p1 && p2){
                 this.props.dispatch(transform2dSelectedDocumentsMoving([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]));
                 this.registerChange([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]);
-                this.props.documentCacheHolder.onMovedAway([1, 0, 0, 1, p1[0] - p2[0], p1[1] - p2[1]]);
             }
                 
                 // I should save all these moves and put them on the state of cam.js how could I do that?
