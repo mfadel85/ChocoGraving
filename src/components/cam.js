@@ -919,7 +919,7 @@ class Cam extends React.Component {
         ];
 
         return (
-            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '300px',margin:'10px' }}
                 >
                 <div id="main2" className="panel panel-danger well well-sm" style={{ marginBottom: 7 }}  >
                     <Form onSubmit={this.handleSubmission}>
@@ -965,14 +965,14 @@ class Cam extends React.Component {
                         </div>  
                         <div>  
                             <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
-                            <Button name="generateAll" disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
+                            <Button name="generateAll" style={{display:"none"}} disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
                             &nbsp;&nbsp;
-                            <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={(e) => { this.runJob(e) }} title={this.state.warnings} >
+                            <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={this.generateAll} title={this.state.warnings} >
                                 <span className="fa-stack fa-1x">
                                     <i id="playicon" className="fa fa-play fa-stack-1x"></i>
                                 </span>
                             </button>
-                            <div>
+                            <div style={{display:'none'}}>
                                 <br /> 
                                 <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
                                 <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
@@ -1006,7 +1006,28 @@ class Cam extends React.Component {
                         </table>
                     </div>
                 </div>
-                <div className="Resizer horizontal" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
+                <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7, display: "block" }}>
+                    <table style={{ width: 100 + '%' }}>
+                        <tbody>
+                            <tr>
+                                <th>Progress</th>
+                                <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
+                                    <ButtonToolbar style={{ float: "right" }}>
+                                        <button style={{ display: 'none' }} title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
+                                        <ButtonGroup>
+                                            <button style={{ display: 'none' }} title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
+                                            <button style={{ display: 'none' }} title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
+                                            <FileField style={{ display: 'none' }} onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
+                                                <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
+                                            </FileField>
+                                        </ButtonGroup>
+                                        <button title="Clear" style={{ display: 'none' }} className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
+                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </Alert>
+                <div className="Resizer horizontal" style={{ marginTop: '2px', marginBottom: '2px',display:'none' }}></div>
                 <div className="panel panel-info" style={{ marginBottom: 3,display:"none" }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
@@ -1028,6 +1049,7 @@ class Cam extends React.Component {
                         </table>
                     </div>
                 </div>
+
                 <Splitter style={{ flexShrink: 0,display:'none' }} split="horizontal" initialSize={100} resizerStyle={{ marginTop: 2, marginBottom: 2 }} splitterId="cam-documents">
                     <div style={{ height: "100%", display: "flex", flexDirection: "column", display:'none' }} >
                         <div style={{ overflowY: 'auto', flexGrow: 1 }}><Documents documents={documents} filter={this.state.filter} toggleExpanded={toggleDocumentExpanded} /></div>
@@ -1047,27 +1069,7 @@ class Cam extends React.Component {
                         </ButtonToolbar> : undefined}
                     </div>
                 </Splitter>
-                <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7,display:"block" }}>
-                    <table style={{ width: 100 + '%' }}>
-                        <tbody>
-                            <tr>
-                                <th>GCODE</th>
-                                <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
-                                    <ButtonToolbar style={{ float: "right" }}>
-                                        <button style={{ display: 'none' }} title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
-                                        <ButtonGroup>
-                                            <button style={{ display: 'none' }} title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
-                                            <button style={{ display: 'none' }} title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
-                                            <FileField style={{ display: 'none' }} onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
-                                                <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
-                                            </FileField>
-                                        </ButtonGroup>
-                                        <button title="Clear" style={{ display: 'none' }} className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
-                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </Alert>
+
                 <OperationDiagram {...{ operations, currentOperation }}  style={{display:"none"}} />
                 <Operations
                     style={{ flexGrow: 2, display: "flex", flexDirection: "column",display:"none" }}

@@ -186,14 +186,15 @@ class LaserWeb extends React.Component {
 
         return (
             <AllowCapture style={{ height: '100%' }}>
-                <DocumentCacheHolder style={{ width: '100%' }} documents={this.props.documents}>
+                <DocumentCacheHolder style={{ width: '100%' }}  documents={this.props.documents}>
                     <div style={{ display: 'flex', flexDirection: 'row', height: '100%' }}>
-                        <Sidebar ref="sidebar" style={{ flexGrow: 0, flexShrink: 0 }}>
-                            <Cam id="cam" title="Files" icon="pencil-square-o" />
+                        <Sidebar ref="sidebar" style={{ flexGrow: 0, flexShrink: 0,display:'none' }}>
                             <Com id="com" title="Comms" icon="plug" />
-                            <Jog id="jog" title="Control" icon="arrows-alt" />
+                            <Jog id="jog"  title="Control" icon="arrows-alt" />
                         </Sidebar>
-                        <Workspace style={{ flexGrow: 1, position: "relative" }} />
+                        <Cam id="cam" title="Files" icon="pencil-square-o" style={{ flexGrow: 0, flexShrink: 0}} />
+
+                        <Workspace  style={{ flexGrow: 1, position: "relative" }} />
                     </div>
                 </DocumentCacheHolder>
             </AllowCapture>
