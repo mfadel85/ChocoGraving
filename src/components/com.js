@@ -52,7 +52,7 @@ class Com extends React.Component {
             CommandHistory.write('Connecting Machine @ USB,COM3,115200baud', CommandHistory.INFO);
             let server = settings.comServerIP;
             socket = io('ws://' + server);
-            socket.emit('connectTo', 'USB' + ',' + 'COM3' + ',' + '115200');
+            socket.emit('connectTo', 'USB' + ',' + 'COM6' + ',' + '115200');
             //this.handleConnectMachine();
         }       
     }
@@ -70,7 +70,7 @@ class Com extends React.Component {
                 console.log('Main Testler');
                 let server = settings.comServerIP;
                 socket = io('ws://' + server);
-                socket.emit('connectTo', 'USB' + ',' + 'COM3' + ',' + '115200');
+                socket.emit('connectTo', 'USB' + ',' + 'COM6' + ',' + '115200');
             }
         } else {
             $('#connectS').addClass('disabled');
