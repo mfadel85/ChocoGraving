@@ -437,12 +437,17 @@ class Cam extends React.Component {
         console.log('ttt',this.state);
         let margins = this.calcMargins(this.state.svgOutpout);
         console.log('calc margins', margins);
-
+        let that = this;
+        let runJob = function () {
+            that.generateGcode(function () {
+                that.runJob();
+            });
+        };
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
-        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5);
+        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5,runJob);
         await this.props.dispatch(selectDocument(this.props.documents[0].id));
         //this.runJob();
     }
@@ -460,6 +465,12 @@ class Cam extends React.Component {
     }
 
     textWrapping() {
+        this.props.documents.forEach((element, index) => {
+            if (index > 0) {
+                this.props.dispatch(selectDocument(this.props.documents[index].id));
+                this.props.dispatch(removeDocumentSelected(this.props.documents[index].id));
+            }
+        });
         let text = GlobalStore().getState().gcode.text.data;
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
@@ -644,11 +655,6 @@ class Cam extends React.Component {
                 //this.resolve(); resolve this means deepwork
                 let promise = new Promise( (resolve,reject) =>  {
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
-                    /*that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file2.svg', 1);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file3.svg', 2);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file4.svg', 3);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file5.svg', 4);
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 5);*/
                 });
                 that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
 
@@ -776,7 +782,7 @@ class Cam extends React.Component {
 
 
     }
-    parseSVG(svg,that,margin,fileName,n){
+    parseSVG(svg,that,margin,fileName,n,runJob){
         let activeTemplate = that.state.activeTemplate;
         const release = captureConsole();
         const parser = new Parser({});
@@ -880,9 +886,8 @@ class Cam extends React.Component {
                                             
                                         ] }));*/
                                     that.props.dispatch(selectDocument(that.props.documents[0].id));
-                                    that.generateGcode(function(){
-                                        //that.runJob();
-                                    });
+                                    runJob();
+                                    
                                 }
                             })
                         });
