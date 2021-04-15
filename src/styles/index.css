@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css?family=Inconsolata');
+@import url('https://fonts.googleapis.com/css2?family=Cairo&display=swap');
 
 /* Global */
 
 body, html, .full-height {
     height: 100%;
+    font-family: 'Cairo', sans-serif;
 }
 
 /*Hack for smaller inputs / selects in BS */
@@ -701,4 +702,24 @@ canvas.ImagePort {width: 100%; height:100%; background:#ffffff; pointer-events:'
      overflow-y: auto;
      padding: 0.5em; margin: 1em 0 1em 0; border: 1px solid green; 
      border-radius: 5px
+}
+
+
+.App{
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+.box{
+  margin: 10px;
+  padding: 20px;
+  border: 2px solid salmon;
+  text-align: center;
+  color: salmon;
+}
+
+.shape:focus {
+  opacity: 0.5;
+}
+:target {
+  opacity: 0.5;
 }

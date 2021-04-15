@@ -14,7 +14,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import React from 'react';
-import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text,Row,Col,Container,Grid } from 'react-bootstrap';
+//import Row from 'react-bootstrap/Row'
 import { connect } from 'react-redux';
 import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
@@ -919,20 +920,82 @@ class Cam extends React.Component {
         ];
 
         return (
-            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '345px' }} >
-                <div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7, backgroundColor:'#443B34',color:'white' }}  >
+            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '450px' }} >
+                <div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
                     <div className="well-sm" style={{ padding:'15px',backgroundColor: "#332C26", color:"white" }}>
                         <span style={{fontSize:'16px'}}>SELECT SHAPE</span><br/>
                         <span style={{fontSize:'12px'}}>Choose a shape of your choice to start customizing.</span>
                     </div>
-                    <Form onSubmit={this.handleSubmission} style={{ padding:'15px' }}>
-                        <div style={{ fontSize: '16px' }}><span > Small Shapes</span></div>
-
-                    Font:
-                    <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
-                    </Select>
-                    
-                    <FormGroup  >
+                    <Form onSubmit={this.handleSubmission} >
+                    <div style={{ backgroundColor: '#443B34'}}>
+                        <div style={{ fontSize: '16px', textAlign: 'center'}}> Small Shapes</div>
+                        
+                        <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center'}}>
+                                <Col>
+                                    <div style={{ width: '85px', display:'inline-block',margin:'10px',paddingBottom:'5px'}}>
+                                    <img className="shape" src="shape1.png" style={{ paddingBottom: '5px'}}></img>
+                                            <span >Square in Square</span>
+                                        </div>
+                                    <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
+                                    <img src="shape2.png" style={{ paddingBottom: '5px' }}></img>
+                                            <br />
+                                            <span >Circle in Square</span>
+                                    </div>
+                                    <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
+                                    <img src="shape3.png" style={{ paddingBottom: '5px' }}></img>
+                                            <br />
+                                            <span >Heart in Square</span>
+                                    </div>
+                                <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
+                                    <img src="shape5.png" style={{ paddingBottom: '5px' }}></img>
+                                            <br />
+                                    <span >Circle</span>
+                                    </div>
+                                </Col>
+                            <Col>
+                                <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
+                                    <img src="shape6.png" style={{ paddingBottom: '5px' }}></img>
+                                    <span >Baby Shirt</span>
+                                </div>
+                                <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
+                                    <img src="shape7.png" style={{ paddingBottom: '5px' }}></img>
+                                    <br />
+                                    <span >Stroller</span>
+                                </div>
+                                <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
+                                    <img src="shape8.png" style={{ paddingBottom: '5px' }}></img>
+                                    <br />
+                                    <span >Heart</span>
+                                </div>
+                                <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
+                                    <img src="shape9.png" style={{ paddingBottom: '5px' }}></img>
+                                    <br />
+                                    <span >Oval</span>
+                                </div>
+                            </Col>
+                            <Col>
+                                <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
+                                    <img src="shape4.png" style={{ paddingBottom: '5px' }}></img>
+                                    <span style={{ fontSize: "10px" }}>Rectangle</span>
+                                </div>
+                            </Col>
+                        </Row>
+                            <Row style={{ backgroundColor: "#332C26",  fontSize: "11px", textAlign: 'center' }}>
+                                <div style={{ fontSize: '16px', textAlign: 'center' }}> Big Bars</div>
+                                <Col>
+                                    <div style={{ width: '225px', display: 'inline-block', margin: '10px' }}>
+                                        <img src="shape10.png" style={{ paddingBottom: '5px' }}></img>
+                                        <span style={{ fontSize: "10px" }}>Rectangle</span>
+                                    </div>
+                                </Col>
+                        </Row>
+                        </div>
+                        Font:
+                       
+                        
+                        <FormGroup style={{ margin: '10px'}}>
+                            <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
+                                </Select>
                         <div>
                             <div className="form-check" >
                                 <label htmlFor="Oval">
@@ -965,7 +1028,7 @@ class Cam extends React.Component {
                             <div >
                             Text:<br/>
                             <textarea
-                                name="content" id="content" ref="content" maxLength="23"
+                                name="content" id="content" ref="content" maxLength="23" style={{color:'black'}}
                                 onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
                         </div>  
                         <div>  
