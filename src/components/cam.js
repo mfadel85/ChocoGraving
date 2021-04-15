@@ -919,10 +919,15 @@ class Cam extends React.Component {
         ];
 
         return (
-            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '300px',margin:'10px' }}
-                >
-                <div id="main2" className="panel panel-danger well well-sm" style={{ marginBottom: 7 }}  >
-                    <Form onSubmit={this.handleSubmission}>
+            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '345px' }} >
+                <div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7, backgroundColor:'#443B34',color:'white' }}  >
+                    <div className="well-sm" style={{ padding:'15px',backgroundColor: "#332C26", color:"white" }}>
+                        <span style={{fontSize:'16px'}}>SELECT SHAPE</span><br/>
+                        <span style={{fontSize:'12px'}}>Choose a shape of your choice to start customizing.</span>
+                    </div>
+                    <Form onSubmit={this.handleSubmission} style={{ padding:'15px' }}>
+                        <div style={{ fontSize: '16px' }}><span > Small Shapes</span></div>
+
                     Font:
                     <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
                     </Select>
