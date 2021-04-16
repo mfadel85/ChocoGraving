@@ -128,7 +128,10 @@ class Cam extends React.Component {
             svgDim:[],
             changesXY:[1,0,0,1,0,0],
             changesScaling: [1, 0, 0, 1, 0, 0],
-            scalingCount:0
+            scalingCount:0,
+            step1:true,
+            step2:false,
+            step3:false
         }
 
         /*if (!socket && !serverConnected) {
@@ -160,6 +163,7 @@ class Cam extends React.Component {
         this.moveRight = this.moveRight.bind(this);
         this.scale = this.scale.bind(this);
         this.wheel = this.wheel.bind(this);
+        this.handleSinS = this.handleSinS.bind(this);
 
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
@@ -335,7 +339,10 @@ class Cam extends React.Component {
             nextProps.gcode !== this.props.gcode ||    // Needed for saveGcode() to work
             nextProps.gcoding.percent !== this.props.gcoding.percent ||
             nextProps.gcoding.enable !== this.props.gcoding.enable ||
-            nextState.filter !== this.state.filter
+            nextState.filter !== this.state.filter || 
+            nextState.step1 !== this.state.step1 ||
+            nextState.step2 !== this.state.step2 ||
+            nextState.step3 !== this.state.step3
         );
     }
 
@@ -904,7 +911,13 @@ class Cam extends React.Component {
             content: text
         });
     }
+    handleSinS(){
+        this.setState({step1:false,step2:true})
+    }
     render() {
+        /*
+        list of changes to be made to this code
+         */
         let globalState = GlobalStore().getState();
         const { selectedOption } = this.state;
         console.log('cam.js this.props: ',this.props);
@@ -921,7 +934,7 @@ class Cam extends React.Component {
 
         return (
             <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '450px' }} >
-                <div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
+                { this.state.step1 && (<div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
                     <div className="well-sm" style={{ padding:'15px',backgroundColor: "#332C26", color:"white" }}>
                         <span style={{fontSize:'16px'}}>SELECT SHAPE</span><br/>
                         <span style={{fontSize:'12px'}}>Choose a shape of your choice to start customizing.</span>
@@ -930,10 +943,10 @@ class Cam extends React.Component {
                     <div style={{ backgroundColor: '#443B34'}}>
                         <div style={{ fontSize: '16px', textAlign: 'center'}}> Small Shapes</div>
                         
-                        <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center'}}>
+                            <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center'}}>
                                 <Col>
                                     <div style={{ width: '85px', display:'inline-block',margin:'10px',paddingBottom:'5px'}}>
-                                    <img className="shape" src="shape1.png" style={{ paddingBottom: '5px'}}></img>
+                                    <img className="shape" src="shape1.png" style={{ paddingBottom: '5px'}} onClick={ this.handleSinS } ></img>
                                             <span >Square in Square</span>
                                         </div>
                                     <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
@@ -979,7 +992,7 @@ class Cam extends React.Component {
                                     <span style={{ fontSize: "10px" }}>Rectangle</span>
                                 </div>
                             </Col>
-                        </Row>
+                            </Row>
                             <Row style={{ backgroundColor: "#332C26",  fontSize: "11px", textAlign: 'center' }}>
                                 <div style={{ fontSize: '16px', textAlign: 'center' }}> Big Bars</div>
                                 <Col>
@@ -988,74 +1001,23 @@ class Cam extends React.Component {
                                         <span style={{ fontSize: "10px" }}>Rectangle</span>
                                     </div>
                                 </Col>
-                        </Row>
-                        </div>
-                        Font:
-                       
-                        
-                        <FormGroup style={{ margin: '10px'}}>
-                            <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
-                                </Select>
-                        <div>
-                            <div className="form-check" >
-                                <label htmlFor="Oval">
-                                    <input type="radio" name="template" value="Oval"
-                                        onChange={this.handleTemplateChange}
-                                        className="form-check-input" />
-                            Oval </label>
-                                <img src="oval.jpg" height="40" width="80" />
-                            </div>
-                            <div className="form-check">
-                                <label htmlFor="Rectangle">
-                                    <input type="radio" name="template" value="Rectangle"
-                                        onChange={this.handleTemplateChange}
-                                        className="form-check-input"
-                                    />
-                                Rectangle 
-                                </label>
-                                <img src="rectangle.jpg" height="40" width="80" />
-                            </div>
-                            <div className="form-check">
-                                <label htmlFor="Square">
-                                    <input type="radio" name="template" value="Square" onChange={this.handleTemplateChange}
-                                        className="form-check-input" />
-                                Square 
-                                 </label>
-                                <img src="rectangle.jpg" height="50" width="50" />
-                            </div>
+                            </Row>
+                            
                         </div>
                        
-                            <div >
-                            Text:<br/>
-                            <textarea
-                                name="content" id="content" ref="content" maxLength="23" style={{color:'black'}}
-                                onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
-                        </div>  
-                        <div>  
-                            <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
-                            <Button name="generateAll" style={{display:"none"}} disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
-                            &nbsp;&nbsp;
-                            <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={this.generateAll} title={this.state.warnings} >
-                                <span className="fa-stack fa-1x">
-                                    <i id="playicon" className="fa fa-play fa-stack-1x"></i>
-                                </span>
-                            </button>
-                            <div style={{display:'none'}}>
-                                <br /> 
-                                <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
-                                <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
-                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.95) }} bsSize="large" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
-                                <br />
-                                <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
-                                <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
-                                <Button title="to the right" name="fontminus" onClick={() => { this.moveRight(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-right"} ></Button>
-                            </div>
-                       
-
-                        </div>
-                    </FormGroup>
                 </Form>
-                </div>
+                </div>)}
+                {this.state.step2 && (
+                    <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                    <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
+                        <span style={{ fontSize: '16px' }}>Create Content</span><br />
+                        <span style={{ fontSize: '12px' }}>Place a content of your choice on the piece.</span>
+                    </div>
+                    <div style={{ backgroundColor: '#443B34' }}>
+                        Test
+                    </div>
+                    </Row>
+                )}
                 <div className="panel panel-danger" style={{ marginBottom: 0,display:"none" }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
@@ -1073,6 +1035,71 @@ class Cam extends React.Component {
                             </tbody>
                         </table>
                     </div>
+                </div>
+                <div>
+                    Font:
+                        <FormGroup style={{ margin: '10px' }}>
+                        <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
+                        </Select>
+                        <div>
+                            <div className="form-check" >
+                                <label htmlFor="Oval">
+                                    <input type="radio" name="template" value="Oval"
+                                        onChange={this.handleTemplateChange}
+                                        className="form-check-input" />
+                            Oval </label>
+                                <img src="oval.jpg" height="40" width="80" />
+                            </div>
+                            <div className="form-check">
+                                <label htmlFor="Rectangle">
+                                    <input type="radio" name="template" value="Rectangle"
+                                        onChange={this.handleTemplateChange}
+                                        className="form-check-input"
+                                    />
+                                Rectangle
+                                </label>
+                                <img src="rectangle.jpg" height="40" width="80" />
+                            </div>
+                            <div className="form-check">
+                                <label htmlFor="Square">
+                                    <input type="radio" name="template" value="Square" onChange={this.handleTemplateChange}
+                                        className="form-check-input" />
+                                Square
+                                 </label>
+                                <img src="rectangle.jpg" height="50" width="50" />
+                            </div>
+                        </div>
+
+                        <div >
+                            Text:<br />
+                            <textarea
+                                name="content" id="content" ref="content" maxLength="23" style={{
+                                    backgroundImage: "mold1.png" }}
+                                onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
+                        </div>
+                        <div>
+                            <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
+                            <Button name="generateAll" style={{ display: "none" }} disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
+                            &nbsp;&nbsp;
+                            <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={this.generateAll} title={this.state.warnings} >
+                                <span className="fa-stack fa-1x">
+                                    <i id="playicon" className="fa fa-play fa-stack-1x"></i>
+                                </span>
+                            </button>
+                            <div style={{ display: 'none' }}>
+                                <br />
+                                <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
+                                <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
+                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.95) }} bsSize="large" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
+                                <br />
+                                <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
+                                <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
+                                <Button title="to the right" name="fontminus" onClick={() => { this.moveRight(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-right"} ></Button>
+                            </div>
+
+
+                        </div>
+                    </FormGroup>
                 </div>
                 <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7, display: "block" }}>
                     <table style={{ width: 100 + '%' }}>
