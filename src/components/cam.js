@@ -89,7 +89,7 @@ class Cam extends React.Component {
             filter: null,
             content: "",
             svg: "",
-            font: 'Bubble.otf',
+            font: 'Almarai-Bold.ttf',
             width: 0,
             lineHeight: 0,
             activeTemplateName: 'Square',
@@ -129,9 +129,11 @@ class Cam extends React.Component {
             changesXY:[1,0,0,1,0,0],
             changesScaling: [1, 0, 0, 1, 0, 0],
             scalingCount:0,
-            step1:true,
-            step2:false,
-            step3:false
+            step1: true,
+            step2: false,
+            step3: false,
+            step4:false,
+            pcsCount:6
         }
 
         /*if (!socket && !serverConnected) {
@@ -163,7 +165,11 @@ class Cam extends React.Component {
         this.moveRight = this.moveRight.bind(this);
         this.scale = this.scale.bind(this);
         this.wheel = this.wheel.bind(this);
-        this.handleSinS = this.handleSinS.bind(this);
+        this.handleShape = this.handleShape.bind(this);
+        this.step1 = this.step1.bind(this);
+        this.step2 = this.step2.bind(this);
+        this.step3 = this.step3.bind(this);
+        this.setPcsCount = this.setPcsCount.bind(this);
 
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
@@ -260,6 +266,7 @@ class Cam extends React.Component {
         this.setState({ font: selectedOption.value });
     };
     wheel(e) {
+        // if there is no document ignore this event or if it has been sent to the machine,
         console.log('e is ', e);
         //e.preventDefault();
         this.scale(Math.exp(e.deltaY / 2000));
@@ -318,7 +325,7 @@ class Cam extends React.Component {
             rtlChars = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC',
             rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']');
         if (rtlDirCheck.test(s.target.value)) 
-            this.setState({ direction: 'RTL',textEnabled:true });
+            this.setState({ direction: 'RTL', textEnabled: true, font:'Almarai-Bold.ttf' });
         else
             this.setState({ direction: 'LTR',textEnabled:true });
         return rtlDirCheck.test(s.target.value);
@@ -342,7 +349,8 @@ class Cam extends React.Component {
             nextState.filter !== this.state.filter || 
             nextState.step1 !== this.state.step1 ||
             nextState.step2 !== this.state.step2 ||
-            nextState.step3 !== this.state.step3
+            nextState.step3 !== this.state.step3 || 
+            nextState.pcsCount !== this.state.pcsCount
         );
     }
 
@@ -433,7 +441,7 @@ class Cam extends React.Component {
         console.log('width : ', width, 'height:', height);
         return [parseFloat(width), parseFloat(height)];
     }
-    async generateAll(){
+    async generateAll(){ 
         this.props.documents.forEach((element,index) => {
             if(index >32){
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -482,7 +490,7 @@ class Cam extends React.Component {
         let text = GlobalStore().getState().gcode.text.data;
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
-        if (text == '') {
+        if (text == '' || text == undefined) {
             alert('no text???');
             return;
         } 
@@ -911,9 +919,45 @@ class Cam extends React.Component {
             content: text
         });
     }
-    handleSinS(){
-        this.setState({step1:false,step2:true})
+    step1(){
+        this.setState({step1: true, step2: false,step3:false});
     }
+    step2(){
+        this.setState({ step1: false, step2: true, step3: false });
+    }
+    step3(){
+        this.setState({ step1: false, step2: false,step3:true });
+    }
+    handleShape(shape){
+        var chocoTemplates = require("../data/chocolateTemplates.json");
+        let activeTemplate = chocoTemplates.templates[2];
+        switch(shape){
+            case 'SinS':
+                activeTemplate = chocoTemplates.templates[2];
+            break;
+            case 'CinS':
+                activeTemplate = chocoTemplates.templates[1];
+            break;
+            case 'HinS':
+                activeTemplate = chocoTemplates.templates[3];
+            break;
+            case 'Circle':
+                activeTemplate = chocoTemplates.templates[3];
+            break;
+            case 'Oval':
+                activeTemplate = chocoTemplates.templates[0];
+            break;
+            default:
+                activeTemplate = chocoTemplates.templates[2];
+            break;
+        }
+        //this.nameInput.focus();
+        this.setState({ step1: false, step2: true, activeTemplate: activeTemplate})
+    }
+    setPcsCount(count){
+        this.setState({pcsCount:count});
+    }
+
     render() {
         /*
         list of changes to be made to this code
@@ -933,7 +977,11 @@ class Cam extends React.Component {
         ];
 
         return (
-            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '450px' }} >
+            
+            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '475px' }} >
+                
+                
+                
                 { this.state.step1 && (<div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
                     <div className="well-sm" style={{ padding:'15px',backgroundColor: "#332C26", color:"white" }}>
                         <span style={{fontSize:'16px'}}>SELECT SHAPE</span><br/>
@@ -946,28 +994,28 @@ class Cam extends React.Component {
                             <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center'}}>
                                 <Col>
                                     <div style={{ width: '85px', display:'inline-block',margin:'10px',paddingBottom:'5px'}}>
-                                    <img className="shape" src="shape1.png" style={{ paddingBottom: '5px'}} onClick={ this.handleSinS } ></img>
+                                        <img className="shape" src="shape1.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('SinS') } ></img>
                                             <span >Square in Square</span>
                                         </div>
                                     <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                    <img src="shape2.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape2.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('CinS')}></img>
                                             <br />
                                             <span >Circle in Square</span>
                                     </div>
                                     <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                    <img src="shape3.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape3.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('HinS')} ></img>
                                             <br />
                                             <span >Heart in Square</span>
                                     </div>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                    <img src="shape5.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape5.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Circle')} ></img>
                                             <br />
                                     <span >Circle</span>
                                     </div>
                                 </Col>
                             <Col>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                    <img src="shape6.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape6.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Oval')} ></img>
                                     <span >Baby Shirt</span>
                                 </div>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
@@ -1008,17 +1056,73 @@ class Cam extends React.Component {
                 </Form>
                 </div>)}
                 {this.state.step2 && (
-                    <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
-                    <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
-                        <span style={{ fontSize: '16px' }}>Create Content</span><br />
-                        <span style={{ fontSize: '12px' }}>Place a content of your choice on the piece.</span>
-                    </div>
-                    <div style={{ backgroundColor: '#443B34' }}>
-                        Test
-                    </div>
+                    <Row style={{ fontSize: "11px" }}>
+                        <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "#E0E1DC", marginLeft: '30px' }}>
+                            <span style={{ fontSize: '18px' }}>CREATE CONTENT</span><br />
+                            <span style={{ fontSize: '12px' }}>Place a content of your choice on the piece.</span>
+                        </div>
+                        <div style={{ padding: '10px', backgroundColor: '#443B36', color: "#706762" }}>
+                            <div style={{textAlign:'center',fontSize:'15px',marginBottom:'10px'}}>Square In Square</div>
+                            <div style={{ marginLeft: '20px', marginRight: '20px', backgroundColor: "#28211B", color: "black", height: '340', borderStyle: 'solid', borderColor: '#45413F',borderWidth:'2px' }}>
+                                <div style={{ display: 'inline-block', width: '15%', height: '340px', borderRightStyle: 'solid', borderRightColor: '#45413F', borderWidth: '2px'}}>
+                                </div>
+                                <div style={{ display: 'inline-block', width: '85%', height: '340px'}}>
+                                    <textarea className='textChoco' placeholder='&#10;your&#10;name&#10;here' autoFocus  name="content" id="content" ref={(input) => { this.nameInput = input; }} maxLength="23"
+                                        onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}  ></textarea>
+                                    </div>
+                                </div>
+                                <div style={{margin:'20px'}}>
+                                    <Button bsSize="lg" bsStyle="warning" onClick={this.step1}> <Icon name="angle-left" /></Button>
+                                    <Button bsSize="lg" bsStyle="warning" style={{ marginLeft: '8px'}}> <Icon name="plus" /></Button>
+                                    <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} onClick={this.step3}  bsStyle="warning"> <Icon name="angle-right" /></Button>
+                                    <Button style={{ float: 'right', marginLeft: '8px' }} bsSize="lg" onClick={this.textWrapping} bsStyle="warning"> OK</Button>
+                                </div>
+                        </div>
                     </Row>
                 )}
-                <div className="panel panel-danger" style={{ marginBottom: 0,display:"none" }}>
+                {this.state.step3 && (
+                    <Row style={{ fontSize: "11px" }}>
+                        <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "#E0E1DC", marginLeft: '30px' }}>
+                            <span style={{ fontSize: '18px' }}>MOLD ARRANGEMENT</span><br />
+                            <span style={{ fontSize: '12px' }}>Choose the mold size to arrange content accordingly.</span>
+                        </div>
+                        <div style={{ padding: '10px', marginTop: "25px", backgroundColor: '#443B36', color: "#635A56" }}>
+                            <div style={{ marginLeft: '20px', marginRight: '20px', backgroundColor: "#28201B", color: "#B2B0AD", height: '340', borderStyle: 'solid', borderColor: '#45413F', borderWidth: '2px' }}>
+                                <div style={{ display: 'inline-block', width: '15%', height: '340' }}>
+                                    <Grid>
+                                        <Row className="show-grid" >
+                                            <Col xs={1} md={1} lg={1} style={{padding:'10px',fontSize:'13px'}}>
+                                                <div className={`pcsCount ${this.state.pcsCount == 1 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(1)}>1 Pc</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 2 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(2)}>2 PC</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 3 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(3)}>3 PC</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 4 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(4)}>4 PC</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 6 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(6)}>6 PC</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 12 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(12)}>12 PC</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 24 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(24)}>24 PC</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 32 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(32)}>32 PC</div>
+                                                <div className={`pcsCount ${this.state.pcsCount == 50 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(50)}>50 PC</div>
+                                            </Col>
+
+                                        </Row>
+                                    </Grid>
+                                </div>
+                                <div style={{ display: 'inline-block', width: '85%', height: '340', backgroundColor: "#514641", borderLeftStyle: 'solid', borderLeftColor: '#453B36', borderWidth: '10px' }}>
+                                    <div style={{ width: '100%', height: '100%', backgroundImage:` URL('http://localhost:8080/moldpcs.png')`,backgroundPosition:'center',backgroundRepeat:'no-repeat'}}></div>
+
+                                </div>
+                            </div>
+                            <div style={{ margin: '20px' }}>
+                                <Button bsSize="lg" bsStyle="warning" onClick={this.step2}> <Icon name="angle-left" /></Button>
+                                <Button bsSize="lg" bsStyle="warning" style={{ marginLeft: '8px' }} > <Icon name="plus" /></Button>
+                                <Button type='button' bsSize="lg" id="playBtn" style={{ float: 'right' }}  onClick={this.generateAll} title={this.state.warnings} >
+                                    <Icon name="play" />
+                                </Button>
+
+                            </div>
+                        </div>
+                    </Row>
+                )}
+                <div className="panel panel-danger hideMe" style={{ marginBottom: 0 }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
                             <tbody>
@@ -1036,7 +1140,8 @@ class Cam extends React.Component {
                         </table>
                     </div>
                 </div>
-                <div>
+                {this.state.step4 && (<div>
+                    
                     Font:
                         <FormGroup style={{ margin: '10px' }}>
                         <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
@@ -1071,22 +1176,14 @@ class Cam extends React.Component {
                         </div>
 
                         <div >
-                            Text:<br />
-                            <textarea
-                                name="content" id="content" ref="content" maxLength="23" style={{
-                                    backgroundImage: "mold1.png" }}
-                                onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data} />
+                            
                         </div>
                         <div>
                             <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
-                            <Button name="generateAll" style={{ display: "none" }} disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
+                            <Button name="generateAll" className='hideMe'  disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
                             &nbsp;&nbsp;
-                            <button type='button' id="playBtn" className={(this.state.warnings) ? "btn btn-ctl btn-warning" : "btn btn-ctl btn-default"} onClick={this.generateAll} title={this.state.warnings} >
-                                <span className="fa-stack fa-1x">
-                                    <i id="playicon" className="fa fa-play fa-stack-1x"></i>
-                                </span>
-                            </button>
-                            <div style={{ display: 'none' }}>
+                            
+                            <div  >
                                 <br />
                                 <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
                                 <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
@@ -1100,7 +1197,7 @@ class Cam extends React.Component {
 
                         </div>
                     </FormGroup>
-                </div>
+                </div>)}
                 <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7, display: "block" }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
@@ -1108,9 +1205,9 @@ class Cam extends React.Component {
                                 <th>Progress</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
-                                        <button style={{ display: 'none' }} title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
+                                        <button  title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention hideMe " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
                                         <ButtonGroup>
-                                            <button style={{ display: 'none' }} title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
+                                            <button  title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs hideMe" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
                                             <button style={{ display: 'none' }} title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
                                             <FileField style={{ display: 'none' }} onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
                                                 <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
@@ -1122,8 +1219,8 @@ class Cam extends React.Component {
                         </tbody>
                     </table>
                 </Alert>
-                <div className="Resizer horizontal" style={{ marginTop: '2px', marginBottom: '2px',display:'none' }}></div>
-                <div className="panel panel-info" style={{ marginBottom: 3,display:"none" }}>
+                <div className="Resizer horizontal hideMe" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
+                <div className="panel panel-info hideMe" style={{ marginBottom: 3 }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
                             <tbody>
@@ -1172,7 +1269,8 @@ class Cam extends React.Component {
                 />
                 <Com id="com" title="Comms" icon="plug" />
 
-            </div>);
+            </div>
+            );
     }
 };
 
