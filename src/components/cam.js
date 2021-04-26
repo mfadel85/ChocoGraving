@@ -133,7 +133,8 @@ class Cam extends React.Component {
             step2: false,
             step3: false,
             step4:false,
-            pcsCount:6
+            pcsCount:6,
+            mold:'mold1.png'
         }
 
         /*if (!socket && !serverConnected) {
@@ -369,9 +370,32 @@ class Cam extends React.Component {
         }
         else {
             console.log("didn't work", 'Playing', playing, 'Paused', paused);
+            /*
+            runJob.mediator();
+            fixMe();
+            handleNextTask();
+            that.clearQueue();
+            stack.moveForward();
+            worker.MakeItWork();
+            cmm.execute();
+            */
+           /// those steps have to be done in order to accomplish that task,
+           // this week will be the best in my life ever, I will make the best investment ever.
         }
     }
 
+    /*
+    Task List
+    1. finish UI stuff.
+    2. generate a workable exe.
+    3. test exe file on the machine.
+    4. the performance of the machine.
+    5. Error messages : warning messages: machine 
+       not connected.
+    6. Don't allow size to grow over maximum
+
+    */
+   
     wordWrapped() {
         console.log("maybe help later!!");
     }
@@ -459,13 +483,21 @@ class Cam extends React.Component {
                 that.runJob();
             });
         };
+        for(let i=1;i<this.state.pcsCount;i++){
+            let index = i+1;
+            if( index < 5 )
+                await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file'+index+'.svg', i);
+            else 
+                await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file' + index + '.svg', i, runJob);
+        }
+        /*
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
         await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5,runJob);
+        */
         await this.props.dispatch(selectDocument(this.props.documents[0].id));
-        //this.runJob();
     }
     calcMargins(svgOutput){
 
@@ -657,8 +689,7 @@ class Cam extends React.Component {
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
                 );
-                let extraMarginX = (44  -mmDims[0])/2;
-                let extraMarginY = (44 - mmDims[1])/2;
+
                 let extraMargin = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
                 const letterCount = max.end - max.start;
                 const letterWidth = mmDims[0] / letterCount;
@@ -669,7 +700,7 @@ class Cam extends React.Component {
                      "Letters:  ", dims, max, mmDims, 'letter count:',
                  letterCount, 'letter width', letterWidth, layout);
                 //this.resolve(); resolve this means deepwork
-                let promise = new Promise( (resolve,reject) =>  {
+                let promise = new Promise( (resolve,reject) =>  { /// understand promises well with examples, async javascripting
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
                 });
                 that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
@@ -860,7 +891,6 @@ class Cam extends React.Component {
                 }
                 if(n > 1){
                     that.props.dispatch(transform2dSelectedDocuments(that.state.extraShift));
-
                 }
 
                 fetch(activeTemplate.file)
@@ -937,15 +967,20 @@ class Cam extends React.Component {
             break;
             case 'CinS':
                 activeTemplate = chocoTemplates.templates[1];
+                this.setState({mold:'mold2.png'});
             break;
             case 'HinS':
                 activeTemplate = chocoTemplates.templates[3];
+                this.setState({ mold: 'mold7.png' });
             break;
             case 'Circle':
                 activeTemplate = chocoTemplates.templates[3];
+                this.setState({ mold: 'mold3.png' });
             break;
             case 'Oval':
                 activeTemplate = chocoTemplates.templates[0];
+                this.setState({ mold: 'mold9.png' });
+
             break;
             default:
                 activeTemplate = chocoTemplates.templates[2];
@@ -1015,7 +1050,7 @@ class Cam extends React.Component {
                                 </Col>
                             <Col>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                        <img src="shape6.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Oval')} ></img>
+                                        <img src="shape6.png" style={{ paddingBottom: '5px' }}  ></img>
                                     <span >Baby Shirt</span>
                                 </div>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
@@ -1029,7 +1064,7 @@ class Cam extends React.Component {
                                     <span >Heart</span>
                                 </div>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                    <img src="shape9.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape9.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Oval')}></img>
                                     <br />
                                     <span >Oval</span>
                                 </div>
@@ -1067,7 +1102,7 @@ class Cam extends React.Component {
                                 <div style={{ display: 'inline-block', width: '15%', height: '340px', borderRightStyle: 'solid', borderRightColor: '#45413F', borderWidth: '2px'}}>
                                 </div>
                                 <div style={{ display: 'inline-block', width: '85%', height: '340px'}}>
-                                    <textarea className='textChoco' placeholder='&#10;your&#10;name&#10;here' autoFocus  name="content" id="content" ref={(input) => { this.nameInput = input; }} maxLength="23"
+                                    <textarea className='textChoco' style={{ backgroundImage:"URL('http://localhost:8080/"+this.state.mold+"')"}} placeholder='&#10;your&#10;name&#10;here' autoFocus  name="content" id="content" ref={(input) => { this.nameInput = input; }} maxLength="23"
                                         onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}  ></textarea>
                                     </div>
                                 </div>
