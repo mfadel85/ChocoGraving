@@ -677,7 +677,7 @@ class Cam extends React.Component {
                 let mmDims = dims.map(n => n / operator);
                
                 if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
-                    alert("The size of the words shouldn't be more than 28mm!!!")
+                    alert("Please divide to two lines,the size of the words shouldn't be more than 28mm!!!")
                     return;
                 }
                 that.setState({
@@ -1098,8 +1098,25 @@ class Cam extends React.Component {
                         </div>
                         <div style={{ padding: '10px', backgroundColor: '#443B36', color: "#706762" }}>
                             <div style={{textAlign:'center',fontSize:'15px',marginBottom:'10px'}}>Square In Square</div>
-                            <div style={{ marginLeft: '20px', marginRight: '20px', backgroundColor: "#28211B", color: "black", height: '340', borderStyle: 'solid', borderColor: '#45413F',borderWidth:'2px' }}>
+                            <div 
+                                style={{ marginLeft: '20px', marginRight: '20px',
+                                backgroundColor: "#28211B", color: "black",
+                                height: '340', borderStyle: 'solid', borderColor: '#45413F',borderWidth:'2px' }}>
                                 <div style={{ display: 'inline-block', width: '15%', height: '340px', borderRightStyle: 'solid', borderRightColor: '#45413F', borderWidth: '2px'}}>
+                                    <Grid>
+                                        <Row className="show-grid" >
+                                            <Col xs={1} md={1} lg={1} style={{ padding: '10px', fontSize: '13px' }}>
+                                                <div onClick={() => {}}><img src='icon1.png'></img></div>
+                                                <div onClick={() => { }}><img src='icon2.png'></img></div>
+                                                <div onClick={() => { }}><img src='icon3.png'></img></div>
+                                                <div onClick={() => { }}><img src='icon4.png'></img></div>
+                                                <div onClick={() => { }}><img src='icon5.png'></img></div>
+                                                <div onClick={() => { }}><img src='icon6.png'></img></div>
+
+                                            </Col>
+
+                                        </Row>
+                                    </Grid>
                                 </div>
                                 <div style={{ display: 'inline-block', width: '85%', height: '340px'}}>
                                     <textarea className='textChoco' style={{ backgroundImage:"URL('http://localhost:8080/"+this.state.mold+"')"}} placeholder='&#10;your&#10;name&#10;here' autoFocus  name="content" id="content" ref={(input) => { this.nameInput = input; }} maxLength="23"
