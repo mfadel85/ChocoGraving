@@ -27,8 +27,8 @@
         },
         {
             "id":"SquareModel",
-            "maxHeight":32,
-            "maxWidth":25,
+            "maxHeight":28,
+            "maxWidth":28,
             "maxLines":3,
             "maxWordsAr":4,
             "maxWordsEn":3,

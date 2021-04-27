@@ -220,7 +220,7 @@ class Cam extends React.Component {
 
     resetFontSize(e) { // a bug here!!!
         let activeTemplateName = this.state.activeTemplateName;
-        this.handleTemplateChange(e, activeTemplateName);
+        //this.handleTemplateChange(e, activeTemplateName);
     }
 
     handleDepthChange(e) {
@@ -294,30 +294,7 @@ class Cam extends React.Component {
             value = templateName;
         this.setState({
             activeTemplateName: value
-        });
-        var chocoTemplates = require("../data/chocolateTemplates.json");
-        switch (value) {
-            case "Oval":
-                this.setState({
-                    activeTemplate: chocoTemplates.templates[0]
-                });
-                break;
-            case "Rectangle":
-                this.setState({
-                    activeTemplate: chocoTemplates.templates[1]
-                });
-                break;
-            case "Square":
-                this.setState({
-                    activeTemplate: chocoTemplates.templates[2]
-                });
-                break;
-            default:
-                this.setState({
-                    activeTemplate: chocoTemplates.templates[2]
-                });
-            break;
-        }
+        });    
     };
 
     checkRTL(s) {
@@ -756,6 +733,7 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0.3, 0]));
     }
+
     scale(s){
         let scalingCount = this.state.scalingCount;
         
@@ -773,6 +751,7 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
     }
+
     scaleSec(s,n) {
         let scalingCount = this.state.scalingCount;
         let index = n == 0 ? 0 : n * 3 + 30;
@@ -964,26 +943,42 @@ class Cam extends React.Component {
         switch(shape){
             case 'SinS':
                 activeTemplate = chocoTemplates.templates[2];
+                this.setState({ mold: 'mold1.png' });
             break;
             case 'CinS':
                 activeTemplate = chocoTemplates.templates[1];
                 this.setState({mold:'mold2.png'});
             break;
             case 'HinS':
-                activeTemplate = chocoTemplates.templates[3];
+                activeTemplate = chocoTemplates.templates[1];
                 this.setState({ mold: 'mold7.png' });
             break;
             case 'Circle':
-                activeTemplate = chocoTemplates.templates[3];
+                activeTemplate = chocoTemplates.templates[0];
                 this.setState({ mold: 'mold3.png' });
             break;
             case 'Oval':
-                activeTemplate = chocoTemplates.templates[0];
+                activeTemplate = chocoTemplates.templates[1];
                 this.setState({ mold: 'mold9.png' });
-
             break;
+            case 'BabyS':
+                activeTemplate = chocoTemplates.templates[0];
+                this.setState({ mold: 'mold5.png' });
+            break;
+            case 'BabySt':
+                activeTemplate = chocoTemplates.templates[0];
+                this.setState({ mold: 'mold6.png' });
+                break;
+            case 'Heart':
+                activeTemplate = chocoTemplates.templates[0];
+                this.setState({ mold: 'mold8.png' });
+                break;
+            case 'Rect':
+                activeTemplate = chocoTemplates.templates[1];
+                this.setState({ mold: 'mold9.png' });
+                break;
             default:
-                activeTemplate = chocoTemplates.templates[2];
+                activeTemplate = chocoTemplates.templates[0];
             break;
         }
         //this.nameInput.focus();
@@ -1010,7 +1005,6 @@ class Cam extends React.Component {
             { value: 'ITCKRIST.TTF', label: 'ITCKRIST' },
             { value: 'Bevan.ttf', label: 'Bevan' },
         ];
-
         return (
             
             <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '475px' }} >
@@ -1050,16 +1044,16 @@ class Cam extends React.Component {
                                 </Col>
                             <Col>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                        <img src="shape6.png" style={{ paddingBottom: '5px' }}  ></img>
+                                        <img src="shape6.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('BabyS')}  ></img>
                                     <span >Baby Shirt</span>
                                 </div>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                    <img src="shape7.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape7.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('BabySt')} ></img>
                                     <br />
                                     <span >Stroller</span>
                                 </div>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                    <img src="shape8.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape8.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Heart')} ></img>
                                     <br />
                                     <span >Heart</span>
                                 </div>
@@ -1071,7 +1065,7 @@ class Cam extends React.Component {
                             </Col>
                             <Col>
                                 <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                    <img src="shape4.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape4.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Rect')}></img>
                                     <span style={{ fontSize: "10px" }}>Rectangle</span>
                                 </div>
                             </Col>
@@ -1105,13 +1099,15 @@ class Cam extends React.Component {
                                 <div style={{ display: 'inline-block', width: '15%', height: '340px', borderRightStyle: 'solid', borderRightColor: '#45413F', borderWidth: '2px'}}>
                                     <Grid>
                                         <Row className="show-grid" >
-                                            <Col xs={1} md={1} lg={1} style={{ padding: '10px', fontSize: '13px' }}>
-                                                <div onClick={() => {}}><img src='icon1.png'></img></div>
-                                                <div onClick={() => { }}><img src='icon2.png'></img></div>
-                                                <div onClick={() => { }}><img src='icon3.png'></img></div>
-                                                <div onClick={() => { }}><img src='icon4.png'></img></div>
-                                                <div onClick={() => { }}><img src='icon5.png'></img></div>
-                                                <div onClick={() => { }}><img src='icon6.png'></img></div>
+                                            <Col xs={1} md={1} lg={1} style={{ padding: '10px', fontSize: '13px',margin:'10px' }}>
+                                                <div className='icons' onClick={() => { }}><img src='icon1.png'></img></div>
+                                                <div className='icons' onClick={() => {
+                                                    this.nameInput.focus();
+
+                                                    }}><img src='icon2.png'></img></div>
+                                                <div className='icons' onClick={() => { }}><img src='icon3.png'></img></div>
+                                                <div className='icons' onClick={() => { }}><img src='icon4.png'></img></div>
+                                                <div className='icons' onClick={() => { }}><img src='icon5.png'></img></div>
 
                                             </Col>
 
@@ -1119,7 +1115,9 @@ class Cam extends React.Component {
                                     </Grid>
                                 </div>
                                 <div style={{ display: 'inline-block', width: '85%', height: '340px'}}>
-                                    <textarea className='textChoco' style={{ backgroundImage:"URL('http://localhost:8080/"+this.state.mold+"')"}} placeholder='&#10;your&#10;name&#10;here' autoFocus  name="content" id="content" ref={(input) => { this.nameInput = input; }} maxLength="23"
+                                    <textarea className='textChoco' style={{ backgroundImage:"URL('http://localhost:8080/"+this.state.mold+"')"}} 
+                                        placeholder='&#10;your&#10;name&#10;here' autoFocus name="content" id="content" ref={(input) => {
+                                            this.nameInput = input; }} maxLength="23"
                                         onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}  ></textarea>
                                     </div>
                                 </div>
@@ -1250,14 +1248,19 @@ class Cam extends React.Component {
                         </div>
                     </FormGroup>
                 </div>)}
-                <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7, display: "block" }}>
+                <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
                                 <th>Progress</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
-                                        <button  title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention hideMe " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
+                                        <button  title="Generate G-Code from Operations below" 
+                                        className={"btn btn-xs btn-attention hideMe " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} 
+                                        disabled={!valid || this.props.gcoding.enable} 
+                                        onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />
+                                        &nbsp;Generate
+                                        </button>
                                         <ButtonGroup>
                                             <button  title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs hideMe" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
                                             <button style={{ display: 'none' }} title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
@@ -1266,7 +1269,8 @@ class Cam extends React.Component {
                                             </FileField>
                                         </ButtonGroup>
                                         <button title="Clear" style={{ display: 'none' }} className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
-                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}</td>
+                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}
+                                </td>
                             </tr>
                         </tbody>
                     </table>

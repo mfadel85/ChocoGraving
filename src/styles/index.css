@@ -732,7 +732,7 @@ canvas.ImagePort {width: 100%; height:100%; background:#ffffff; pointer-events:'
     text-align: center;
     text-align-last: center;
     margin: 54px;
-    padding:30px;
+    padding:35px;
     border-width: 0px;
     background-color: transparent;
     background-repeat: no-repeat;
@@ -752,4 +752,7 @@ canvas.ImagePort {width: 100%; height:100%; background:#ffffff; pointer-events:'
 
 .activeCount{
     color:white
+}
+.icons {
+    margin:12px;
 }
