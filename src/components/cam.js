@@ -946,15 +946,15 @@ class Cam extends React.Component {
                 this.setState({ mold: 'mold1.png' });
             break;
             case 'CinS':
-                activeTemplate = chocoTemplates.templates[1];
+                activeTemplate = chocoTemplates.templates[2];
                 this.setState({mold:'mold2.png'});
             break;
             case 'HinS':
-                activeTemplate = chocoTemplates.templates[1];
+                activeTemplate = chocoTemplates.templates[2];
                 this.setState({ mold: 'mold7.png' });
             break;
             case 'Circle':
-                activeTemplate = chocoTemplates.templates[0];
+                activeTemplate = chocoTemplates.templates[2];
                 this.setState({ mold: 'mold3.png' });
             break;
             case 'Oval':
@@ -970,7 +970,7 @@ class Cam extends React.Component {
                 this.setState({ mold: 'mold6.png' });
                 break;
             case 'Heart':
-                activeTemplate = chocoTemplates.templates[0];
+                activeTemplate = chocoTemplates.templates[2];
                 this.setState({ mold: 'mold8.png' });
                 break;
             case 'Rect':
