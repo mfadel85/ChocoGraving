@@ -134,7 +134,13 @@ class Cam extends React.Component {
             step3: false,
             step4:false,
             pcsCount:6,
-            mold:'mold1.png'
+            mold:'mold1.png',
+            moldWidth: '231px',
+            moldHeight: '232px',
+            moldName:'Square in Square',
+            moldPlaceHolder: '\nname\nhere',
+            paddingTop:'35px',
+            forwardEnabled:false
         }
 
         /*if (!socket && !serverConnected) {
@@ -229,6 +235,12 @@ class Cam extends React.Component {
     }
     handleChange(e) {
         this.resetFontSize(e);
+        if(e.target.value == ''){
+            this.setState({forwardEnabled:false});
+        }
+        else {
+            this.setState({forwardEnabled:true});
+        }
         var lines = e.target.value.split("\n");
         lines.forEach((line, i) => {
             var words = line.split(" ");
@@ -328,7 +340,8 @@ class Cam extends React.Component {
             nextState.step1 !== this.state.step1 ||
             nextState.step2 !== this.state.step2 ||
             nextState.step3 !== this.state.step3 || 
-            nextState.pcsCount !== this.state.pcsCount
+            nextState.pcsCount !== this.state.pcsCount ||
+            nextState.content !== this.state.content
         );
     }
 
@@ -943,39 +956,81 @@ class Cam extends React.Component {
         switch(shape){
             case 'SinS':
                 activeTemplate = chocoTemplates.templates[2];
-                this.setState({ mold: 'mold1.png' });
+                this.setState({ 
+                    mold: 'mold1.png',
+                    moldWidth: '231px',moldHeight: '232px',
+                    moldName:'Square in Square',                    
+                    moldPlaceHolder: 'name\nhere',
+                    paddingTop: '65px'
+                 });
             break;
             case 'CinS':
                 activeTemplate = chocoTemplates.templates[2];
-                this.setState({mold:'mold2.png'});
+                this.setState({ 
+                    mold: 'mold2.png',
+                    moldWidth: '231px', moldHeight: '232px',
+                    moldName: 'Circle in Square',
+                    moldPlaceHolder: 'name\nhere',
+                    paddingTop: '65px'
+                });
             break;
             case 'HinS':
                 activeTemplate = chocoTemplates.templates[2];
-                this.setState({ mold: 'mold7.png' });
+                this.setState({ 
+                    mold: 'mold7.png',
+                    moldWidth: '231px', moldHeight: '232px',
+                    moldName: 'Heart in Square',
+                    moldPlaceHolder: 'name\nhere',
+                    paddingTop: '75px'
+                });
             break;
             case 'Circle':
                 activeTemplate = chocoTemplates.templates[2];
-                this.setState({ mold: 'mold3.png' });
+                this.setState({ mold: 'mold3.png', moldWidth: '260px', moldHeight: '234px',
+                    moldName: 'Circle',
+                    moldPlaceHolder: 'name\nhere',
+                    paddingTop: '60px' });
             break;
             case 'Oval':
-                activeTemplate = chocoTemplates.templates[1];
-                this.setState({ mold: 'mold9.png' });
+                activeTemplate = chocoTemplates.templates[0];
+                this.setState({ mold: 'mold9.png', moldWidth: '263px', moldHeight: '210px',
+                    moldName: 'Oval',
+                    moldPlaceHolder: 'name here',
+                    paddingTop: '65px' 
+                });
             break;
             case 'BabyS':
                 activeTemplate = chocoTemplates.templates[0];
-                this.setState({ mold: 'mold5.png' });
+                this.setState({ mold: 'mold5.png', moldWidth: '232px', moldHeight: '245px', 
+                    moldName: 'Baby Shirt',
+                    moldPlaceHolder: 'name\nhere',
+                    paddingTop: '65px'
+                });
             break;
             case 'BabySt':
                 activeTemplate = chocoTemplates.templates[0];
-                this.setState({ mold: 'mold6.png' });
-                break;
+                this.setState({ mold: 'mold6.png', moldWidth: '263px', moldHeight: '245px', 
+                moldName: 'Stroller',
+                moldPlaceHolder: 'name here',
+                paddingTop:'110px'
+            });
+            break;
             case 'Heart':
                 activeTemplate = chocoTemplates.templates[2];
-                this.setState({ mold: 'mold8.png' });
-                break;
+                this.setState({ mold: 'mold8.png', moldWidth: '231px', moldHeight: '232px', 
+                moldName: 'Heart',
+                moldPlaceHolder: 'name here',
+                paddingTop:'53px' 
+            });
+            break;
             case 'Rect':
                 activeTemplate = chocoTemplates.templates[1];
-                this.setState({ mold: 'mold9.png' });
+                this.setState({ 
+                    mold: 'mold4.png', moldWidth: '264', moldHeight: '210px', 
+                    moldName: 'Rectangle',
+                    moldPlaceHolder: 'name here',
+                    paddingTop: '63px'
+             });
                 break;
             default:
                 activeTemplate = chocoTemplates.templates[0];
@@ -1074,7 +1129,7 @@ class Cam extends React.Component {
                                 <div style={{ fontSize: '16px', textAlign: 'center' }}> Big Bars</div>
                                 <Col>
                                     <div style={{ width: '225px', display: 'inline-block', margin: '10px' }}>
-                                        <img src="shape10.png" style={{ paddingBottom: '5px' }}></img>
+                                        <img src="shape10.png" onClick={() => this.handleShape('Rect')} style={{ paddingBottom: '5px' }}></img>
                                         <span style={{ fontSize: "10px" }}>Rectangle</span>
                                     </div>
                                 </Col>
@@ -1091,7 +1146,9 @@ class Cam extends React.Component {
                             <span style={{ fontSize: '12px' }}>Place a content of your choice on the piece.</span>
                         </div>
                         <div style={{ padding: '10px', backgroundColor: '#443B36', color: "#706762" }}>
-                            <div style={{textAlign:'center',fontSize:'15px',marginBottom:'10px'}}>Square In Square</div>
+                            <div style={{textAlign:'center',fontSize:'15px',marginBottom:'10px'}}>
+                                {this.state.moldName}
+                            </div>
                             <div 
                                 style={{ marginLeft: '20px', marginRight: '20px',
                                 backgroundColor: "#28211B", color: "black",
@@ -1115,8 +1172,14 @@ class Cam extends React.Component {
                                     </Grid>
                                 </div>
                                 <div style={{ display: 'inline-block', width: '85%', height: '340px'}}>
-                                    <textarea className='textChoco' style={{ backgroundImage:"URL('http://localhost:8080/"+this.state.mold+"')"}} 
-                                        placeholder='&#10;your&#10;name&#10;here' autoFocus name="content" id="content" ref={(input) => {
+                                    <textarea className='textChoco' 
+                                    style={{ 
+                                        backgroundImage:"URL('http://localhost:8080/"+this.state.mold+"')",
+                                        width:this.state.moldWidth,
+                                        height:this.state.moldHeight,
+                                        paddingTop:this.state.paddingTop
+                                    }} 
+                                        placeholder={this.state.moldPlaceHolder} autoFocus name="content" id="content" ref={(input) => {
                                             this.nameInput = input; }} maxLength="23"
                                         onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}  ></textarea>
                                     </div>
@@ -1124,7 +1187,7 @@ class Cam extends React.Component {
                                 <div style={{margin:'20px'}}>
                                     <Button bsSize="lg" bsStyle="warning" onClick={this.step1}> <Icon name="angle-left" /></Button>
                                     <Button bsSize="lg" bsStyle="warning" style={{ marginLeft: '8px'}}> <Icon name="plus" /></Button>
-                                    <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} onClick={this.step3}  bsStyle="warning"> <Icon name="angle-right" /></Button>
+                                    <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} disabled={!this.state.content} onClick={this.step3}  bsStyle="warning"> <Icon name="angle-right" /></Button>
                                     <Button style={{ float: 'right', marginLeft: '8px' }} bsSize="lg" onClick={this.textWrapping} bsStyle="warning"> OK</Button>
                                 </div>
                         </div>
@@ -1138,7 +1201,7 @@ class Cam extends React.Component {
                         </div>
                         <div style={{ padding: '10px', marginTop: "25px", backgroundColor: '#443B36', color: "#635A56" }}>
                             <div style={{ marginLeft: '20px', marginRight: '20px', backgroundColor: "#28201B", color: "#B2B0AD", height: '340', borderStyle: 'solid', borderColor: '#45413F', borderWidth: '2px' }}>
-                                <div style={{ display: 'inline-block', width: '15%', height: '340' }}>
+                                <div style={{ display: 'inline-block', width: '15%', height: '340px' }}>
                                     <Grid>
                                         <Row className="show-grid" >
                                             <Col xs={1} md={1} lg={1} style={{padding:'10px',fontSize:'13px'}}>
