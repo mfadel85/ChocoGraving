@@ -15,9 +15,8 @@
 
 import React from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text,Row,Col,Container,Grid } from 'react-bootstrap';
-//import Row from 'react-bootstrap/Row'
 import { connect } from 'react-redux';
-import { cloneDocumentSelected, colorDocumentSelected, loadDocument, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
+import { cloneDocumentSelected, colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
 import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
@@ -26,7 +25,7 @@ import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
-import { runJob/*, handleConnectServer */} from './com.js';
+import { runJob} from './com.js';
 import CommandHistory from './command-history';
 import { Documents } from './document';
 import { withDocumentCache } from './document-cache';
@@ -40,13 +39,7 @@ import { OperationDiagram } from './operation-diagram';
 import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
-import { OutRec } from 'clipper-lib';
 import Com from './com.js'
-//import { layout } from 'makerjs';
-import io from 'socket.io-client';
-import { fixupOperations } from '../reducers/operation';
-var socket, connectVia;
-var serverConnected = false;
 
 const opentype = require('opentype.js');
 var playing = false;
@@ -177,6 +170,7 @@ class Cam extends React.Component {
         this.step2 = this.step2.bind(this);
         this.step3 = this.step3.bind(this);
         this.setPcsCount = this.setPcsCount.bind(this);
+        this.rotate = this.rotate.bind(this);
 
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
@@ -746,7 +740,23 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0.3, 0]));
     }
+    rotate(){
+        //
+        var rotateArray = [0.9986295347545738, -0.05233595624294383,0.05233595624294383,0.9986295347545738,-4.43159518811045,4.9364512620398955]
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments(rotateArray));
+    }
+    rotateClockwise(){
+        var rotateArray = [0.9986295347545738,
+            0.05233595624294383,
+            -0.05233595624294383,
+            0.9986295347545738,
+            4.684298907150151,
+            -4.699918052283735];
+        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(transform2dSelectedDocuments(rotateArray));
 
+    }
     scale(s){
         let scalingCount = this.state.scalingCount;
         
@@ -1163,8 +1173,11 @@ class Cam extends React.Component {
 
                                                     }}><img src='icon2.png'></img></div>
                                                 <div className='icons' onClick={() => { }}><img src='icon3.png'></img></div>
-                                                <div className='icons' onClick={() => { }}><img src='icon4.png'></img></div>
+                                                <div className='icons' onClick={() =>this.rotate()}><img src='icon4.png'></img></div>
+                                                <div className='icons' onClick={() => this.rotateClockwise()}><img src='icon4.png'></img></div>
+
                                                 <div className='icons' onClick={() => { }}><img src='icon5.png'></img></div>
+
 
                                             </Col>
 
