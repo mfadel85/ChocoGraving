@@ -133,7 +133,9 @@ class Cam extends React.Component {
             moldName:'Square in Square',
             moldPlaceHolder: '\nname\nhere',
             paddingTop:'35px',
-            forwardEnabled:false
+            forwardEnabled:false,
+            errorMessage:'',
+            statusMsg:'Progress'
         }
 
         /*if (!socket && !serverConnected) {
@@ -1328,7 +1330,8 @@ class Cam extends React.Component {
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
-                                <th>Progress</th>
+                                <th>{this.status.statusMsg}</th>
+                                <td>{this.status.errorMessage}</td>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
                                         <button  title="Generate G-Code from Operations below" 
