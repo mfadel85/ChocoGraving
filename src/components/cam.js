@@ -134,7 +134,7 @@ class Cam extends React.Component {
             moldPlaceHolder: '\nname\nhere',
             paddingTop:'35px',
             forwardEnabled:false,
-            errorMessage:'',
+            errorMessage:'Test',
             statusMsg:'Progress'
         }
 
@@ -1330,8 +1330,7 @@ class Cam extends React.Component {
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
-                                <th>{this.status.statusMsg}</th>
-                                <td>{this.status.errorMessage}</td>
+                                <th>{this.state.statusMsg}</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
                                         <button  title="Generate G-Code from Operations below" 
