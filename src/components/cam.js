@@ -40,10 +40,15 @@ import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
 import Com from './com.js'
+import io from 'socket.io-client';
 
 const opentype = require('opentype.js');
 var playing = false;
 var paused = false;
+var socket, connectVia;
+var serverConnected = false;
+var machineConnected = false;
+
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
 function NoDocumentsError(props) {
     let { settings, documents, operations, camBounds } = props;
@@ -182,6 +187,8 @@ class Cam extends React.Component {
 
 
     componentWillMount() {
+        this.handleConnectServer();
+
         let that = this
         console.log('this', this);
         window.generateGcode = (run) => {
@@ -212,6 +219,8 @@ class Cam extends React.Component {
         document.addEventListener("wheel", this.wheel);
 
         this.generateGcode.bind(this);
+        this.handleConnectServer.bind(this);
+        this.handleConnectServer();
         this.stopGcode.bind(this);
     }
     generateGcode(run) {
@@ -223,6 +232,36 @@ class Cam extends React.Component {
     resetFontSize(e) { // a bug here!!!
         let activeTemplateName = this.state.activeTemplateName;
         //this.handleTemplateChange(e, activeTemplateName);
+    }
+
+    handleConnectServer() {
+        let that = this;
+        let { settings, dispatch } = this.props;
+        let server = settings.comServerIP;
+        CommandHistory.write('Connecting to Server @ ' + server, CommandHistory.INFO);
+        //console.log('Connecting to Server ' + server);
+        socket = io('ws://' + server);
+
+        socket.on('data', function (data) {
+            serverConnected = true;
+            machineConnected = true;
+            if (data) {
+                if (data.indexOf('<') === 0) {
+                    //CommandHistory.write('statusReport: ' + data);
+                    updateStatus(data);
+                } else {
+                    var style = CommandHistory.STD;
+                    if (data.indexOf('[MSG:') === 0) {
+                        style = CommandHistory.WARN;
+                    } else if (data.indexOf('ALARM:') === 0) {
+                        style = CommandHistory.DANGER;
+                    } else if (data.indexOf('error:') === 0) {
+                        style = CommandHistory.DANGER;
+                    }
+                    CommandHistory.write(data, style);
+                }
+            }
+        });
     }
 
     handleDepthChange(e) {
