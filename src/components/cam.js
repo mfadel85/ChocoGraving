@@ -187,7 +187,7 @@ class Cam extends React.Component {
 
 
     componentWillMount() {
-        this.handleConnectServer();
+        //this.handleConnectServer();
 
         let that = this
         console.log('this', this);
@@ -219,8 +219,8 @@ class Cam extends React.Component {
         document.addEventListener("wheel", this.wheel);
 
         this.generateGcode.bind(this);
-        this.handleConnectServer.bind(this);
-        this.handleConnectServer();
+        //this.handleConnectServer.bind(this);
+        //this.handleConnectServer();
         this.stopGcode.bind(this);
     }
     generateGcode(run) {
@@ -234,7 +234,7 @@ class Cam extends React.Component {
         //this.handleTemplateChange(e, activeTemplateName);
     }
 
-    handleConnectServer() {
+    /*handleConnectServer() {
         let that = this;
         let { settings, dispatch } = this.props;
         let server = settings.comServerIP;
@@ -262,7 +262,7 @@ class Cam extends React.Component {
                 }
             }
         });
-    }
+    }*/
 
     handleDepthChange(e) {
         this.props.dispatch(setDepth(e.target.value));
@@ -376,7 +376,8 @@ class Cam extends React.Component {
             nextState.step2 !== this.state.step2 ||
             nextState.step3 !== this.state.step3 || 
             nextState.pcsCount !== this.state.pcsCount ||
-            nextState.content !== this.state.content
+            nextState.content !== this.state.content  ||
+            nextState.statusMsg !== this.state.statusMsg
         );
     }
 
@@ -1541,11 +1542,3 @@ Cam = withDocumentCache(withGetBounds(Cam));
 
 export default Cam;
 
-function updateStatus(data) {
-    // Smoothieware: <Idle,MPos:49.5756,279.7644,-15.0000,WPos:0.0000,0.0000,0.0000>
-    // till GRBL v0.9: <Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>
-    // since GRBL v1.1: <Idle|WPos:0.000,0.000,0.000|Bf:15,128|FS:0,0|Pn:S|WCO:0.000,0.000,0.000> (when $10=2)
-
-    // Extract state
-    var state = data.substring(data.indexOf('<') + 1, data.search(/(,|\|)/));
-}

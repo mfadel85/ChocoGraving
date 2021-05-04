@@ -572,6 +572,7 @@ function updateStatus(data) {
     var state = data.substring(data.indexOf('<') + 1, data.search(/(,|\|)/));
     if (state === 'Alarm') {
         $("#msgStatus").html('Please ask for help');
+        $('#playBtn').prop('disabled', true);
         $("#machineStatus").removeClass('badge-ok');
         $("#machineStatus").addClass('badge-notify');
         $("#machineStatus").removeClass('badge-warn');
@@ -587,7 +588,7 @@ function updateStatus(data) {
 //        }
     } else if (state === 'Home') {
         $("#msgStatus").html('Machine is ready for Work');
-
+        $('#playBtn').prop('disabled', false);
         $("#machineStatus").removeClass('badge-ok');
         $("#machineStatus").removeClass('badge-notify');
         $("#machineStatus").removeClass('badge-warn');
@@ -615,6 +616,7 @@ function updateStatus(data) {
 //        }
     } else if (state === 'Idle') {
         $("#msgStatus").html('Machine is Ready for the next order');
+        $('#playBtn').prop('disabled', false);
 
         $("#machineStatus").addClass('badge-ok');
         $("#machineStatus").removeClass('badge-notify');
@@ -630,6 +632,7 @@ function updateStatus(data) {
 //        }
     } else if (state === 'Run') {
         $("#msgStatus").html('Machine is Working');
+        $('#playBtn').prop('disabled', true);
         $("#machineStatus").removeClass('badge-ok');
         $("#machineStatus").removeClass('badge-notify');
         $("#machineStatus").removeClass('badge-warn');
