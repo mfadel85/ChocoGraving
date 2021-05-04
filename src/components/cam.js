@@ -391,7 +391,7 @@ class Cam extends React.Component {
         if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
             let cmd = this.props.gcode;
             console.log('runJob(' + cmd.length + ')');
-            playing = true;
+            //playing = true;
             runJob(cmd);
         }
         else {
