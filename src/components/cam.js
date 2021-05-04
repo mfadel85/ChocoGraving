@@ -1369,7 +1369,7 @@ class Cam extends React.Component {
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
-                                <th>{this.state.statusMsg}</th>
+                                <th id='msgStatus'>{this.state.statusMsg}</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
                                         <button  title="Generate G-Code from Operations below" 
@@ -1541,3 +1541,11 @@ Cam = withDocumentCache(withGetBounds(Cam));
 
 export default Cam;
 
+function updateStatus(data) {
+    // Smoothieware: <Idle,MPos:49.5756,279.7644,-15.0000,WPos:0.0000,0.0000,0.0000>
+    // till GRBL v0.9: <Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>
+    // since GRBL v1.1: <Idle|WPos:0.000,0.000,0.000|Bf:15,128|FS:0,0|Pn:S|WCO:0.000,0.000,0.000> (when $10=2)
+
+    // Extract state
+    var state = data.substring(data.indexOf('<') + 1, data.search(/(,|\|)/));
+}
