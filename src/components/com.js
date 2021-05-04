@@ -602,6 +602,8 @@ function updateStatus(data) {
 //        }
     } else if (state === 'Hold') {
         $("#msgStatus").html('Pause Status');
+        $('#playBtn').prop('disabled', true);
+
         $("#machineStatus").removeClass('badge-ok');
         $("#machineStatus").removeClass('badge-notify');
         $("#machineStatus").addClass('badge-warn');
@@ -616,7 +618,7 @@ function updateStatus(data) {
 //        }
     } else if (state === 'Idle') {
         $("#msgStatus").html('Machine is Ready for the next order');
-        $('#playBtn').prop('disabled', false);
+        $('#playBtn').prop('disabled', true);
 
         $("#machineStatus").addClass('badge-ok');
         $("#machineStatus").removeClass('badge-notify');
