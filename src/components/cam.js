@@ -1216,7 +1216,7 @@ class Cam extends React.Component {
                                                     }}><img src='icon2.png'></img></div>
                                                 <div className='icons' onClick={() => { }}><img src='icon3.png'></img></div>
                                                 <div className='icons' onClick={() =>this.rotate()}><img src='icon4.png'></img></div>
-                                                <div className='icons' onClick={() => this.rotateClockwise()}><img src='icon4.png'></img></div>
+                                                <div className='icons ' onClick={() => this.rotateClockwise()}><img className='reverse' src='icon4.png'></img></div>
 
                                                 <div className='icons' onClick={() => { }}><img src='icon5.png'></img></div>
 
