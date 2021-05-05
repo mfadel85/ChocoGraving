@@ -626,7 +626,7 @@ function updateStatus(data) {
 //        }
     } else if (state === 'Idle') {
         $("#msgStatus").html('Machine is Ready for the next order');
-        $('#playBtn').prop('disabled', true);
+        $('#playBtn').prop('disabled', false);
 
         $("#machineStatus").addClass('badge-ok');
         $("#machineStatus").removeClass('badge-notify');
