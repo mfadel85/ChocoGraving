@@ -95,6 +95,8 @@ class Com extends React.Component {
 
         socket.on('connect', function(data) {
             serverConnected = true;
+            $("#msgStatus").html('Server is connected');
+
             $('#connectS').addClass('disabled');
             $('#disconnectS').removeClass('disabled');
             //socket.emit('firstLoad');
@@ -160,6 +162,8 @@ class Com extends React.Component {
                 //console.log('ports: ' + ports);
                 CommandHistory.write('Serial ports detected: ' + JSON.stringify(data));
             } else {
+                $("#msgStatus").html('Server is not connected!');
+
                 CommandHistory.error('No serial ports found on server!');
             }
         });
@@ -210,6 +214,8 @@ class Com extends React.Component {
             $('#connectS').addClass('disabled');
             $('#disconnectS').removeClass('disabled');
             if (data.indexOf('opened') >= 0) {
+                $("#msgStatus").html('Machine is connted!!');
+
                 machineConnected = true;
                 $('#connect').addClass('disabled');
                 $('#disconnect').removeClass('disabled');
@@ -217,6 +223,8 @@ class Com extends React.Component {
             }
             if (data.indexOf('Connect') >= 0) {
                 machineConnected = false;
+                $("#msgStatus").html('Machine is not connted!!');
+
                 $('#connect').removeClass('disabled');
                 $('#disconnect').addClass('disabled');
                 CommandHistory.error('Machine disconnected')
