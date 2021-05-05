@@ -492,6 +492,10 @@ class Cam extends React.Component {
         return [parseFloat(width), parseFloat(height)];
     }
     async generateAll(){ 
+        if($("#machineStatus").text != "Machine is not connected!!"){
+            alert('Machine is not connected, please ask for help, from the administrator!!!');
+            return;
+        }
         this.props.documents.forEach((element,index) => {
             if(index >32){
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -1370,7 +1374,7 @@ class Cam extends React.Component {
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
-                                <th id='msgStatus'>{this.state.statusMsg}</th>
+                                <th >Progress</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
                                         <button  title="Generate G-Code from Operations below" 
@@ -1389,6 +1393,11 @@ class Cam extends React.Component {
                                         <button title="Clear" style={{ display: 'none' }} className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
                                     </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}
                                 </td>
+                            </tr>
+                            <tr>
+                                <td><span id="serverStatus">{this.state.statusMsg}</span></td>
+                                <td><span id="machineStatus"></span></td>
+                                {/*<td><span id='msgStatus'></span></td>*/}
                             </tr>
                         </tbody>
                     </table>

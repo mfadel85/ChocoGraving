@@ -96,6 +96,7 @@ class Com extends React.Component {
         socket.on('connect', function(data) {
             serverConnected = true;
             $("#msgStatus").html('Server is connected');
+            $("#serverStatus").html('Server is connected');
 
             $('#connectS').addClass('disabled');
             $('#disconnectS').removeClass('disabled');
@@ -108,6 +109,8 @@ class Com extends React.Component {
             CommandHistory.error('Disconnected from Server ' + settings.comServerIP)
             //console.log('Disconnected from Server ' + settings.commServerIP);
             serverConnected = false;
+            $("#serverStatus").html('Server is disconnected');
+
             $('#connectS').removeClass('disabled');
             $('#disconnectS').addClass('disabled');
             machineConnected = false;
@@ -162,7 +165,6 @@ class Com extends React.Component {
                 //console.log('ports: ' + ports);
                 CommandHistory.write('Serial ports detected: ' + JSON.stringify(data));
             } else {
-                $("#msgStatus").html('Server is not connected!');
 
                 CommandHistory.error('No serial ports found on server!');
             }
@@ -214,7 +216,8 @@ class Com extends React.Component {
             $('#connectS').addClass('disabled');
             $('#disconnectS').removeClass('disabled');
             if (data.indexOf('opened') >= 0) {
-                $("#msgStatus").html('Machine is connted!!');
+                $("#msgStatus").html('Machine is connected!!');
+                $("#machineStatus").html('Machine is connected!!');
 
                 machineConnected = true;
                 $('#connect').addClass('disabled');
@@ -223,7 +226,7 @@ class Com extends React.Component {
             }
             if (data.indexOf('Connect') >= 0) {
                 machineConnected = false;
-                $("#msgStatus").html('Machine is not connted!!');
+                $("#machineStatus").html('Machine is  not connected!!');
 
                 $('#connect').removeClass('disabled');
                 $('#disconnect').addClass('disabled');
@@ -656,7 +659,7 @@ function updateStatus(data) {
 //            $('#alarmmodal').modal('hide');
 //        }
     }
-    $('#machineStatus').html(state);
+    //$('#machineStatus').html(state);
 }
 
 
@@ -695,9 +698,11 @@ export function runJob(job) {
                 CommandHistory.error('Job empty!')
             }
         } else {
+            $("#msgStatus").html('Machine is not connected!');
             CommandHistory.error('Machine is not connected!')
         }
     } else {
+        $("#msgStatus").html('Server is not connected!');
 
         CommandHistory.error('Not gonna work, Server is not connected!')
     }
