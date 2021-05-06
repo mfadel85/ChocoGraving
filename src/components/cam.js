@@ -384,6 +384,9 @@ class Cam extends React.Component {
             console.log('runJob(' + cmd.length + ')');
             //playing = true;
             runJob(cmd);
+            this.step1();
+            //dispatch(resetWorkspace()); 
+            this.props.dispatch(resetWorkspace());
         }
         else {
             console.log("didn't work", 'Playing', playing, 'Paused', paused);
@@ -483,7 +486,7 @@ class Cam extends React.Component {
         return [parseFloat(width), parseFloat(height)];
     }
     async generateAll(){ 
-        if($("#machineStatus").text != "Machine is not connected!!"){
+        if($("#machineStatus").text() != "Machine is connected!!"){
             alert('Machine is not connected, please ask for help, from the administrator!!!');
             return;
         }
@@ -1097,7 +1100,7 @@ class Cam extends React.Component {
             break;
         }
         //this.nameInput.focus();
-        this.setState({ step1: false, step2: true, activeTemplate: activeTemplate})
+        this.setState({ step1: false, step2: true, activeTemplate: activeTemplate});
     }
     setPcsCount(count){
         this.setState({pcsCount:count});
