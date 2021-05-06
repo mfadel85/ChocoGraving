@@ -76,81 +76,72 @@ export class CAMValidator extends React.Component {
 CAMValidator = connect((state) => { return { documents: state.documents.length } })(CAMValidator)
 
 let __interval;
-
+const initialState = {
+    filter: null,
+    content: "",
+    svg: "",
+    font: 'Almarai-Bold.ttf',
+    width: 0,
+    lineHeight: 0,
+    activeTemplateName: 'Square',
+    activeTemplate: {
+        "id": "SquareModel",
+        "maxHeight": 32,
+        "maxWidth": 25,
+        "maxLines": 3,
+        "maxWordsAr": 4,
+        "maxWordsEn": 3,
+        "shiftX": 10,
+        "shiftY": 10,
+        "file": "../Square.svg",
+        "scale": 0.001,
+        fontSize: 24
+    },
+    marginX: 0,
+    marginY: 0,
+    scale: 0.012695775,
+    fontSize: 25,
+    fontchange: 0,
+    textDocID: '',
+    templateDocID: '',
+    direction: 'LTR',
+    stepOver: 100,
+    svgOutpout: [],
+    svgModels: [],
+    layout: [],
+    chocolateDepth: 30,
+    textEnabled: true,
+    generalAllEnable: false,
+    moldShifts: [70, 65],
+    extraShift: [1, 0, 0, 1, 0, 0],
+    originalShift: [0, 0],
+    stdMargin: 50,
+    svgDim: [],
+    changesXY: [1, 0, 0, 1, 0, 0],
+    changesScaling: [1, 0, 0, 1, 0, 0],
+    scalingCount: 0,
+    step1: true,
+    step2: false,
+    step3: false,
+    step4: false,
+    pcsCount: 6,
+    mold: 'mold1.png',
+    moldWidth: '231px',
+    moldHeight: '232px',
+    moldName: 'Square in Square',
+    moldPlaceHolder: '\nname\nhere',
+    paddingTop: '35px',
+    forwardEnabled: false,
+    errorMessage: 'Test',
+    statusMsg: 'Progress'
+};
 class Cam extends React.Component {
 
     constructor(props) {
         super(props);
         this.chocoalteDepthRef;
     
-        this.state = {
-            filter: null,
-            content: "",
-            svg: "",
-            font: 'Almarai-Bold.ttf',
-            width: 0,
-            lineHeight: 0,
-            activeTemplateName: 'Square',
-            activeTemplate: {
-                "id": "SquareModel",
-                "maxHeight": 32,
-                "maxWidth": 25,
-                "maxLines": 3,
-                "maxWordsAr": 4,
-                "maxWordsEn": 3,
-                "shiftX": 10,
-                "shiftY": 10,
-                "file": "../Square.svg",
-                "scale": 0.001,
-                fontSize: 24
-            },
-            marginX: 0,
-            marginY: 0,
-            scale: 0.012695775,
-            fontSize: 25,
-            fontchange: 0,
-            textDocID: '',
-            templateDocID: '',
-            direction: 'LTR',
-            stepOver: 100,
-            svgOutpout:[],
-            svgModels:[],
-            layout:[],
-            chocolateDepth: 30,
-            textEnabled:true,
-            generalAllEnable:false,
-            moldShifts: [70, 65],
-            extraShift: [1, 0, 0, 1, 0, 0],
-            originalShift: [0, 0],
-            stdMargin:  50,
-            svgDim:[],
-            changesXY:[1,0,0,1,0,0],
-            changesScaling: [1, 0, 0, 1, 0, 0],
-            scalingCount:0,
-            step1: true,
-            step2: false,
-            step3: false,
-            step4:false,
-            pcsCount:6,
-            mold:'mold1.png',
-            moldWidth: '231px',
-            moldHeight: '232px',
-            moldName:'Square in Square',
-            moldPlaceHolder: '\nname\nhere',
-            paddingTop:'35px',
-            forwardEnabled:false,
-            errorMessage:'Test',
-            statusMsg:'Progress'
-        }
-
-        /*if (!socket && !serverConnected) {
-            handleConnectServer();
-            // MFH I added this
-            CommandHistory.write('Connecting Machine @ USB,/dev/ttyUSB0,115200baud', CommandHistory.INFO);
-            let server = settings.comServerIP;
-            socket = io('ws://' + server);
-            socket.emit('connectTo', 'USB' + ',' + '/dev/ttyUSB0' + ',' + '115200');
-        }*/
+        this.state = initialState;
         let { settings, documents, operations } = this.props;
 
         this.handleDepthChange = this.handleDepthChange.bind(this);
@@ -456,8 +447,8 @@ class Cam extends React.Component {
         this.props.dispatch(clearOperations());
         this.setState({ 
             changesXY:[1,0,0,1,0,0],
-            changesScaling:[1,0,0,1,0,0]
-
+            changesScaling:[1,0,0,1,0,0],
+            dims:[0,0]
         });
     }
 
@@ -756,6 +747,7 @@ class Cam extends React.Component {
         console.log('testyyyy');
     }
     moveUp(){
+        // get current up limit
         let changes = this.state.changesXY;
         changes[5] += 0.3;
         this.setState({ changesXY: changes});
@@ -764,6 +756,8 @@ class Cam extends React.Component {
     }
 
     moveDown() {
+        // get current down limit
+
         let changes = this.state.changesXY;
         changes[5] -= 0.3;
         this.setState({ changesXY: changes });
@@ -772,6 +766,7 @@ class Cam extends React.Component {
     }
   
     moveLeft() {
+        //
         let changes = this.state.changesXY;
         changes[4] -= 0.3;
         this.setState({ changesXY: changes });
@@ -804,6 +799,15 @@ class Cam extends React.Component {
 
     }
     scale(s){
+        const dim = this.state.dims;
+        /// [28,28]
+        let maxDim = [28,28];
+        if ( (dim[0] * 1.05 > maxDim[0] || dim[1] * 1.05 > maxDim[1]) && s >1 )
+        {
+            alert('You reached the maximum size');
+            return;
+        }
+            
         let scalingCount = this.state.scalingCount;
         
         this.setState({scalingCount:scalingCount});
@@ -816,7 +820,7 @@ class Cam extends React.Component {
         changes[3] *= s;
         changes[4] += cx - s * cx;
         changes[5] += cy - s * cy;
-        this.setState({ changesScaling: changes });
+        this.setState({ changesScaling: changes,dims:[dim[0]*s,dim[1]*s] });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
     }
