@@ -750,7 +750,7 @@ class Cam extends React.Component {
         console.log('testyyyy');
     }
     moveUp(){
-        // get current up limit
+        //check limits: get current up limit
         let changes = this.state.changesXY;
         changes[5] += 0.3;
         this.setState({ changesXY: changes});
@@ -759,7 +759,7 @@ class Cam extends React.Component {
     }
 
     moveDown() {
-        // get current down limit
+        //check limits: get current down limit
 
         let changes = this.state.changesXY;
         changes[5] -= 0.3;
@@ -769,7 +769,7 @@ class Cam extends React.Component {
     }
   
     moveLeft() {
-        //
+        // check limits:get current left limit
         let changes = this.state.changesXY;
         changes[4] -= 0.3;
         this.setState({ changesXY: changes });
@@ -778,6 +778,8 @@ class Cam extends React.Component {
     }
 
     moveRight() {
+        //check limits: get current right limit
+
         let changes = this.state.changesXY;
         changes[4] += 0.3;
         this.setState({ changesXY: changes });
