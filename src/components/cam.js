@@ -88,6 +88,9 @@ const initialState = {
         "id": "SquareModel",
         "maxHeight": 32,
         "maxWidth": 25,
+        chocolateWidth: 44,
+        chocolateHeight: 44,
+        marginChocolate: [50, 50],
         "maxLines": 3,
         "maxWordsAr": 4,
         "maxWordsEn": 3,
@@ -95,7 +98,8 @@ const initialState = {
         "shiftY": 10,
         "file": "../Square.svg",
         "scale": 0.001,
-        fontSize: 24
+        fontSize: 24,
+        "moldShifts": [70, 65]
     },
     marginX: 0,
     marginY: 0,
@@ -134,6 +138,10 @@ const initialState = {
     forwardEnabled: false,
     errorMessage: 'Test',
     statusMsg: 'Progress'
+    /*
+
+
+    */
 };
 class Cam extends React.Component {
 
@@ -224,6 +232,7 @@ class Cam extends React.Component {
         let activeTemplateName = this.state.activeTemplateName;
         //this.handleTemplateChange(e, activeTemplateName);
     }
+
 
     /*handleConnectServer() {
         let that = this;

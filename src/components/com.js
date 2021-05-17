@@ -226,7 +226,7 @@ class Com extends React.Component {
             }
             if (data.indexOf('Connect') >= 0) {
                 machineConnected = false;
-                $("#machineStatus").html('Machine is  not connected!!');
+                $("#machineStatus").html('Machine is not connected!!');
 
                 $('#connect').removeClass('disabled');
                 $('#disconnect').addClass('disabled');
@@ -257,7 +257,7 @@ class Com extends React.Component {
 
         socket.on('runningJob', function (data) {
             CommandHistory.write('runningJob(' + data.length + ')', CommandHistory.WARN);
-            alert(data);
+            //alert(data);
             //setGcode(data);
         });
 
