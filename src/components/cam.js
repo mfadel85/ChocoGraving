@@ -622,26 +622,19 @@ class Cam extends React.Component {
                 models = {};
                 lines.forEach((line, i) => {
                     wordModel = new makerjs.models.Text(font, line, fontSize, true);
-                    let count = 0;
-                    for (var c in wordModel.models)
-                        count++;
-                    console.log('count', count);
+                    let count =wordModel.models.count;
                     shiftY = shiftY + maxWHeight + 3;
                     shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * 3.78));/// what is this equation?
-                    let firstLineShift = that.state.activeTemplate.shiftX * 9 - (wordWidths[0] / (2 * 3.78));
-                    console.log('shiftX', shiftX, ' wordWidths[i]', wordWidths[i] / (2 * 3.78), 'activetempalte.shiftx',
-                        that.state.activeTemplate.shiftX);
+
                     let shiftingFactor = 0;
                     if (i > 0) {
                         shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
-                        console.log('shifting factor is', shiftingFactor, wordWidths[0], wordWidths[1]);
                     }
                     for (let index = 0; index < count; index++) {
                         shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
                         wordModel.models[index].origin = [shifts[0], shifts[1]];
                     }
-                    console.log('shiftX is ', shiftX, 'shiftY is:', shiftY, 'word model is:', wordModel.models[0].origin);
-                    console.log('xShiftFinal', shifts);
+
 
                     //var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
                     makerjs.model.addModel(models, wordModel);
@@ -697,19 +690,16 @@ class Cam extends React.Component {
 
             }
             const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];
-            /// testlertestler testytyq
             try {
-                let maxDim = 28;
                 const operator = 100/25.4;// the division of unit per mm
-                let firstX = 75;
-                let stdMargin = 50; // margin between two pieces of the mo
+                let stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
                 let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
-                
+            
                 let dims = that.getDimension(output);
                
                 let mmDims = dims.map(n => n / operator);
                
-                if (mmDims[0] > maxDim || mmDims[1] > maxDim) {
+                if (mmDims[0] > that.state.activeTemplate.maxWidth || mmDims[1] > that.state.activeTemplate.maxHeight) {
                     alert("Please divide to two lines,the size of the words shouldn't be more than 28mm!!!")
                     return;
                 }
@@ -814,9 +804,7 @@ class Cam extends React.Component {
     }
     scale(s){
         const dim = this.state.dims;
-        /// [28,28]
-        let maxDim = [28,28];
-        if ( (dim[0] * 1.05 > maxDim[0] || dim[1] * 1.05 > maxDim[1]) && s >1 )
+        if ((dim[0] * 1.05 > this.state.activeTemplate.maxWidth || dim[1] * 1.05 > this.state.activeTemplate.maxHeight) && s >1 )
         {
             alert('You reached the maximum size');
             return;
