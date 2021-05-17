@@ -523,13 +523,6 @@ class Cam extends React.Component {
             else 
                 await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file' + index + '.svg', i, runJob);
         }
-        /*
-        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file2.svg', 1);
-        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file3.svg', 2);
-        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file4.svg', 3);
-        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file5.svg', 4);
-        await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file6.svg', 5,runJob);
-        */
         await this.props.dispatch(selectDocument(this.props.documents[0].id));
     }
     calcMargins(svgOutput){
@@ -600,11 +593,7 @@ class Cam extends React.Component {
                 let shiftX = 0;
                 let shiftY = 0;
                 let shifts = [shiftX, shiftY];
-                let prevWordWidth = 0;
-                let pervWordOrigin = 0;
-
                 models = {};
-
                 console.log('lines are : ', layout.lines);
                 svgWords = [];
                 lines.forEach((line, i) => {
@@ -622,7 +611,6 @@ class Cam extends React.Component {
                 models = {};
                 lines.forEach((line, i) => {
                     wordModel = new makerjs.models.Text(font, line, fontSize, true);
-                    let count =wordModel.models.count;
                     shiftY = shiftY + maxWHeight + 3;
                     shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * 3.78));/// what is this equation?
 
@@ -630,17 +618,12 @@ class Cam extends React.Component {
                     if (i > 0) {
                         shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
                     }
-                    for (let index = 0; index < count; index++) {
+                    for (let index = 0; index < wordModel.models.count; index++) {
                         shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
                         wordModel.models[index].origin = [shifts[0], shifts[1]];
                     }
-
-
-                    //var newWordModel = makerjs.model.moveRelative(wordModel,[10,10]);
                     makerjs.model.addModel(models, wordModel);
                 });
-                console.log('models', models);
-                prevWordWidth = 0;
             }
             else {// LTR
                 try {
@@ -651,7 +634,6 @@ class Cam extends React.Component {
                 }
                 let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
                 while (!result) {
-                    console.log("we get here!!!");
                     that.setState({
                         activeTemplate: activeTemplate
                     });

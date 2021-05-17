@@ -4,26 +4,37 @@
         {
             "id":"OvalModel",
             "maxHeight":20,
-            "maxWidth":25,
+            "maxWidth":30,
             "maxLines":2,
             "maxWordsAr":3,
             "maxWordsEn":3,
             "shiftX":17.765,
             "shiftY":8,
             "file":"../Oval.svg" ,
-            "scale":0.020
+            "scale":0.020,
+            "chocolateWidth": 45,
+            "chocolateHeight": 35,
+            "marginChocolate": [41,51],
+            "moldShifts":[70,65]
         },
         {
             "id":"RectangleModel",
-            "maxHeight":20,
-            "maxWidth":25,
-            "maxLines":3,
+            "maxHeight":22,
+            "maxWidth":35,
+            "maxLines":2,
             "maxWordsAr":4,
             "maxWordsEn":3,
             "shiftX":0,
             "shiftY":0,
             "file":"../Rectangle.svg",
-            "scale":0.1
+            "scale":0.1,
+            "chocolateWidth": 49,
+            "chocolateHeight": 29,
+            "marginChocolate": [55,35],
+            "moldShifts": [
+                70,
+                65
+            ]
         },
         {
             "id":"SquareModel",
@@ -35,7 +46,14 @@
             "shiftX":10,
             "shiftY":10,
             "file":"../Square.svg",
-            "scale":0.010
+            "scale":0.010,
+            "chocolateWidth": 44,
+            "chocolateHeight": 44,
+            "marginChocolate": [50,50],
+            "moldShifts": [
+                70,
+                65
+            ]
         }
     ]
 } 
