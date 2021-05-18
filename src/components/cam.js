@@ -317,7 +317,7 @@ class Cam extends React.Component {
         // if there is no document ignore this event or if it has been sent to the machine,
         console.log('e is ', e);
         //e.preventDefault();
-        this.scale(Math.exp(e.deltaY / 2000));
+        this.scale(Math.exp(e.deltaY / 20000));
         //this.zoom(e.pageX, e.pageY, Math.exp(e.deltaY / 2000));
     }
     handleKeyDown(e) {
@@ -595,7 +595,6 @@ class Cam extends React.Component {
                 let shifts = [shiftX, shiftY];
                 models = {};
                 console.log('lines are : ', layout.lines);
-                svgWords = [];
                 lines.forEach((line, i) => {
                     wordModel = new makerjs.models.Text(font, line, fontSize);
                     makerjs.model.addModel(models, wordModel);
@@ -786,7 +785,7 @@ class Cam extends React.Component {
     }
     scale(s){
         const dim = this.state.dims;
-        if ((dim[0] * 1.05 > this.state.activeTemplate.maxWidth || dim[1] * 1.05 > this.state.activeTemplate.maxHeight) && s >1 )
+        if ((dim[0] * s > this.state.activeTemplate.maxWidth || dim[1] * s > this.state.activeTemplate.maxHeight) && s >1 )
         {
             alert('You reached the maximum size');
             return;
@@ -1345,9 +1344,9 @@ class Cam extends React.Component {
                             
                             <div  >
                                 <br />
-                                <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.05) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
+                                <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.02) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
                                 <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
-                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.95) }} bsSize="large" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
+                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.98) }} bsSize="large" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
                                 <br />
                                 <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
                                 <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
