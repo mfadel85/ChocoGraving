@@ -96,7 +96,7 @@ const initialState = {
         "maxWordsEn": 3,
         "shiftX": 10,
         "shiftY": 10,
-        "file": "../Square.svg",
+        "file": "../Square.svg",//this file will change depending on the template adding profiles
         "scale": 0.001,
         fontSize: 24,
         "moldShifts": [70, 65]
@@ -997,7 +997,7 @@ class Cam extends React.Component {
         var chocoTemplates = require("../data/chocolateTemplates.json");
         let activeTemplate = chocoTemplates.templates[2];
         switch(shape){
-            case 'SinS':
+            case 'SinS':// square in square
                 activeTemplate = chocoTemplates.templates[2];
                 this.setState({ 
                     mold: 'mold1.png',
@@ -1008,7 +1008,7 @@ class Cam extends React.Component {
                  });
             break;
             case 'CinS':
-                activeTemplate = chocoTemplates.templates[2];
+                activeTemplate = chocoTemplates.templates[4];
                 this.setState({ 
                     mold: 'mold2.png',
                     moldWidth: '231px', moldHeight: '232px',
@@ -1018,7 +1018,7 @@ class Cam extends React.Component {
                 });
             break;
             case 'HinS':
-                activeTemplate = chocoTemplates.templates[2];
+                activeTemplate = chocoTemplates.templates[5];
                 this.setState({ 
                     mold: 'mold7.png',
                     moldWidth: '231px', moldHeight: '232px',
@@ -1028,7 +1028,7 @@ class Cam extends React.Component {
                 });
             break;
             case 'Circle':
-                activeTemplate = chocoTemplates.templates[2];
+                activeTemplate = chocoTemplates.templates[3];
                 this.setState({ mold: 'mold3.png', moldWidth: '260px', moldHeight: '234px',
                     moldName: 'Circle',
                     moldPlaceHolder: 'name\nhere',

@@ -54,6 +54,72 @@
                 70,
                 65
             ]
+        },
+        {
+            "id": "CircleModel",
+            "maxHeight": 28,
+            "maxWidth": 28,
+            "maxLines": 3,
+            "maxWordsAr": 4,
+            "maxWordsEn": 3,
+            "shiftX": 10,
+            "shiftY": 10,
+            "file": "../circle2.svg",
+            "scale": 0.010,
+            "chocolateWidth": 36,
+            "chocolateHeight": 36,
+            "marginChocolate": [
+                42,
+                42
+            ],
+            "moldShifts": [
+                70,
+                65
+            ]
+        },
+        {
+            "id": "CircleSquare",
+            "maxHeight": 28,
+            "maxWidth": 28,
+            "maxLines": 3,
+            "maxWordsAr": 4,
+            "maxWordsEn": 3,
+            "shiftX": 10,
+            "shiftY": 10,
+            "file": "../squreCircle.svg",
+            "scale": 0.010,
+            "chocolateWidth": 44,
+            "chocolateHeight": 44,
+            "marginChocolate": [
+                50,
+                50
+            ],
+            "moldShifts": [
+                70,
+                65
+            ]
+        },
+        {
+            "id": "HeartSquare",
+            "maxHeight": 28,
+            "maxWidth": 28,
+            "maxLines": 3,
+            "maxWordsAr": 4,
+            "maxWordsEn": 3,
+            "shiftX": 10,
+            "shiftY": 10,
+            "file": "../sqaureHeart.svg",
+            "scale": 0.010,
+            "chocolateWidth": 44,
+            "chocolateHeight": 44,
+            "marginChocolate": [
+                50,
+                50
+            ],
+            "moldShifts": [
+                70,
+                65
+            ]
         }
     ]
 } 
