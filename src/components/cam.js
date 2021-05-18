@@ -1051,7 +1051,7 @@ class Cam extends React.Component {
                 });
             break;
             case 'BabySt':
-                activeTemplate = chocoTemplates.templates[0];
+                activeTemplate = chocoTemplates.templates[7];
                 this.setState({ mold: 'mold6.png', moldWidth: '263px', moldHeight: '245px', 
                 moldName: 'Stroller',
                 moldPlaceHolder: 'name here',
@@ -1059,7 +1059,7 @@ class Cam extends React.Component {
             });
             break;
             case 'Heart':
-                activeTemplate = chocoTemplates.templates[2];
+                activeTemplate = chocoTemplates.templates[8];
                 this.setState({ mold: 'mold8.png', moldWidth: '231px', moldHeight: '232px', 
                 moldName: 'Heart',
                 moldPlaceHolder: 'name here',

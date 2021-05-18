@@ -120,29 +120,72 @@
                 70,
                 65
             ]
+        },
+        {
+            "id": "babyShirt",
+            "maxHeight": 38,
+            "maxWidth": 28,
+            "maxLines": 3,
+            "maxWordsAr": 4,
+            "maxWordsEn": 3,
+            "shiftX": 10,
+            "shiftY": 10,
+            "file": "../babyShirt.svg",
+            "scale": 0.010,
+            "chocolateWidth": 50,
+            "chocolateHeight": 50,
+            "marginChocolate": [
+                56,
+                56
+            ],
+            "moldShifts": [
+                70,
+                65
+            ]
+        },
+        {
+            "id": "stroller",
+            "maxHeight": 16,
+            "maxWidth": 37,
+            "maxLines": 2,
+            "maxWordsAr": 4,
+            "maxWordsEn": 3,
+            "shiftX": 10,
+            "shiftY": 10,
+            "file": "../stroller.svg",
+            "scale": 0.010,
+            "chocolateWidth": 54,
+            "chocolateHeight": 52,
+            "marginChocolate": [
+                60,
+                58
+            ],
+            "moldShifts": [
+                70,
+                65
+            ]
+        },
+        {
+            "id": "Heart",
+            "maxHeight": 28,
+            "maxWidth": 32,
+            "maxLines": 3,
+            "maxWordsAr": 4,
+            "maxWordsEn": 3,
+            "shiftX": 10,
+            "shiftY": 10,
+            "file": "../heart2M.svg",
+            "scale": 0.010,
+            "chocolateWidth": 44,
+            "chocolateHeight": 42,
+            "marginChocolate": [
+                50,
+                48
+            ],
+            "moldShifts": [
+                70,
+                65
+            ]
         }
-,
-{
-    "id": "babyShirt",
-    "maxHeight": 38,
-    "maxWidth": 28,
-    "maxLines": 3,
-    "maxWordsAr": 4,
-    "maxWordsEn": 3,
-    "shiftX": 10,
-    "shiftY": 10,
-    "file": "../babyShirt.svg",
-    "scale": 0.010,
-    "chocolateWidth": 50,
-    "chocolateHeight": 50,
-    "marginChocolate": [
-        56,
-        56
-    ],
-    "moldShifts": [
-        70,
-        65
-    ]
-}        
     ]
 } 
