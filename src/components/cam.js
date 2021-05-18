@@ -1043,7 +1043,7 @@ class Cam extends React.Component {
                 });
             break;
             case 'BabyS':
-                activeTemplate = chocoTemplates.templates[0];
+                activeTemplate = chocoTemplates.templates[6];
                 this.setState({ mold: 'mold5.png', moldWidth: '232px', moldHeight: '245px', 
                     moldName: 'Baby Shirt',
                     moldPlaceHolder: 'name\nhere',
