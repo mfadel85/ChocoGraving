@@ -15,7 +15,8 @@
             "chocolateWidth": 45,
             "chocolateHeight": 35,
             "marginChocolate": [41,51],
-            "moldShifts":[70,65]
+            "moldShifts":[70,65],
+            "filePcsCount":16
         },
         {
             "id":"RectangleModel",
@@ -34,7 +35,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":48
         },
         {
             "id":"SquareModel",
@@ -53,7 +55,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":32
         },
         {
             "id": "CircleModel",
@@ -75,7 +78,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":22
         },
         {
             "id": "CircleSquare",
@@ -97,7 +101,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":49
         },
         {
             "id": "HeartSquare",
@@ -119,7 +124,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":35
         },
         {
             "id": "babyShirt",
@@ -141,7 +147,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":33
         },
         {
             "id": "stroller",
@@ -163,7 +170,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":62
         },
         {
             "id": "Heart",
@@ -185,7 +193,8 @@
             "moldShifts": [
                 70,
                 65
-            ]
+            ],
+            "filePcsCount":89
         }
     ]
 } 

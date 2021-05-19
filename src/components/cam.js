@@ -99,7 +99,8 @@ const initialState = {
         "file": "../Square.svg",//this file will change depending on the template adding profiles
         "scale": 0.001,
         fontSize: 24,
-        "moldShifts": [70, 65]
+        "moldShifts": [70, 65],
+        filePcsCount:32// the number of pcs in svg file according to template, square in square :32,circle in square:49
     },
     marginX: 0,
     marginY: 0,
@@ -395,7 +396,7 @@ class Cam extends React.Component {
             runJob(cmd);
             this.step1();
             //dispatch(resetWorkspace()); 
-            this.props.dispatch(resetWorkspace());
+            //this.props.dispatch(resetWorkspace());
         }
         else {
             console.log("didn't work", 'Playing', playing, 'Paused', paused);
@@ -408,8 +409,6 @@ class Cam extends React.Component {
             worker.MakeItWork();
             cmm.execute();
             */
-           /// those steps have to be done in order to accomplish that task,
-           // this week will be the best in my life ever, I will make the best investment ever.
         }
     }
 
@@ -500,7 +499,7 @@ class Cam extends React.Component {
             return;
         }
         this.props.documents.forEach((element,index) => {
-            if(index >32){
+            if(index >this.state.activeTemplate.filePcsCount){
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
                 this.props.dispatch(removeDocumentSelected(this.props.documents[index].id));
             }
@@ -810,7 +809,7 @@ class Cam extends React.Component {
 
     scaleSec(s,n) {
         let scalingCount = this.state.scalingCount;
-        let index = n == 0 ? 0 : n * 3 + 30;
+        let index = n == 0 ? 0 : n * 3 + this.state.activeTemplate.filePcsCount-2;
         var stdMarginY = 0;
         if (n > 2)
             stdMarginY = 1;
@@ -894,7 +893,7 @@ class Cam extends React.Component {
                     type: "image/svg+xml"
                 };
                 
-                let index = n == 0 ? 0 : n * 3 + 30;
+                let index = n == 0 ? 0 : n * 3 + that.state.activeTemplate.filePcsCount-2;
                 let doc1 = that.props.documents.map(() => that.props.documents[index].id).slice(0, 1);
 
                 that.props.dispatch(selectDocuments(false));
@@ -918,8 +917,8 @@ class Cam extends React.Component {
                 
                 if (n == 1) { ///  
                     let newExtraShift = that.state.extraShift;
-                    newExtraShift[4] = that.props.documents[32].changes[4] - that.state.originalShift[0] - that.state.changesXY[4]/* - margins[0]*/;
-                    newExtraShift[5] = that.props.documents[32].changes[5] - that.state.originalShift[1] - that.state.changesXY[5]/* - margins[1]*/;
+                    newExtraShift[4] = that.props.documents[that.state.activeTemplate.filePcsCount].changes[4] - that.state.originalShift[0] - that.state.changesXY[4]/* - margins[0]*/;
+                    newExtraShift[5] = that.props.documents[that.state.activeTemplate.filePcsCount].changes[5] - that.state.originalShift[1] - that.state.changesXY[5]/* - margins[1]*/;
                     that.setState({ extraShift: newExtraShift},() =>{
                         that.props.dispatch(transform2dSelectedDocuments(newExtraShift));
                     })
@@ -945,21 +944,21 @@ class Cam extends React.Component {
                                 //that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                             }).then(() => {
                                 if (n == 0) {
-                                    that.setState({ originalShift: [that.props.documents[32].changes[4], that.props.documents[32].changes[5]] })
+                                    that.setState({ originalShift: [that.props.documents[0].changes[4], that.props.documents[0].changes[5]] })
                                 }
                                 if (n > 4) {
-                                    
+                                    // change indexes here
                                     that.props.dispatch(addOperation({
                                         documents: [
                                             that.props.documents[0].id,
-                                            that.props.documents[33].id,
-                                            that.props.documents[36].id,
+                                            that.props.documents[that.state.activeTemplate.filePcsCount + 1].id,
+                                            that.props.documents[that.state.activeTemplate.filePcsCount + 4].id,
                                         ] }));
                                     that.props.dispatch(addOperation({
                                         documents: [
-                                            that.props.documents[39].id,
-                                            that.props.documents[42].id,
-                                            that.props.documents[45].id
+                                            that.props.documents[that.state.activeTemplate.filePcsCount + 7].id,
+                                            that.props.documents[that.state.activeTemplate.filePcsCount + 10].id,
+                                            that.props.documents[that.state.activeTemplate.filePcsCount + 13].id
                                         ] }));
                                     /*that.props.dispatch(addOperation({
                                         documents: [
