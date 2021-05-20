@@ -494,10 +494,10 @@ class Cam extends React.Component {
         return [parseFloat(width), parseFloat(height)];
     }
     async generateAll(){ 
-        if($("#machineStatus").text() != "Machine is connected!!"){
+        /*if($("#machineStatus").text() != "Machine is connected!!"){
             alert('Machine is not connected, please ask for help, from the administrator!!!');
             return;
-        }
+        }*/
         this.props.documents.forEach((element,index) => {
             if(index >this.state.activeTemplate.filePcsCount){
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -512,7 +512,7 @@ class Cam extends React.Component {
         let that = this;
         let runJob = function () {
             that.generateGcode(function () {
-                that.runJob();
+                //that.runJob();
             });
         };
         for(let i=1;i<this.state.pcsCount;i++){
