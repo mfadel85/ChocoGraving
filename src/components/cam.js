@@ -16,7 +16,7 @@
 import React from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text,Row,Col,Container,Grid } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { cloneDocumentSelected, colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
+import { cloneDocumentSelected, colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsMoving, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
 import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
@@ -744,7 +744,7 @@ class Cam extends React.Component {
         changes[5] -= 0.3;
         this.setState({ changesXY: changes });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, -0.3]));    
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, -0.3]));
     }
   
     moveLeft() {
@@ -753,7 +753,7 @@ class Cam extends React.Component {
         changes[4] -= 0.3;
         this.setState({ changesXY: changes });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, -0.3, 0]));      
+        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, -0.3, 0]));
     }
 
     moveRight() {
@@ -803,8 +803,14 @@ class Cam extends React.Component {
         changes[4] += cx - s * cx;
         changes[5] += cy - s * cy;
         this.setState({ changesScaling: changes,dims:[dim[0]*s,dim[1]*s] });
+        let shiftingChanges = this.state.changesXY;
+        //shiftingChanges[4] += changes[4];
+        //shiftingChanges[5] += changes[5];
+
+        this.setState({ changesXY: shiftingChanges });
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
+        // or transform2dSelectedDocumentsMoving
     }
 
     scaleSec(s,n) {
@@ -820,8 +826,7 @@ class Cam extends React.Component {
         let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2 + margins[1];
         let cx = (2 * x + this.state.dims[0]) / 2;
         let cy = (2 * y + this.state.dims[1]) / 2;
-        let changes = this.state.changesScaling;
-        this.setState({ changesScaling: changes });
+
         this.props.dispatch(selectDocument(this.props.documents[index].id));
         this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
     }
@@ -917,11 +922,11 @@ class Cam extends React.Component {
                 
                 if (n == 1) { ///  
                     let newExtraShift = that.state.extraShift;
-                    newExtraShift[4] = that.props.documents[that.state.activeTemplate.filePcsCount].changes[4] - that.state.originalShift[0] - that.state.changesXY[4]/* - margins[0]*/;
-                    newExtraShift[5] = that.props.documents[that.state.activeTemplate.filePcsCount].changes[5] - that.state.originalShift[1] - that.state.changesXY[5]/* - margins[1]*/;
+                    newExtraShift[4] = that.props.documents[0].changes[4] - that.state.originalShift[0] - that.state.changesXY[4]/* - margins[0]*/;
+                    newExtraShift[5] = that.props.documents[0].changes[5] - that.state.originalShift[1] - that.state.changesXY[5]/* - margins[1]*/;
                     that.setState({ extraShift: newExtraShift},() =>{
                         that.props.dispatch(transform2dSelectedDocuments(newExtraShift));
-                    })
+                    });
                 }
                 if(n > 1){
                     that.props.dispatch(transform2dSelectedDocuments(that.state.extraShift));
@@ -1194,7 +1199,7 @@ class Cam extends React.Component {
                             <div 
                                 style={{ marginLeft: '20px', marginRight: '20px',
                                 backgroundColor: "#28211B", color: "black",
-                                height: '340', borderStyle: 'solid', borderColor: '#45413F',borderWidth:'2px' }}>
+                                height: '340px', borderStyle: 'solid', borderColor: '#45413F',borderWidth:'2px' }}>
                                 <div style={{ display: 'inline-block', width: '15%', height: '340px', borderRightStyle: 'solid', borderRightColor: '#45413F', borderWidth: '2px'}}>
                                     <Grid>
                                         <Row className="show-grid" >

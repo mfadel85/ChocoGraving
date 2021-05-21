@@ -1,6 +1,8 @@
 import { objectNoId } from '../reducers/object'
 
-export const camera = objectNoId('camera', resetCamera(null, { machineWidth: 150, machineHeight: 150 }));
+export const camera = objectNoId('camera', resetCamera(null, 
+    { machineWidth: 150, machineHeight: 150 })
+);
 
 export function resetCamera(camera, settings) {
     return {
@@ -17,7 +19,7 @@ export function zoomArea(camera, settings, workspace, { x1, y1, x2, y2 }) {
     let cx = (x1 + x2) / 2 - settings.machineBottomLeftX + workspace.workOffsetX;
     let cy = (y1 + y2) / 2 - settings.machineBottomLeftY + workspace.workOffsetY;
     let fovy = 2 * Math.atan2(Math.max(Math.abs(y2 - y1), Math.abs(x2 - x1) * workspace.height / workspace.width) / 2, d);
-    fovy = 0.22;//0.10 original
+    fovy = 0.33;//0.12 original
     console.log('fovy is',fovy);
     return {
         eye: [cx, cy, d],
