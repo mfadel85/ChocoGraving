@@ -17,7 +17,7 @@ import React from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text,Row,Col,Container,Grid } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { cloneDocumentSelected, colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsMoving, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
-import { generatingGcode, setGcode } from '../actions/gcode';
+import { generatingGcode, setGcode,saveModels } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
 import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
 import { GlobalStore } from '../index';
@@ -138,7 +138,8 @@ const initialState = {
     paddingTop: '35px',
     forwardEnabled: false,
     errorMessage: 'Test',
-    statusMsg: 'Progress'
+    statusMsg: 'Progress',
+    svgFile:''
     /*
 
 
@@ -669,6 +670,8 @@ class Cam extends React.Component {
                 });
 
             }
+            that.props.dispatch(saveModels(models));
+
             const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];
             try {
                 const operator = 100/25.4;// the division of unit per mm
@@ -713,7 +716,11 @@ class Cam extends React.Component {
                     () => console.log('faiLUre')
                 );
 
-                that.setState({generalAllEnable:true});
+                that.setState({generalAllEnable:true/*,svgFile:'test.svg'*/});
+                var svgElement = document.getElementById("svgFile");
+                svgElement.setAttribute('href','data:text/plain;chartset=utf-8,' + encodeURIComponent(output));
+                svgElement.setAttribute('download','File.svg');
+                //svgElement.click();
             }
             catch (Exception) {
                 console.log(Exception);
@@ -1307,8 +1314,7 @@ class Cam extends React.Component {
                     
                     Font:
                         <FormGroup style={{ margin: '10px' }}>
-                        <Select value={globalState.gcode.chocolateFont.data} onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
-                        </Select>
+                       
                         <div>
                             <div className="form-check" >
                                 <label htmlFor="Oval">
@@ -1361,6 +1367,16 @@ class Cam extends React.Component {
                         </div>
                     </FormGroup>
                 </div>)}
+                <div>Choose Font:</div>
+                <Select value={globalState.gcode.chocolateFont.data} placeholder='Choose Font'
+                    onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
+                    <option value="GreatVibes">Great Vibes</option>
+                    <option value="Arslan">ArslanFont</option>
+                    <option value="chocolatePristina">Pristina</option>
+                    <option value="ITCKRIST">ITCKRIST</option>
+                    <option value="TrajanPro-Bold">TrajanPro-B</option>
+                    <option value="Bevan">Eevan</option>
+                </Select>
                 <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
@@ -1390,6 +1406,7 @@ class Cam extends React.Component {
                                 <td><span id="machineStatus"></span></td>
                                 {/*<td><span id='msgStatus'></span></td>*/}
                             </tr>
+                            <tr><td><a href={this.state.svgFile} id="svgFile">File</a></td></tr>
                         </tbody>
                     </table>
                 </Alert>

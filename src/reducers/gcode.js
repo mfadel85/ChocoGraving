@@ -23,6 +23,8 @@ export function gcode(state = GCODE_INITIALSTATE, action) {
     }
     if (action.type === 'GCODE_SET')
         return { ...state, dirty: false , content: action.payload };
+    if (action.type === 'SAVE_MODELS')
+        return { ...state, models:action.payload };
     if (action.type === 'SET_FORM_DATA')
         return { ...state,  text: action.payload };
     if (action.type === 'SET_DEPTH')
