@@ -184,6 +184,8 @@ class Cam extends React.Component {
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
         this.checkRTL = this.checkRTL.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
+        this.downloadFile = this.downloadFile.bind(this);
+
     }
 
 
@@ -717,6 +719,8 @@ class Cam extends React.Component {
                 );
 
                 that.setState({generalAllEnable:true/*,svgFile:'test.svg'*/});
+                //let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
+
                 var svgElement = document.getElementById("svgFile");
                 svgElement.setAttribute('href','data:text/plain;chartset=utf-8,' + encodeURIComponent(output));
                 svgElement.setAttribute('download','File.svg');
@@ -1004,6 +1008,17 @@ class Cam extends React.Component {
     step3(){
         this.setState({ step1: false, step2: false,step3:true });
     }
+    downloadFile(){
+        const makerjs = require('makerjs');
+        const  globalState = GlobalStore().getState();
+
+        let output = makerjs.exporter.toSVG(globalState.gcode.models,{scale:2});
+        console.log(output);
+        var svgElement = document.getElementById("svgFile");
+        svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(output));
+        svgElement.setAttribute('download', 'File.svg');
+        svgElement.click();
+    }
     handleShape(shape){
         var chocoTemplates = require("../data/chocolateTemplates.json");
         let activeTemplate = chocoTemplates.templates[2];
@@ -1245,6 +1260,8 @@ class Cam extends React.Component {
                                     <Button bsSize="lg" bsStyle="warning" onClick={this.step1}> <Icon name="angle-left" /></Button>
                                     <Button bsSize="lg" bsStyle="warning" style={{ marginLeft: '8px'}}> <Icon name="plus" /></Button>
                                     <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} disabled={!this.state.content} onClick={this.step3}  bsStyle="warning"> <Icon name="angle-right" /></Button>
+                                    <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} disabled={!this.state.content} onClick={this.downloadFile} bsStyle="warning">Download</Button>
+
                                     <Button style={{ float: 'right', marginLeft: '8px' }} bsSize="lg" onClick={this.textWrapping} bsStyle="warning"> OK</Button>
                                 </div>
                         </div>
