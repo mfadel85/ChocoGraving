@@ -540,7 +540,7 @@ class Cam extends React.Component {
         console.log('test');
     }
 
-    textWrapping(downloadMe) {
+    textWrapping(downloadMe,final) {
         this.props.documents.forEach((element, index) => {
             if (index > 0) {
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -558,6 +558,8 @@ class Cam extends React.Component {
         var that = this;
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
+        const operator = 100 / 25.4;// the division of unit per mm
+
         console.log('this.state.font', font);
         var lines = text.split("\n");
         let models = {};
@@ -668,15 +670,33 @@ class Cam extends React.Component {
                 layout.glyphs.forEach((glyph, i) => {
                     let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
                     character.origin = makerjs.point.scale(glyph.position, scale);
-                    makerjs.model.addModel(models, character, i);
+                    var newChar;
+                    if(final)// only for final if(final) which is a parameter for the function
+                    {
+                        newChar = makerjs.model.mirror(character, true, false);
+                    }
+                    else {
+                        newChar = character;
+                        makerjs.model.addModel(models, newChar, i);
+
+                    }
+                    if(final){
+                        makerjs.model.addModel(models, newChar, i);
+
+                    }
                 });
+                let mmDims = that.getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
+
+                if(final)
+                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(42 - mmDims[0]) * operator, (41 - mmDims[1]) * operator]);
+
+
 
             }
             that.props.dispatch(saveModels(models));
 
             const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];
             try {
-                const operator = 100/25.4;// the division of unit per mm
                 let stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
                 let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
             
@@ -684,10 +704,10 @@ class Cam extends React.Component {
                
                 let mmDims = dims.map(n => n / operator);
                
-                if (mmDims[0] > that.state.activeTemplate.maxWidth || mmDims[1] > that.state.activeTemplate.maxHeight) {
+                /*if (mmDims[0] > that.state.activeTemplate.maxWidth || mmDims[1] > that.state.activeTemplate.maxHeight) {
                     alert("Please divide to two lines,the size of the words shouldn't be more than 28mm!!!")
                     return;
-                }
+                }*/
                 that.setState({
                     svgOutpout: output,
                     svgModels: models,
@@ -1012,13 +1032,16 @@ class Cam extends React.Component {
     downloadFile(){
         const makerjs = require('makerjs');
         const  globalState = GlobalStore().getState();
-        this.setState({fontSize:this.state.fontSize*this.state.changesScaling[3]},() =>{
+        //scaling according to dims
+        const scale = 28/this.state.dims[0];
+        this.setState({fontSize:this.state.fontSize*scale},() =>{
             var downloadMe = () => {
                 var svgElement = document.getElementById("svgFile");
                 svgElement.setAttribute('download', 'File.svg');
                 svgElement.click();
             }
-            this.textWrapping(downloadMe);
+            const final = true;
+            this.textWrapping(downloadMe, final);
             
             // how to scale correctly
             /*let output = makerjs.exporter.toSVG(globalState.gcode.models);
