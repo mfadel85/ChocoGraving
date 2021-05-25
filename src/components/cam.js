@@ -540,7 +540,7 @@ class Cam extends React.Component {
         console.log('test');
     }
 
-    textWrapping() {
+    textWrapping(downloadMe) {
         this.props.documents.forEach((element, index) => {
             if (index > 0) {
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -724,6 +724,7 @@ class Cam extends React.Component {
                 var svgElement = document.getElementById("svgFile");
                 svgElement.setAttribute('href','data:text/plain;chartset=utf-8,' + encodeURIComponent(output));
                 svgElement.setAttribute('download','File.svg');
+                downloadMe();
                 //svgElement.click();
             }
             catch (Exception) {
@@ -1011,13 +1012,23 @@ class Cam extends React.Component {
     downloadFile(){
         const makerjs = require('makerjs');
         const  globalState = GlobalStore().getState();
-
-        let output = makerjs.exporter.toSVG(globalState.gcode.models,{scale:2});
-        console.log(output);
-        var svgElement = document.getElementById("svgFile");
-        svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(output));
-        svgElement.setAttribute('download', 'File.svg');
-        svgElement.click();
+        this.setState({fontSize:this.state.fontSize*this.state.changesScaling[3]},() =>{
+            var downloadMe = () => {
+                var svgElement = document.getElementById("svgFile");
+                svgElement.setAttribute('download', 'File.svg');
+                svgElement.click();
+            }
+            this.textWrapping(downloadMe);
+            
+            // how to scale correctly
+            /*let output = makerjs.exporter.toSVG(globalState.gcode.models);
+            console.log(output);
+            var svgElement = document.getElementById("svgFile");
+            svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(output));
+            svgElement.setAttribute('download', 'File.svg');
+            svgElement.click();*/
+        })
+        
     }
     handleShape(shape){
         var chocoTemplates = require("../data/chocolateTemplates.json");
