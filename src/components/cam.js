@@ -682,7 +682,7 @@ class Cam extends React.Component {
                     }
                     if(final){
                         makerjs.model.addModel(models, newChar, i);
-                        that.loadSVGChocoTemplate([[0, 0], [0, 0],[-4, -4]], 0);
+                        that.loadSVGChocoTemplate([[0, 0], [0, 0],[-3, -3]], 0);
 
 
                     }
@@ -1045,13 +1045,14 @@ class Cam extends React.Component {
         const makerjs = require('makerjs');
         const  globalState = GlobalStore().getState();
         //scaling according to dims
-        const scale = 28/this.state.dims[0];
+        const scale = 25/this.state.dims[0];//or 28 instead of 32 we will see
+        var downloadMe = () => {
+            var svgElement = document.getElementById("svgFile");
+            svgElement.setAttribute('download', 'File.svg');
+            svgElement.click();
+        }
         this.setState({fontSize:this.state.fontSize*scale},() =>{
-            var downloadMe = () => {
-                var svgElement = document.getElementById("svgFile");
-                svgElement.setAttribute('download', 'File.svg');
-                svgElement.click();
-            }
+            
             const final = true;
             this.textWrapping(downloadMe, final);
             
