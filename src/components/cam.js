@@ -621,7 +621,7 @@ class Cam extends React.Component {
                     if (i > 0) {
                         shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
                     }
-                    for (let index = 0; index < wordModel.models.count; index++) {
+                    for (let index = 0; index < Object.keys(wordModel.models).length; index++) {
                         shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
                         wordModel.models[index].origin = [shifts[0], shifts[1]];
                     }
@@ -682,13 +682,17 @@ class Cam extends React.Component {
                     }
                     if(final){
                         makerjs.model.addModel(models, newChar, i);
+                        that.loadSVGChocoTemplate([[0, 0], [0, 0],[-4, -4]], 0);
+
 
                     }
                 });
                 let mmDims = that.getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
 
-                if(final)
-                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(42 - mmDims[0]) * operator, (41 - mmDims[1]) * operator]);
+                if(final){
+                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(50.42- mmDims[0]) * operator, (49.20 - mmDims[1]) * operator]);
+
+                }
 
 
 
@@ -698,7 +702,15 @@ class Cam extends React.Component {
             const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];
             try {
                 let stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
+                //var oval = new makerjs.models.Oval(20, 150);
+                fetch('3333.svg')
+                    .then(resp => resp.text())
+                    .then(content => {
+                        console.log(content);
+                    });
+                //makerjs.model.addModel(models, oval);
+
+                let output = makerjs.exporter.toSVG(models, { accuracy: 0.001 });
             
                 let dims = that.getDimension(output);
                
@@ -876,7 +888,7 @@ class Cam extends React.Component {
             stdMarginY = 1;
         this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1] + stdMarginY * margin[2]]));
         let that  = this;
-        fetch(that.state.activeTemplate.file)
+        fetch('3333.svg')
             .then(resp => resp.text())
             .then(content => {
                 parser.parse(content).then((tags) => {
