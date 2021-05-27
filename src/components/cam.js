@@ -690,7 +690,7 @@ class Cam extends React.Component {
                 let mmDims = that.getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
 
                 if(final){
-                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(50.42- mmDims[0]) * operator, (49.20 - mmDims[1]) * operator]);
+                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(40.1- mmDims[0]) * operator, (39.26 - mmDims[1]) * operator]);
 
                 }
 

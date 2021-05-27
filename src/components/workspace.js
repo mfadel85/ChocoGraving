@@ -754,7 +754,7 @@ class WorkspaceContent extends React.Component {
                 this.props.dispatch(setWorkspaceAttrs({ width: this.props.width, height: this.props.height }));
                 if (!this.props.workspace.initialZoom) {
                     let x = this.props.settings.machineBottomLeftX;
-                    x = 40;
+                    x = 80;
                     let y = this.props.settings.machineBottomLeftY;
                     if (!this.props.settings.showMachine) {
                         x = 0;
@@ -762,7 +762,7 @@ class WorkspaceContent extends React.Component {
                     }
                     this.props.dispatch(setWorkspaceAttrs({ initialZoom: true }));
                     this.props.dispatch(zoomArea(
-                        x - 10,
+                        x - 5,
                         y - 15,
                         x + this.props.settings.machineWidth/2,
                         y + this.props.settings.machineHeight
