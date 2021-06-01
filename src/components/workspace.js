@@ -754,7 +754,7 @@ class WorkspaceContent extends React.Component {
                 this.props.dispatch(setWorkspaceAttrs({ width: this.props.width, height: this.props.height }));
                 if (!this.props.workspace.initialZoom) {
                     let x = this.props.settings.machineBottomLeftX;
-                    x = 80;
+                    x = 40;
                     let y = this.props.settings.machineBottomLeftY;
                     if (!this.props.settings.showMachine) {
                         x = 0;
