@@ -41,6 +41,8 @@ import Splitter from './splitter';
 import Select from 'react-select';
 import Com from './com.js'
 import io from 'socket.io-client';
+import FileUpload from './FileUpload';
+
 
 const opentype = require('opentype.js');
 var playing = false;
@@ -187,6 +189,7 @@ class Cam extends React.Component {
         this.downloadFile = this.downloadFile.bind(this);
         this.automatedProcess = this.automatedProcess.bind(this);
         this.handleOutsideLines = this.handleOutsideLines.bind(this);
+        this.convert = this.convert.bind(this);
 
     }
 
@@ -702,6 +705,9 @@ class Cam extends React.Component {
                         that.loadSVGChocoTemplate([[0, 0], [0, 0],[-3, -3]], 0);
                     }
                 });
+                // next steps: enable upload file to the server, read that file, make it white and black, save it as jpg and upload it
+                // to the php page, in the php page call the convertio api, download the results in the dist folder
+                // you will have the svg file in the dist folder and then read it, make the other operations on it.
                 let mmDims = that.getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
 
                 if (downloaable){
@@ -1194,7 +1200,44 @@ class Cam extends React.Component {
     setPcsCount(count){
         this.setState({pcsCount:count});
     }
+    convert(){
+        console.log('test');
+        const img = document.getElementById("eeveelutions");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        img.crossOrigin = "anonymous";
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const origData = imgData
+        console.log(origData);
+        let i = 0;
+        for (i = 0; i < imgData.data.length; i += 4) {
+            let count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
+            let colour = 0;
+            if (count > 383) colour = 255;
 
+            imgData.data[i] = colour;
+            imgData.data[i + 1] = colour;
+            imgData.data[i + 2] = colour;
+            imgData.data[i + 3] = 255;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        var pngImage = canvas.toDataURL("image/png");
+        $.ajax({
+            type: "POST",
+            crossDomain: true,
+            url: "http://localhost/ChocoGraveProject/LaserWeb4/",
+            data: {
+                imgBase64: pngImage
+            }
+        }).done(function (o) {
+            console.log('saved');
+            // If you want the file to be visible in the browser 
+            // - please modify the callback in javascript. All you
+            // need is to return the url to the file, you just saved 
+            // and than put the image in your browser.
+        });
+    }
     render() {
         /*
         list of changes to be made to this code
@@ -1214,7 +1257,7 @@ class Cam extends React.Component {
         ];
         return (
             
-            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '475px' }} >
+            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '800px' }} >
 
                 { this.state.step1 && (<div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
                     <div className="well-sm" style={{ padding:'15px',backgroundColor: "#332C26", color:"white" }}>
@@ -1465,8 +1508,8 @@ class Cam extends React.Component {
                         </div>
                     </FormGroup>
                 </div>)}
-                <div>Choose Font:</div>
-                <Select value={globalState.gcode.chocolateFont.data} placeholder='Choose Font'
+                <div className="success hideMe" >Choose Font:</div>
+                <Select className="success hideMe" value={globalState.gcode.chocolateFont.data} placeholder='Choose Font'
                     onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
                     <option value="GreatVibes">Great Vibes</option>
                     <option value="Arslan">ArslanFont</option>
@@ -1476,7 +1519,7 @@ class Cam extends React.Component {
                     <option value="Bevan">Eevan</option>
                 </Select>
                 <a href={this.state.svgFile} id="svgFile">File</a>
-                <Alert bsStyle="success hideMe" className="hideMe" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
+                <Alert bsStyle="success" className="hideMe" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
@@ -1553,6 +1596,12 @@ class Cam extends React.Component {
                 </Splitter>
 
                 <OperationDiagram {...{ operations, currentOperation }}  style={{display:"none"}} />
+                {/* <FileUpload /> */}
+                <div><button onClick={this.convert} >Convert</button></div>
+                <div className="">
+                    <img src="realSSS.jpg" id="eeveelutions" height="210" width="300" />
+                    <canvas id="canvas" height="352" width="500" />
+                </div>
                 <Operations
                     style={{ flexGrow: 2, display: "flex", flexDirection: "column", display:"none" }}
                 /*genGCode = {this./*generateGcode*//*docuementAdded}*/
@@ -1560,6 +1609,7 @@ class Cam extends React.Component {
                 <Com id="com" title="Comms" icon="plug" />
 
             </div>
+
             );
     }
 };
