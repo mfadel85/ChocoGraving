@@ -141,7 +141,9 @@ const initialState = {
     forwardEnabled: false,
     errorMessage: 'Test',
     statusMsg: 'Progress',
-    svgFile:''
+    svgFile:'',
+    fileLoaded:false,
+    hideme:''
     /*
 
 
@@ -231,6 +233,12 @@ class Cam extends React.Component {
         //this.handleConnectServer();
         this.stopGcode.bind(this);
     }
+    componentWillMount() {
+        if(this.state.fileLoaded == true){
+            console.log('testory file loaded!!');
+
+        }
+    }
     generateGcode(run) {
         console.log("game started now!");
         this.QE = window.generateGcode(run);
@@ -243,35 +251,6 @@ class Cam extends React.Component {
     }
 
 
-    /*handleConnectServer() {
-        let that = this;
-        let { settings, dispatch } = this.props;
-        let server = settings.comServerIP;
-        CommandHistory.write('Connecting to Server @ ' + server, CommandHistory.INFO);
-        //console.log('Connecting to Server ' + server);
-        socket = io('ws://' + server);
-
-        socket.on('data', function (data) {
-            serverConnected = true;
-            machineConnected = true;
-            if (data) {
-                if (data.indexOf('<') === 0) {
-                    //CommandHistory.write('statusReport: ' + data);
-                    updateStatus(data);
-                } else {
-                    var style = CommandHistory.STD;
-                    if (data.indexOf('[MSG:') === 0) {
-                        style = CommandHistory.WARN;
-                    } else if (data.indexOf('ALARM:') === 0) {
-                        style = CommandHistory.DANGER;
-                    } else if (data.indexOf('error:') === 0) {
-                        style = CommandHistory.DANGER;
-                    }
-                    CommandHistory.write(data, style);
-                }
-            }
-        });
-    }*/
 
     handleDepthChange(e) {
         this.props.dispatch(setDepth(e.target.value));
@@ -386,7 +365,8 @@ class Cam extends React.Component {
             nextState.step3 !== this.state.step3 || 
             nextState.pcsCount !== this.state.pcsCount ||
             nextState.content !== this.state.content  ||
-            nextState.statusMsg !== this.state.statusMsg
+            nextState.statusMsg !== this.state.statusMsg ||
+            nextState.fileLoaded !== this.state.fileLoaded
         );
     }
 
@@ -408,29 +388,8 @@ class Cam extends React.Component {
         }
         else {
             console.log("didn't work", 'Playing', playing, 'Paused', paused);
-            /*
-            runJob.mediator();
-            fixMe();
-            handleNextTask();
-            that.clearQueue();
-            stack.moveForward();
-            worker.MakeItWork();
-            cmm.execute();
-            */
         }
     }
-
-    /*
-    Task List
-    1. finish UI stuff.
-    2. generate a workable exe.
-    3. test exe file on the machine.
-    4. the performance of the machine.
-    5. Error messages : warning messages: machine 
-       not connected.
-    6. Don't allow size to grow over maximum
-
-    */
    
     wordWrapped() {
         console.log("maybe help later!!");
@@ -500,6 +459,18 @@ class Cam extends React.Component {
         let height = svgObject.slice(heightStart + 1, heightEnd)
         console.log('width : ', width, 'height:', height);
         return [parseFloat(width), parseFloat(height)];
+    }
+    getDimensionAPI(svg){
+        let widthStart = this.getPosition(svg, '"', 13);
+        let widthFin = this.getPosition(svg, '"', 14);
+        let width = svg.slice(widthStart + 1, widthFin)
+        let heightStart = this.getPosition(svg, '"', 15);
+        let heightEnd = this.getPosition(svg, '"', 16);
+        let height = svg.slice(heightStart + 1, heightEnd)
+        console.log('width : ', width, 'height:', height);
+        return [parseFloat(width), parseFloat(height)];
+        
+
     }
     getDimensionStr(svgObject) {
         let widthStart = this.getPosition(svgObject, '"', 1);
@@ -1202,7 +1173,7 @@ class Cam extends React.Component {
     }
     convert(){
         console.log('test');
-        const img = document.getElementById("eeveelutions");
+        const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         img.crossOrigin = "anonymous";
@@ -1214,8 +1185,8 @@ class Cam extends React.Component {
         for (i = 0; i < imgData.data.length; i += 4) {
             let count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
             let colour = 0;
-            if (count > 383) colour = 255;
-
+            if (count > 383) 
+                colour = 255;
             imgData.data[i] = colour;
             imgData.data[i + 1] = colour;
             imgData.data[i + 2] = colour;
@@ -1223,20 +1194,38 @@ class Cam extends React.Component {
         }
         ctx.putImageData(imgData, 0, 0);
         var pngImage = canvas.toDataURL("image/png");
-        $.ajax({
-            type: "POST",
-            crossDomain: true,
-            url: "http://localhost/ChocoGraveProject/LaserWeb4/",
-            data: {
-                imgBase64: pngImage
-            }
-        }).done(function (o) {
-            console.log('saved');
-            // If you want the file to be visible in the browser 
-            // - please modify the callback in javascript. All you
-            // need is to return the url to the file, you just saved 
-            // and than put the image in your browser.
-        });
+        const payload = { data: pngImage };
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            cors: true, // allow cross-origin HTTP request
+            credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
+        };
+        /*const text ='<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN""http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg version="1.0" xmlns="http://www.w3.org/2000/svg"width="500.000000pt" height="352.000000pt" viewBox="0 0 500.000000 352.000000"preserveAspectRatio="xMidYMid meet">';
+        const dims = this.getDimensionAPI(text);*/
+
+        if(imgData.data[0] == 255)
+            fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
+            .then((response) => { 
+                const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
+                const stdMargin = this.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
+                const extraMargin = [0, 0];
+                const image = response;
+                const dims = this.getDimensionAPI(response);
+                this.setState({ dims: dims }, () => {
+                    this.parseSVG(response, this, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0 );
+                });
+                this.setState({ fileLoaded: true, generatedFile: image,hideme:'hideMe' });
+            }).then(() => {
+                const scale = 25 /this.state.dims[0];
+                this.scale(scale * 3.7795284176);
+                //now to import it into 
+            });
     }
     render() {
         /*
@@ -1546,11 +1535,13 @@ class Cam extends React.Component {
                             <tr>
                                 <td><span id="serverStatus">{this.state.statusMsg}</span></td>
                                 <td><span id="machineStatus"></span></td>
+                                <td><button className="btn btn-warning btn-xs" onClick={this.convert} >Convert</button></td>
                                 {/*<td><span id='msgStatus'></span></td>*/}
                             </tr>
                             <tr><td><a href={this.state.svgFile} id="svgFile">File</a></td></tr>
                         </tbody>
                     </table>
+
                 </Alert>
                 <div className="Resizer horizontal hideMe" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
                 <div className="panel panel-info hideMe" style={{ marginBottom: 3 }}>
@@ -1597,9 +1588,9 @@ class Cam extends React.Component {
 
                 <OperationDiagram {...{ operations, currentOperation }}  style={{display:"none"}} />
                 {/* <FileUpload /> */}
-                <div><button onClick={this.convert} >Convert</button></div>
                 <div className="">
-                    <img src="realSSS.jpg" id="eeveelutions" height="210" width="300" />
+                    <div className={this.state.hideme} dangerouslySetInnerHTML={{ __html: this.state.generatedFile }} />
+                    <img src="realSSS.jpg" id="eeveelutions" height="175" width="250" />
                     <canvas id="canvas" height="352" width="500" />
                 </div>
                 <Operations
