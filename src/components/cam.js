@@ -1208,8 +1208,32 @@ class Cam extends React.Component {
         };
         /*const text ='<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN""http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg version="1.0" xmlns="http://www.w3.org/2000/svg"width="500.000000pt" height="352.000000pt" viewBox="0 0 500.000000 352.000000"preserveAspectRatio="xMidYMid meet">';
         const dims = this.getDimensionAPI(text);*/
+        if (imgData.data[0] == 255)
+        fetch('convertio/googleosss.svg')
+            .then(resp => resp.text())
+            .then(content => {
+                const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
+                const stdMargin = this.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
+                const extraMargin = [0, 0];
+                const image = content;
+                const dims = this.getDimensionAPI(content);
+                this.setState({ dims: dims }, () => {
+                    this.parseSVG(content, this, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0,()=>{
+                        
+                    });
+                });
+            })
+            .then((content) => {
+                const scale = 25 / this.state.dims[0];
+                console.log(content);
 
-        if(imgData.data[0] == 255)
+                this.scale(scale * 3.7795284176);
+
+                //should we work on the svg file or import into the svg maker? 
+                // which approach is the best :?
+                //now to import it into 
+            });
+        /*if(imgData.data[0] == 255)
             fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
             .then((response) => { 
                 const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
@@ -1225,7 +1249,7 @@ class Cam extends React.Component {
                 const scale = 25 /this.state.dims[0];
                 this.scale(scale * 3.7795284176);
                 //now to import it into 
-            });
+            });*/
     }
     render() {
         /*
