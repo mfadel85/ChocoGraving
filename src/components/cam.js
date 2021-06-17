@@ -1290,14 +1290,22 @@ class Cam extends React.Component {
         //const scalingStr = 
         const svgDims = this.getDimensionGeneral(svgFile);
         const scalingFactor = fixedWidth / svgDims[0];
+        const scalingFactorY = fixedWidth / svgDims[1];
 
         console.log('svgFile:', svgFile);
 
         const final1 = svgFile.replaceAll(svgDims[0], '800');
         const final2 = final1.replaceAll(svgDims[1], '535');
         const tansformIndex = this.findStartEndIndices(final2,'transform="');
-        const transform = ' transform="translate(147.9611671,124.47244096) scale(-' + scalingFactor+',-'+scalingFactor+') ';//-0.0215,-0.0215 those has to be dynamically
-        var final5 = final2.replace(final2.substring(tansformIndex[0], tansformIndex[1]), transform);
+        //stroke="none"
+        //
+        const finalS = final2.replaceAll('fill="#000000"', ' fill="none" ');
+
+        const final3 = finalS.replaceAll('stroke="none"', ' stroke="#76C2DA" stroke-width="0.1" ');
+//fill="#000000"
+
+        const transform = ' transform="translate(147.9611671,130.17244096) scale(-' + scalingFactor + ',-' + scalingFactorY + ') ';//-0.0215,-0.0215 those has to be dynamically
+        var final5 = final3.replace(final3.substring(tansformIndex[0], tansformIndex[1]), transform);
         const mainGStart = final5.indexOf('<g');
         const mainGEnd = final5.indexOf('</g>')+5;
         const g = final5.substring(mainGStart, mainGEnd);
@@ -1306,8 +1314,8 @@ class Cam extends React.Component {
                 if (j == 0 && i == 0 )
                     continue;
                 var xTransform = parseFloat(147.9611671) + j * 119;
-                var yTransform = parseFloat(124.47244096)+ i * 116.5;
-                const g1 = g.replace('147.9611671', xTransform).replace('124.47244096', yTransform);
+                var yTransform = parseFloat(130.17244096)+ i * 116.5;
+                const g1 = g.replace('147.9611671', xTransform).replace('130.17244096', yTransform);
                 const insertionIndex = final5.indexOf('</g>') + 4;
                 var final = final5.slice(0, insertionIndex) + g1 + final5.slice(insertionIndex);
                 final5 = final;
