@@ -42,6 +42,7 @@ import Select from 'react-select';
 import Com from './com.js'
 import io from 'socket.io-client';
 import FileUpload from './FileUpload';
+import axios from 'axios';
 
 
 const opentype = require('opentype.js');
@@ -1256,45 +1257,149 @@ class Cam extends React.Component {
         //var $croppedCanvas = $("<canvas>").attr({ width: cropWidth, height: cropHeight });
         inMemCanvas.width = cropWidth;
         inMemCanvas.height = cropHeight;
-        //inMemCtx.drawImage(canvas,
-           /* cropLeft, cropTop, cropWidth+15, cropHeight+15,
-            0, 0, cropWidth + 15, cropHeight + 15);*/
+        inMemCtx.drawImage(canvas,
+            cropLeft, cropTop, cropWidth, cropHeight,
+            0, 0, cropWidth, cropHeight);
         //inMemCtx.drawImage(canvas, 0, 0);
-        //canvas.width = cropWidth;
-        //canvas.height = cropHeight;
+        canvas.width = cropWidth;
+        canvas.height = cropHeight;
 
         //canvas.width  = cropWidth;
         // finally crop the guy
         
-        //context.drawImage(inMemCanvas, 0, 0);
+        context.drawImage(inMemCanvas, 0, 0);
 
 
         return [cropLeft, cropTop, cropRight, cropBottom,cropWidth,cropHeight];
     };
 
     convert(){
-        // to test against serveral dimensions
         const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
 
-        /// minimize before you start
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
         img.crossOrigin = "anonymous";
         ctx.drawImage(img, 0, 0);
-        const croppedDimensions = this.removeBlanks(canvas,canvas.width,canvas.height);
 
-        ctx.drawImage(canvas,
+        /*ctx.drawImage(canvas,
             croppedDimensions[0], croppedDimensions[1], canvas.width, canvas.height,
-            0, 0, canvas.width, canvas.height,);
+            0, 0, canvas.width, canvas.height,);*/
         //const imgData = ctx.getImageData(croppedDimensions[0], croppedDimensions[1], croppedDimensions[2], croppedDimensions[3]);// canvas width and height???
 
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const origData = imgData;
-        console.log(origData);
-        let i = 0;
-        for (i = 0; i < imgData.data.length; i += 4) {
-            let count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
-            let colour = 0;
+
+        for (var i = 0; i < imgData.data.length; i += 4) {
+            var count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
+            var colour = 0;
+            if (count > 383)
+                colour = 255;
+            imgData.data[i] = colour;
+            imgData.data[i + 1] = colour;
+            imgData.data[i + 2] = colour;
+            imgData.data[i + 3] = 255;
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        var pngImage = canvas.toDataURL("image/png");
+        var updatedImageData = '';
+        const payload = { data: pngImage };
+        const that = this;
+        axios.post('http://localhost:8090/http://localhost:4000', { data: payload })
+            .then((response) => {
+                updatedImageData = response;
+                console.log('resop',response);
+                var i = new Image();
+
+                i.onload = function () {
+                    //alert(i.width + ", " + i.height);
+                    img.width = i.width;
+                    img.height = i.height;
+                    img.src = response.data;
+                    /*
+                    const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
+
+                    /// minimize before you start
+                    var canvas = document.getElementById("canvas");
+                    var ctx = canvas.getContext("2d");
+                    img.crossOrigin = "anonymous";
+                    ctx.drawImage(img, 0, 0);
+                    */
+                    const image = document.getElementById("eeveelutions");
+                    ctx = canvas.getContext("2d");
+                    img.crossOrigin = "anonymous";
+                    var canvasMod = document.getElementById('canvasMod');
+                    var inMemCtx = canvasMod.getContext('2d');
+                    canvasMod.width = img.width;
+                    canvasMod.height = img.height;
+                    canvasMod.width = img.width;
+                    canvasMod.height = img.height;
+                    inMemCtx.drawImage(img,
+                        0, 0, img.width, img.height,
+                        0, 0, img.width, img.height);
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    //canvas.width  = cropWidth;
+                    // finally crop the guy
+
+                    ctx.drawImage(canvasMod, 0, 0);
+                    const croppedDimensions = that.removeBlanks(canvas, canvas.width, canvas.height);
+
+                    imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
+                    var pngImage = canvas.toDataURL("image/png");
+                    var updatedImageData = '';
+                    const payload = { data: pngImage };
+                    const options = {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                        cors: true, // allow cross-origin HTTP request
+                        credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
+                    };
+                    fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
+                        .then((response) => {
+                            const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];             
+                            const stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
+                            const extraMargin = [0, 0];
+                            const image = response;
+                            const dims = that.getDimensionAPI(response);
+                            //now let's repeat it 
+
+                            that.setState({ dims: dims }, () => {
+                                that.parseSVG(response, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
+                            });
+                            svgContent = response;
+
+                            that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
+                        }).then(() => {
+                            const scale = 25 / that.state.dims[0];
+                            console.log(svgContent); /// bunu de handle
+                            const updatedContent = that.minimizeSvgFile(svgContent, canvas.width / croppedDimensions[4], croppedDimensions[5] / canvas.height);
+                            const repeatContent = that.repeatPattern(updatedContent);
+                            that.scale(scale * 3.7795284176);
+                        });
+                };
+                i.src = response.data;
+
+                
+
+                // load the image into canvas
+                /// now to trim white spaces
+            })
+            .catch(err => {
+                console.error(err);
+            });
+
+/*
+        const origData = imgData;
+
+        for (var i = 0; i < imgData.data.length; i += 4) {
+            var count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
+            var colour = 0;
             if (count > 383) 
                 colour = 255;
             imgData.data[i] = colour;
@@ -1302,9 +1407,15 @@ class Cam extends React.Component {
             imgData.data[i + 2] = colour;
             imgData.data[i + 3] = 255;
         }
+
         ctx.putImageData(imgData, 0, 0);
-        var pngImage = canvas.toDataURL("image/png");
-        const payload = { data: pngImage };
+
+        const croppedDimensions = this.removeBlanks(canvas, canvas.width, canvas.height);
+
+        imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
+
+
+        
 
         const options = {
             method: 'POST',
@@ -1315,7 +1426,7 @@ class Cam extends React.Component {
             body: JSON.stringify(payload),
             cors: true, // allow cross-origin HTTP request
             credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
-        };
+        };*/
         /*const text ='<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN""http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg version="1.0" xmlns="http://www.w3.org/2000/svg"width="500.000000pt" height="352.000000pt" viewBox="0 0 500.000000 352.000000"preserveAspectRatio="xMidYMid meet">';
         const dims = this.getDimensionAPI(text);*/
         var svgContent;
@@ -1341,10 +1452,16 @@ class Cam extends React.Component {
                 const repeatContent = this.repeatPattern(updatedContent);
                 this.scale(scale * 3.7795284176);
                 // change scale, repeat all gs add the framePath
-                //this.buildSvgFromPaths();
  
             });*/
-        if(imgData.data[0] == 255)
+
+
+
+
+        /*if(imgData.data[0] == 255)
+        {
+
+      
             fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
             .then((response) => { 
                 const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
@@ -1367,6 +1484,7 @@ class Cam extends React.Component {
                 const repeatContent = this.repeatPattern(updatedContent);
                 this.scale(scale * 3.7795284176);                
             });
+        }*/
     }
     
     minimizeSvgFile(svgFile,percentageX,percentageY){
@@ -1387,7 +1505,6 @@ class Cam extends React.Component {
         const finalS = final2.replaceAll('fill="#000000"', ' fill="none" ');
 
         const final3 = finalS.replaceAll('stroke="none"', ' stroke="#76C2DA" stroke-width="0.1" ');
-//fill="#000000"
 
         const transform = ' transform="translate(147.9611671,130.17244096) scale(-' + scalingFactor + ',-' + scalingFactorY + ') ';//-0.0215,-0.0215 those has to be dynamically
         var final5 = final3.replace(final3.substring(tansformIndex[0], tansformIndex[1]), transform);
@@ -1422,65 +1539,7 @@ class Cam extends React.Component {
     repeatPattern(svgFile){
         return svgFile;
     }
-    buildSvgFromPaths(){
-        const path1  = '<g stroke-linecap="round" fill-rule="evenodd" font-size="12px" stroke="#000" stroke-width="0.25mm" fill="none" style="fill:none;stroke:#000000;stroke-width:0.25mm" id="layer1" transform="matrix(3.7795173,0,0,3.80101,-36.012742,-254.21432)"><path d="M3105 3465 c-144 -48 -404 -94 -647 -116 -91 -8 -138 -17 -138 -24 0 -18 104 -38 215 -41 59 -2 99 -7 98 -13 -2 -5 -23 -70 -48 -143 -58 -168 -92 -368 -62 -368 9 0 25 43 46 123 41 153 63 217 72 212 9 -6 74 -160 100 -239 18 -54 19 -60 4 -82 -35 -55 -206 -160 -347 -214 -151 -59 -424 -110 -588 -110 -160 0 -248 29 -329 110 -56 56 -62 78 -64 242 -1 72 -6 111 -15 120 -10 10 -15 10 -22 -2 -5 -8 -10 -25 -10 -36 0 -39 -64 -107 -137 -146 l-42 -23 -28 26 c-89 82 -147 78 -194 -13 -45 -89 -61 -186 -38 -231 29 -57 77 -69 160 -40 26 10 51 14 54 11 11 -11 -63 -141 -106 -185 -112 -117 -280 -208 -461 -248 -100 -22 -103 -40 -10 -52 124 -15 264 -8 344 18 79 25 172 83 212 129 59 71 105 214 106 330 0 52 2 56 35 79 20 13 49 39 65 57 16 19 31 34 33 34 1 0 1 -40 -1 -89 -4 -107 11 -146 85 -211 83 -73 181 -102 349 -102 133 0 227 13 389 53 158 39 235 65 320 107 184 92 288 198 306 312 3 25 14 74 24 110 29 107 17 189 -48 348 -30 72 -52 132 -48 132 18 0 228 39 244 45 23 10 22 4 -13 -55 -28 -48 -38 -80 -23 -80 3 0 29 21 58 48 28 26 77 69 110 97 55 47 115 118 115 137 0 14 -53 8 -125 -17z" vector-effect="non-scaling-stroke" id="path5" /></g>';
-        const path1Orig = 'M3105 3465 c-144 -48 -404 -94 -647 -116 -91 -8 -138 -17 -138 -24 0 -18 104 -38 215 -41 59 -2 99 -7 98 -13 -2 -5 -23 -70 -48 -143 -58 -168 -92 -368 -62 -368 9 0 25 43 46 123 41 153 63 217 72 212 9 -6 74 -160 100 -239 18 -54 19 -60 4 -82 -35 -55 -206 -160 -347 -214 -151 -59 -424 -110 -588 -110 -160 0 -248 29 -329 110 -56 56 -62 78 -64 242 -1 72 -6 111 -15 120 -10 10 -15 10 -22 -2 -5 -8 -10 -25 -10 -36 0 -39 -64 -107 -137 -146 l-42 -23 -28 26 c-89 82 -147 78 -194 -13 -45 -89 -61 -186 -38 -231 29 -57 77 -69 160 -40 26 10 51 14 54 11 11 -11 -63 -141 -106 -185 -112 -117 -280 -208 -461 -248 -100 -22 -103 -40 -10 -52 124 -15 264 -8 344 18 79 25 172 83 212 129 59 71 105 214 106 330 0 52 2 56 35 79 20 13 49 39 65 57 16 19 31 34 33 34 1 0 1 -40 -1 -89 -4 -107 11 -146 85 -211 83 -73 181 -102 349 -102 133 0 227 13 389 53 158 39 235 65 320 107 184 92 288 198 306 312 3 25 14 74 24 110 29 107 17 189 -48 348 -30 72 -52 132 -48 132 18 0 228 39 244 45 23 10 22 4 -13 -55 -28 -48 -38 -80 -23 -80 3 0 29 21 58 48 28 26 77 69 110 97 55 47 115 118 115 137 0 14 -53 8 -125 -17z';
 
-        const path2 = 'M2050 3420 c-80 -10 -139 -27 -163 -48 -28 -25 -64 -96 -71 -143 l-7 -44 23 26 c13 15 43 32 68 38 60 16 150 29 150 23 0 -3 -26 -35 -58 -71 -104 -118 -127 -160 -70 -130 32 17 135 122 187 192 49 65 68 129 44 153 -8 7 -20 13 -26 13 -7 -1 -41 -5 -77 -9z';
-        const path3 = 'M3620 3400 c-6 -11 -8 -24 -5 -29 3 -5 -3 -31 -14 -58 -39 -101 -82 -340 -88 -494 -4 -109 -3 -148 7 -154 21 -13 29 8 44 116 16 112 69 294 79 269 82 -215 115 -345 102 -397 -7 -30 -156 -187 -226 -238 -94 -70 -238 -122 -286 -104 -26 9 -57 64 -49 86 4 8 1 34 -5 57 -6 22 -11 86 -11 141 0 86 -3 104 -20 125 l-20 25 -27 -34 c-14 -18 -41 -61 -59 -95 -147 -272 -135 -254 -219 -324 -81 -68 -161 -118 -225 -141 -74 -28 -245 -73 -266 -70 -61 6 -55 -14 11 -35 68 -21 205 -33 284 -24 63 7 228 73 267 106 61 53 148 170 168 226 l22 61 8 -45 c35 -206 56 -256 117 -283 38 -17 51 -18 100 -8 186 37 410 239 469 423 11 35 26 101 32 148 6 47 15 114 20 150 15 108 -9 238 -68 375 -106 244 -120 267 -142 225z';
-        const path4 = 'M512 3363 c-11 -16 -26 -42 -35 -58 -19 -39 -106 -155 -115 -155 -4 0 -18 26 -32 58 -29 66 -82 130 -125 148 -24 10 -34 10 -56 -1 -31 -17 -69 -98 -69 -149 0 -33 3 -36 40 -46 44 -12 80 -6 80 13 0 27 62 -52 86 -112 15 -36 29 -68 31 -70 7 -10 69 60 120 136 47 72 58 82 78 77 17 -4 28 1 44 22 11 15 21 32 21 39 0 7 6 18 14 24 26 22 26 52 1 77 -32 32 -59 30 -83 -3z';
-        const path5 = 'M1340 3365 c-30 -7 -73 -14 -96 -14 -22 -1 -48 -7 -57 -13 -16 -13 -77 -157 -77 -183 0 -7 5 -17 10 -20 15 -9 210 34 245 54 17 10 46 45 68 85 59 105 42 122 -93 91z';
-        const path6 = 'M3997 3233 c-20 -82 -40 -193 -46 -248 -6 -55 -15 -138 -20 -185 -17 -150 -17 -201 2 -211 23 -13 36 13 62 126 3 11 8 49 11 85 3 36 10 79 14 95 5 17 14 57 20 90 12 58 13 58 26 34 64 -123 124 -366 124 -502 0 -72 -3 -87 -26 -122 -93 -140 -290 -264 -509 -319 -54 -14 -99 -27 -102 -30 -11 -11 40 -24 143 -36 97 -12 122 -11 198 3 100 18 195 59 250 107 98 87 146 272 148 575 1 136 -2 173 -21 244 -20 76 -107 267 -157 346 -30 48 -67 95 -75 95 -3 0 -23 -66 -42 -147z';
-        var models = [];
-        const makerjs = require('makerjs');
-
-        const model1 = makerjs.importer.fromSVGPathData(path1Orig);
-        makerjs.model.addModel(models, model1);
-
-        const model2 = makerjs.importer.fromSVGPathData(path2);
-        makerjs.model.addModel(models, model2);
-
-        const model3 = makerjs.importer.fromSVGPathData(path3);
-        makerjs.model.addModel(models, model3);
-
-        const model4 = makerjs.importer.fromSVGPathData(path4);
-        makerjs.model.addModel(models, model4);
-
-        const model5 = makerjs.importer.fromSVGPathData(path5);
-        makerjs.model.addModel(models, model5);
-
-        const model6 = makerjs.importer.fromSVGPathData(path6);
-        makerjs.model.addModel(models, model6);
-        let output = makerjs.exporter.toSVG(models);
-        console.log('modified:',output);
-
-    }
-    downscaleImage(dataUrl, newWidth, imageType, imageArguments) {
-        "use strict";
-        var image, oldWidth, oldHeight, newHeight, canvas, ctx, newDataUrl;
-
-        // Provide default values
-        imageType = imageType || "image/jpeg";
-        imageArguments = imageArguments || 0.7;
-
-        // Create a temporary image so that we can compute the height of the downscaled image.
-        image = new Image();
-        image.src = dataUrl;
-        oldWidth = image.width;
-        oldHeight = image.height;
-        newHeight = Math.floor(oldHeight / oldWidth * newWidth)
-
-        // Create a temporary canvas to draw the downscaled image on.
-        canvas = document.getElementById("canvas");
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-
-        // Draw the downscaled image on the canvas and return the new data URL.
-        ctx = canvas.getContext("2d");
-        ctx.drawImage(image, 0, 0, newWidth, newHeight);
-        newDataUrl = canvas.toDataURL(imageType, imageArguments);
-        return newDataUrl;
-    }
     // On file select (from the pop up)
     onFileChange(event){
         const canvas = document.getElementById('canvas');
@@ -1525,6 +1584,33 @@ class Cam extends React.Component {
         // Send formData object
         //axios.post("api/uploadfile", formData);
     };
+    testExpress(){
+        const payload = 'I love you';
+
+        axios.post('http://localhost:8090/http://localhost:4000',{data:payload})
+            .then((response) => {
+                console.log(response);
+        })
+        .catch(err => {
+            console.error(err);
+        });
+        /*let book = {
+            BookId: 1,
+            Title: "coolBook",
+            Author: "Me"
+        }
+
+        fetch("http://localhost:8090/http://localhost:4000",
+            {
+                method: "post",
+                data: JSON.stringify(book)
+            }*/
+        /*fetch('http://localhost:8090/http://localhost:4000', options).then(response => response.json())
+            .then((response) => {
+                console.log(response.portal,response.location,response.knowledge);
+            }).then(() => {                
+            });*/
+    }
     render() {
         /*
         list of changes to be made to this code
@@ -1833,6 +1919,8 @@ class Cam extends React.Component {
                             <tr>
                                 <td><span id="serverStatus">{this.state.statusMsg}</span></td>
                                 <td><span id="machineStatus"></span></td>
+                                <td><button className="btn btn-warning btn-xs" onClick={this.testExpress} >Test ExpressJS</button></td>
+
                                 <td><button className="btn btn-warning btn-xs" onClick={this.convert} >Convert</button></td>
                                 {/*<td><span id='msgStatus'></span></td>*/}
                             </tr>
@@ -1894,8 +1982,10 @@ class Cam extends React.Component {
                 {/* <FileUpload /> */}
                 <div className="">
                     <div className={this.state.hideme} dangerouslySetInnerHTML={{ __html: this.state.generatedFile }} />
-                    <img src="sampleMin.jpg" id="eeveelutions" height="175" width="250" />
+                    <img src="" id="eeveelutions"/>
                     <canvas id="canvas" height="398" width="500" />
+                    <canvas id="canvasMod"  />
+
                 </div>
                 <Operations
                     style={{ flexGrow: 2, display: "flex", flexDirection: "column", display:"none" }}
