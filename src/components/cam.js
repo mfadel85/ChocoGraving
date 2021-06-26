@@ -1505,7 +1505,7 @@ class Cam extends React.Component {
         const finalS = final2.replaceAll('fill="#000000"', ' fill="none" ');
 
         const final3 = finalS.replaceAll('stroke="none"', ' stroke="#76C2DA" stroke-width="0.1" ');
-
+        /// original
         const transform = ' transform="translate(147.9611671,130.17244096) scale(-' + scalingFactor + ',-' + scalingFactorY + ') ';//-0.0215,-0.0215 those has to be dynamically
         var final5 = final3.replace(final3.substring(tansformIndex[0], tansformIndex[1]), transform);
         const mainGStart = final5.indexOf('<g');
