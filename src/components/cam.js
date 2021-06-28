@@ -1379,6 +1379,26 @@ class Cam extends React.Component {
                             const scale = 25 / that.state.dims[0];
                             console.log(svgContent); /// bunu de handle
                             const updatedContent = that.minimizeSvgFile(svgContent, canvas.width / croppedDimensions[4], croppedDimensions[5] / canvas.height);
+                            /// handle this updated content
+                            // write more code,enCourage.implement(it);
+                            //return a new promise that resolves with this stuff all the time, and implement the process
+                            const payload = { data: updatedContent };
+                            const aIOptions = {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(payload),
+                                cors: true, // allow cross-origin HTTP request
+                                credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
+                            };
+                            fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/toAi.php', aIOptions).then(response => response.json())
+                                .then((response) => {
+                                    const aiFile = response;
+                                    //we have to save this file and enable the user to download it
+                                    console.log(response);
+                                })
                             const repeatContent = that.repeatPattern(updatedContent);
                             that.scale(scale * 3.7795284176);
                         });
@@ -1391,6 +1411,7 @@ class Cam extends React.Component {
                 /// now to trim white spaces
             })
             .catch(err => {
+                alert('error happened: '+ err)
                 console.error(err);
             });
 
@@ -1895,7 +1916,7 @@ class Cam extends React.Component {
                 <Alert bsStyle="success" className="hideMe" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
-                            <tr>
+                            <tr className="hideMe">
                                 <th >Progress</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
@@ -1917,11 +1938,15 @@ class Cam extends React.Component {
                                 </td>
                             </tr>
                             <tr>
-                                <td><span id="serverStatus">{this.state.statusMsg}</span></td>
-                                <td><span id="machineStatus"></span></td>
-                                <td><button className="btn btn-warning btn-xs" onClick={this.testExpress} >Test ExpressJS</button></td>
-
-                                <td><button className="btn btn-warning btn-xs" onClick={this.convert} >Convert</button></td>
+                                <th >Progress</th>
+                                <td className='hideMe'><span id="serverStatus">{this.state.statusMsg}</span></td>
+                                <td className='hideMe'><span id="machineStatus"></span></td>
+                                <td className='hideMe'><button className="btn btn-warning btn-l" onClick={this.testExpress} >Test ExpressJS</button></td>
+                                <td><input type="file" onChange={this.onFileChange} />
+                                    <button onClick={this.onFileUpload}>
+                                        Upload!
+                                    </button></td>
+                                <td><button className="btn btn-warning btn-l" onClick={this.convert} >Convert</button></td>
                                 {/*<td><span id='msgStatus'></span></td>*/}
                             </tr>
                             <tr><td><a href={this.state.svgFile} id="svgFile">File</a></td></tr>
@@ -1930,10 +1955,7 @@ class Cam extends React.Component {
 
                 </Alert>
                 <div>
-                    <input type="file" onChange={this.onFileChange} />
-                    <button onClick={this.onFileUpload}>
-                        Upload!
-                </button>
+                    
                 </div>
                 <div className="Resizer horizontal hideMe" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
                 <div className="panel panel-info hideMe" style={{ marginBottom: 3 }}>
