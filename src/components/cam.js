@@ -14,18 +14,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import React from 'react';
-import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text,Row,Col,Container,Grid } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup,  Row,Col,Grid } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { cloneDocumentSelected, colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsMoving, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
-import { generatingGcode, setGcode,saveModels } from '../actions/gcode';
+import { cloneDocumentSelected, colorDocumentSelected, loadDocument,  removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments } from '../actions/document';
+import {  saveModels } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
-import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
+import { addOperation, clearOperations,  setFormData, setDepth, setFont } from '../actions/operation';
 import { GlobalStore } from '../index';
-import { getGcode } from '../lib/cam-gcode';
-import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
+import {  captureConsole } from '../lib/helpers';
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
-import { runJob} from './com.js';
 import CommandHistory from './command-history';
 import { Documents } from './document';
 import { withDocumentCache } from './document-cache';
@@ -33,40 +31,18 @@ import Icon from './font-awesome';
 import { ColorPicker, FileField, Info, SearchButton } from './forms';
 import { GetBounds, withGetBounds } from './get-bounds.js';
 import { imageTagPromise, promisedImage } from './image-filters';
-import { alert, confirm, prompt } from './laserweb';
-import { Error, Operations } from './operation';
+import { alert, confirm } from './laserweb';
+import { Error } from './operation';
 import { OperationDiagram } from './operation-diagram';
-import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
-import Com from './com.js'
-import io from 'socket.io-client';
-import FileUpload from './FileUpload';
 import axios from 'axios';
 
 
 const opentype = require('opentype.js');
-var playing = false;
-var paused = false;
-var socket, connectVia;
-var serverConnected = false;
-var machineConnected = false;
-const framePath = '<g stroke-linecap="round" fill-rule="evenodd" font-size="12px" stroke="#000" stroke-width="0.25mm" fill="none" style="fill:none;stroke:#000000;stroke-width:0.25mm" id="layer1" transform="matrix(3.7795173,0,0,3.80101,-36.012742,-254.21432)"><path d="m 233.83379,67.373184 c -2.53989,0.0018 -2.01422,0.247614 -2.01242,3.001398 0.002,2.761509 -2.23509,5.001401 -4.99667,5.003306 -2.76151,0.0018 -5.0014,-2.2352 -5.00331,-4.99678 -0.002,-2.438506 0.43819,-3.000199 -1.39322,-2.998999 l -29.58928,0.01979 c -1.57229,0.0011 -1.01899,0.713105 -1.01751,3.000798 0.002,2.76158 -2.23499,5.001401 -4.99661,5.003306 -2.76168,0.0018 -5.00157,-2.2352 -5.0033,-4.996709 -0.002,-2.569316 0.58282,-3.00041 -1.50619,-2.999105 l -29.08229,0.01951 c -2.01362,0.0014 -1.4133,0.467889 -1.4116,3.000904 0.002,2.761579 -2.2351,5.001507 -4.99661,5.003306 -2.76161,0.0018 -5.0015,-2.23513 -5.00341,-4.996709 -0.002,-2.664496 0.83831,-3.000516 -1.46477,-2.998894 l -29.06042,0.0193 c -2.04481,0.0014 -1.47641,0.452896 -1.47468,3.001081 0.002,2.761615 -2.23503,5.001507 -4.99671,5.003412 -2.76151,0.0018 -5.001402,-2.2352 -5.003201,-4.996815 -0.0018,-2.426476 0.550298,-3.000375 -1.258499,-2.99907 l -29.269619,0.01937 c -2.285682,0.0018 -1.473588,0.343923 -1.471789,3.00101 0.0018,2.761614 -2.235094,5.001506 -4.996709,5.003411 -2.76158,0.0018 -5.001471,-2.2352 -5.003376,-4.996815 -0.0018,-2.623678 0.825888,-3.00048 -1.382607,-2.998999 l -30.757812,0.0206 c -2.419703,0.0014 -1.361405,0.288889 -1.359676,3.000692 0.0019,2.761721 -2.235129,5.001613 -4.996603,5.003412 -4.260321,0.0028 -5.4871056,-0.635706 -5.4989942,1.399399 l 0.017568,26.354686 c 0.00113,1.74092 3.1126292,1.24742 5.5007232,1.2459 2.761579,-0.002 5.001507,2.23503 5.003376,4.99671 0.0018,2.76141 -2.235094,5.0014 -4.996568,5.00331 -2.509625,0.002 -5.5004051,-0.74369 -5.4992057,1.22319 l 0.019085,28.53069 c 0.00109,1.74092 3.1124877,1.24763 5.5006867,1.2459 2.761615,-0.002 5.001507,2.23509 5.003412,4.99671 0.0017,2.76151 -2.235094,5.00151 -4.996603,5.00341 -2.509591,0.002 -5.5005812,-0.74372 -5.4992054,1.22308 l 0.019015,28.53101 c 0.0012,1.74089 3.1124884,1.24739 5.5007934,1.24591 2.761509,-0.002 5.001401,2.23498 5.003306,4.9967 0.0018,2.76141 -2.235094,5.00141 -4.996497,5.0032 -2.509697,0.002 -5.5006174,-0.74362 -5.4992063,1.2233 0.00589,8.9566 0.011818,17.91321 0.017886,26.86988 0.014323,1.9957 1.2659083,0.90992 5.5004053,0.9071 2.761721,-0.002 5.001613,2.23502 5.003412,4.9966 0.0016,2.4421 -0.958603,3.0226 0.459987,2.9996 l 30.735199,-0.0205 c 2.399629,-0.002 2.306919,0.11 2.304908,-3.00168 -0.0018,-2.7614 2.2352,-5.00129 4.996604,-5.0032 2.761615,-0.002 5.001506,2.2351 5.003411,4.99668 0.0018,2.8334 0.417689,2.99229 1.100702,2.99931 l 29.636684,-0.0198 c 1.968395,-0.001 1.264215,-0.4905 1.262486,-3.0009 -0.0018,-2.76151 2.23513,-5.0013 4.996601,-5.0032 2.76172,-0.002 5.00151,2.23509 5.00331,4.9966 0.001,1.80898 -0.42859,3.00031 0.4978,2.99971 l 30.83239,-0.0206 c 0.9549,-7e-4 0.67102,-1.16702 0.66982,-3.00062 -0.002,-2.76147 2.2352,-5.0002 4.9966,-5.002 2.76158,-0.002 5.00151,2.23383 5.00338,4.99541 0.001,2.12181 -0.39578,3.0003 0.92802,2.99942 l 29.85449,-0.0199 c 1.9668,-0.001 1.21909,-0.49111 1.2175,-3.0008 -0.002,-2.76148 2.2351,-5.0014 4.99671,-5.0032 2.76148,-0.002 5.0014,2.23502 5.0032,4.9966 0.002,2.38831 -0.48919,3.0003 1.25169,2.99911 l 30.1975,-0.0202 c 1.38522,0.0433 0.55252,-0.49492 0.55079,-3.00041 -0.002,-2.76151 2.2352,-5.0014 4.99671,-5.0032 2.76161,-0.002 5.00151,2.23498 5.00331,4.99671 0.002,2.81177 -0.35631,2.95599 1.10179,2.99917 10.319,-0.007 20.63799,-0.0137 30.95699,-0.0206 2.47791,-0.002 1.44311,-0.2666 1.44142,-3.00098 -0.002,-2.76151 2.23509,-5.0014 4.9966,-5.0033 4.15798,-0.003 5.4876,0.83199 5.49921,-1.13482 -0.006,-8.88319 -0.0119,-17.76638 -0.0178,-26.6495 -10e-4,-1.96677 -2.99131,-1.21747 -5.5009,-1.21578 -2.7614,0.002 -5.00129,-2.2352 -5.0032,-4.99671 -0.002,-2.76161 2.23509,-5.0015 4.99671,-5.0033 2.38809,-0.001 5.50019,0.48761 5.49899,-1.25328 l -0.019,-28.5309 c -10e-4,-1.96681 -2.9912,-1.21751 -5.50079,-1.21582 -2.76151,0.002 -5.00141,-2.2352 -5.00331,-4.99671 -0.002,-2.76158 2.23509,-5.0015 4.99671,-5.00337 2.3882,-0.001 5.5003,0.48768 5.4991,-1.25321 l -0.0191,-28.5308 c -0.001,-1.9668 -2.99109,-1.2175 -5.50082,-1.21581 -2.76148,0.002 -5.0013,-2.2352 -5.00321,-4.99671 -0.002,-2.76158 2.23513,-5.00147 4.99661,-5.00327 2.3883,-0.002 5.5003,0.48757 5.4992,-1.25331 l -0.018,-26.839617 c -0.0141,-1.966771 -1.34249,-0.909779 -5.5004,-0.907203 -2.76158,0.0018 -5.00162,-2.234883 -5.00341,-4.996498 -0.002,-2.73438 1.03261,-3.000692 -1.4453,-2.998999 z" vector-effect="non-scaling-stroke" id="path5" /></g>';
+const framePath = require('../data/staticdata.js');
 
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
-function NoDocumentsError(props) {
-    let { settings, documents, operations, camBounds } = props;
-    if (documents.length === 0 && (operations.length === 0 || !settings.toolCreateEmptyOps))
-        return <GetBounds Type="span"><Error operationsBounds={camBounds} message='Click here to begin' /></GetBounds>;
-    else
-        return <span />;
-}
-
-function GcodeProgress({ gcoding, onStop }) {
-    return <div style={{ display: "flex", flexDirection: "row" }}><ProgressBar now={gcoding.percent} active={gcoding.enable} label={`${gcoding.percent}%`} style={{ flexGrow: 1, marginBottom: "0px" }} /><Button onClick={onStop} bsSize="xs" bsStyle="danger"><Icon name="hand-paper-o" /></Button></div>
-}
-
-GcodeProgress = connect((state) => { return { gcoding: state.gcode.gcoding } })(GcodeProgress)
 
 export class CAMValidator extends React.Component {
     render() {
@@ -147,11 +123,6 @@ const initialState = {
     fileLoaded:false,
     hideme:'',
     selectedFile: null
-
-    /*
-
-
-    */
 };
 class Cam extends React.Component {
 
@@ -164,23 +135,17 @@ class Cam extends React.Component {
 
         this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
-        this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
         this.handleSubmission = this.handleSubmission.bind(this);
         this.handleTemplateChange = this.handleTemplateChange.bind(this);
-        this.generateGcode = this.generateGcode.bind(this);
-        this.docuementAdded = this.docuementAdded.bind(this);
         this.textWrapping = this.textWrapping.bind(this);
         this.generateAll = this.generateAll.bind(this);
-        this.runJob = this.runJob.bind(this);
         this.handleMoves = this.handleMoves(this);
-        this.wordWrapped = this.wordWrapped.bind(this);
         this.moveDown = this.moveDown.bind(this);
         this.moveUp = this.moveUp.bind(this);
         this.moveLeft = this.moveLeft.bind(this);
         this.moveRight = this.moveRight.bind(this);
         this.scale = this.scale.bind(this);
-        this.wheel = this.wheel.bind(this);
         this.handleShape = this.handleShape.bind(this);
         this.step1 = this.step1.bind(this);
         this.step2 = this.step2.bind(this);
@@ -198,73 +163,14 @@ class Cam extends React.Component {
         this.convert = this.convert.bind(this);
         //onFileChange
         this.onFileChange = this.onFileChange.bind(this);
-        this.onFileUpload = this.onFileUpload.bind(this);
 
     }
-
-
-    componentWillMount() {
-        //this.handleConnectServer();
-
-        let that = this
-        console.log('this', this);
-        window.generateGcode = (run) => {
-            let { settings, documents, operations } = that.props;
-            let percent = 0;
-            __interval = setInterval(() => {
-                that.props.dispatch(generatingGcode(true, isNaN(percent) ? 0 : Number(percent)));
-            }, 100)
-            settings.stepOver = that.state.stepOver;
-            console.log("settings are: ", settings,'documents',documents);
-            let QE = getGcode(settings, documents, operations, that.props.documentCacheHolder,
-                (msg, level) => { CommandHistory.write(msg, level); },
-                (gcode) => {
-                    clearInterval(__interval)
-                    that.props.dispatch(setGcode(gcode));
-                    console.log('gcode is ready');
-                    that.props.dispatch(generatingGcode(false))
-                    run();
-                },
-                (threads) => {
-                    percent = ((Array.isArray(threads)) ? (threads.reduce((a, b) => a + b, 0) / threads.length) : threads).toFixed(2);
-                }
-            );
-            return QE;
-        }
-
-        document.addEventListener("keydown", this.handleKeyDown);
-        document.addEventListener("wheel", this.wheel);
-
-        this.generateGcode.bind(this);
-        //this.handleConnectServer.bind(this);
-        //this.handleConnectServer();
-        this.stopGcode.bind(this);
-    }
-    componentWillMount() {
-        if(this.state.fileLoaded == true){
-            console.log('testory file loaded!!');
-
-        }
-    }
-    generateGcode(run) {
-        console.log("game started now!");
-        this.QE = window.generateGcode(run);
-    }
-
-
-    resetFontSize(e) { // a bug here!!!
-        let activeTemplateName = this.state.activeTemplateName;
-        //this.handleTemplateChange(e, activeTemplateName);
-    }
-
-
 
     handleDepthChange(e) {
         this.props.dispatch(setDepth(e.target.value));
         this.setState({ chocolateDepth: e.target.value });
     }
     handleChange(e) {
-        this.resetFontSize(e);
         if(e.target.value == ''){
             this.setState({forwardEnabled:false});
         }
@@ -289,7 +195,6 @@ class Cam extends React.Component {
         this.setState({ content: e.target.value,textEnabled:true });
     }
     handleFontChange(selectedOption) {
-        //this.resetFontSize(e);
         switch (selectedOption.value) {
 
             case 'Almarai-Bold.ttf':
@@ -308,27 +213,8 @@ class Cam extends React.Component {
         this.props.dispatch(setFont(selectedOption.value));
         this.setState({ font: selectedOption.value });
     };
-    wheel(e) {
-        // if there is no document ignore this event or if it has been sent to the machine,
-        console.log('e is ', e);
-        //e.preventDefault();
-        this.scale(Math.exp(e.deltaY / 20000));
-        //this.zoom(e.pageX, e.pageY, Math.exp(e.deltaY / 2000));
-    }
-    handleKeyDown(e) {
-        
-        if(e.keyCode == 40 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39){
-            switch(e.keyCode){
-                case 40:this.moveDown();break;
-                case 38:this.moveUp();break;
-                case 37:this.moveLeft();break;
-                case 39: this.moveRight();break;
-            }
-        }
-        /*var words = e.target.value.split(" ");
-        if (words.length > this.state.activeTemplate.maxWordsEn) {
-        }*/
-    }
+
+
     handleTemplateChange(e, templateName = null) {
         let { value } = e.target;
 
@@ -350,12 +236,8 @@ class Cam extends React.Component {
             this.setState({ direction: 'LTR',textEnabled:true });
         return rtlDirCheck.test(s.target.value);
     };
-    stopGcode() {
-        if (this.QE) { this.QE.end(); }
-    }
-    docuementAdded() {
-        console.log('Document Added');
-    }
+
+
     shouldComponentUpdate(nextProps, nextState) {
         return (
             nextState.font !== this.state.font || /*nextState.fontSize !== this.state.fontSize || */
@@ -363,9 +245,6 @@ class Cam extends React.Component {
             nextProps.operations !== this.props.operations ||
             nextProps.currentOperation !== this.props.currentOperation ||
             nextProps.bounds !== this.props.bounds ||
-            nextProps.gcode !== this.props.gcode ||    // Needed for saveGcode() to work
-            nextProps.gcoding.percent !== this.props.gcoding.percent ||
-            nextProps.gcoding.enable !== this.props.gcoding.enable ||
             nextState.filter !== this.state.filter || 
             nextState.step1 !== this.state.step1 ||
             nextState.step2 !== this.state.step2 ||
@@ -377,48 +256,7 @@ class Cam extends React.Component {
         );
     }
 
-    runJob() {/// bug here to be solved
-
-        //this.generateGcode();
-
-        let globalState = GlobalStore().getState();
-        console.log('globalState', globalState);
-        // check if machine is connected first
-        if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
-            let cmd = this.props.gcode;
-            console.log('runJob(' + cmd.length + ')');
-            //playing = true;
-            runJob(cmd);
-            this.step1();
-            //dispatch(resetWorkspace()); 
-            //this.props.dispatch(resetWorkspace());
-        }
-        else {
-            console.log("didn't work", 'Playing', playing, 'Paused', paused);
-        }
-    }
-   
-    wordWrapped() {
-        console.log("maybe help later!!");
-    }
-
-    /// to test this I guess there are some conditions to be solved
-    isWrappedWord(layout, text) {
-        let result = true;
-        var words = text.split(" ");
-        words.forEach((word) => {
-            layout.lines.forEach((line, j) => {
-                console.log('end', layout.lines[j].end, 'start', layout.lines[j].start, 'word length:', word.length);
-                if (layout.lines[j].end - layout.lines[j].start < word.length) {
-                    result = false;
-                }
-            })
-        })
-        return true;
-    }
-    /// to bet tested this I guess there are some conditions to be solved
-
-    validateLayout(layout, text, maxLines) { //// add another condition which is if the number of lines is bigger than the number of words
+    validateLayout(layout, maxLines) { //// add another condition which is if the number of lines is bigger than the number of words
         return layout.lines.length > maxLines ? false:true;        
     }
     init() {
@@ -487,7 +325,7 @@ class Cam extends React.Component {
         const heightIndex = svgObject.indexOf('height="') + 7;
         const heightFin = svgObject.indexOf('"', heightIndex+1);
         const height = svgObject.slice(heightIndex + 1, heightFin);
-        return [parseFloat(width), parseFloat(height)];
+        return [parseFloat(width), parseFloat(height),width,height];
 
     }
     findStartEndIndices(string,substring){
@@ -507,10 +345,7 @@ class Cam extends React.Component {
         return [width, height];
     }
     async generateAll(){ 
-        /*if($("#machineStatus").text() != "Machine is connected!!"){
-            alert('Machine is not connected, please ask for help, from the administrator!!!');
-            return;
-        }*/
+
         this.props.documents.forEach((element,index) => {
             if(index >this.state.activeTemplate.filePcsCount){
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -520,24 +355,20 @@ class Cam extends React.Component {
         /// remove all documents
         this.setState({ textEnabled:false});
         console.log('ttt',this.state);
-        let margins = this.calcMargins(this.state.svgOutpout);
+        let margins = this.calcMargins();
         console.log('calc margins', margins);
         let that = this;
-        let runJob = function () {
-            that.generateGcode(function () {
-                //that.runJob();
-            });
-        };
+        
         for(let i=1;i<this.state.pcsCount;i++){
             let index = i+1;
             if( index < 5 )
                 await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file'+index+'.svg', i);
             else 
-                await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file' + index + '.svg', i, runJob);
+                await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file' + index + '.svg', i, );
         }
         await this.props.dispatch(selectDocument(this.props.documents[0].id));
     }
-    calcMargins(svgOutput){
+    calcMargins(){
 
         let dims = this.getDimension(this.state.svgOutpout);
         const operator = 3.7795284176;// the division of unit per mm
@@ -546,13 +377,10 @@ class Cam extends React.Component {
         return margins;
     }
 
-    updateShifts(){
-        console.log('test');
-    }
+
 
     textWrapping(downloadMe,final) {
         const downloaable = final;
-        //final= true;
         this.props.documents.forEach((element, index) => {
             if (index > 0) {
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -647,7 +475,7 @@ class Cam extends React.Component {
                 catch (ex) {
                     console.log(ex);
                 }
-                let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
+                let result = that.validateLayout(layout,  that.state.activeTemplate.maxLines);
                 while (!result) {
                     that.setState({
                         activeTemplate: activeTemplate
@@ -658,7 +486,6 @@ class Cam extends React.Component {
                     that.setState({ activeTemplate: activeTemplate });
                     let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
                     let finalWidth = 120;// should be maxMM * 301 (which is point in mm) 5000
-
 
                     let layoutOptions = {
                         "align": "center",
@@ -697,22 +524,12 @@ class Cam extends React.Component {
                         that.loadSVGChocoTemplate([[0, 0], [0, 0],[-3, -3]], 0);
                     }
                 });
-                // next steps: enable upload file to the server, read that file, make it white and black, save it as jpg and upload it
-                // to the php page, in the php page call the convertio api, download the results in the dist folder
-                // you will have the svg file in the dist folder and then read it, make the other operations on it.
+
                 let mmDims = that.getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
 
                 if (downloaable){
-                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(42- mmDims[0]) * operator, (41 - mmDims[1]) * operator]);
-                    /*const path = "M 233.83379,67.373184 c -2.53989,0.0018 -2.01422,0.247614 -2.01242,3.001398 0.002,2.761509 -2.23509,5.001401 -4.99667,5.003306 -2.76151,0.0018 -5.0014,-2.2352 -5.00331,-4.99678 -0.002,-2.438506 0.43819,-3.000199 -1.39322,-2.998999 l -29.58928,0.01979 c -1.57229,0.0011 -1.01899,0.713105 -1.01751,3.000798 0.002,2.76158 -2.23499,5.001401 -4.99661,5.003306 -2.76168,0.0018 -5.00157,-2.2352 -5.0033,-4.996709 -0.002,-2.569316 0.58282,-3.00041 -1.50619,-2.999105 l -29.08229,0.01951 c -2.01362,0.0014 -1.4133,0.467889 -1.4116,3.000904 0.002,2.761579 -2.2351,5.001507 -4.99661,5.003306 -2.76161,0.0018 -5.0015,-2.23513 -5.00341,-4.996709 -0.002,-2.664496 0.83831,-3.000516 -1.46477,-2.998894 l -29.06042,0.0193 c -2.04481,0.0014 -1.47641,0.452896 -1.47468,3.001081 0.002,2.761615 -2.23503,5.001507 -4.99671,5.003412 -2.76151,0.0018 -5.001402,-2.2352 -5.003201,-4.996815 -0.0018,-2.426476 0.550298,-3.000375 -1.258499,-2.99907 l -29.269619,0.01937 c -2.285682,0.0018 -1.473588,0.343923 -1.471789,3.00101 0.0018,2.761614 -2.235094,5.001506 -4.996709,5.003411 -2.76158,0.0018 -5.001471,-2.2352 -5.003376,-4.996815 -0.0018,-2.623678 0.825888,-3.00048 -1.382607,-2.998999 l -30.757812,0.0206 c -2.419703,0.0014 -1.361405,0.288889 -1.359676,3.000692 0.0019,2.761721 -2.235129,5.001613 -4.996603,5.003412 -4.260321,0.0028 -5.4871056,-0.635706 -5.4989942,1.399399 l 0.017568,26.354686 c 0.00113,1.74092 3.1126292,1.24742 5.5007232,1.2459 2.761579,-0.002 5.001507,2.23503 5.003376,4.99671 0.0018,2.76141 -2.235094,5.0014 -4.996568,5.00331 -2.509625,0.002 -5.5004051,-0.74369 -5.4992057,1.22319 l 0.019085,28.53069 c 0.00109,1.74092 3.1124877,1.24763 5.5006867,1.2459 2.761615,-0.002 5.001507,2.23509 5.003412,4.99671 0.0017,2.76151 -2.235094,5.00151 -4.996603,5.00341 -2.509591,0.002 -5.5005812,-0.74372 -5.4992054,1.22308 l 0.019015,28.53101 c 0.0012,1.74089 3.1124884,1.24739 5.5007934,1.24591 2.761509,-0.002 5.001401,2.23498 5.003306,4.9967 0.0018,2.76141 -2.235094,5.00141 -4.996497,5.0032 -2.509697,0.002 -5.5006174,-0.74362 -5.4992063,1.2233 0.00589,8.9566 0.011818,17.91321 0.017886,26.86988 0.014323,1.9957 1.2659083,0.90992 5.5004053,0.9071 2.761721,-0.002 5.001613,2.23502 5.003412,4.9966 0.0016,2.4421 -0.958603,3.0226 0.459987,2.9996 l 30.735199,-0.0205 c 2.399629,-0.002 2.306919,0.11 2.304908,-3.00168 -0.0018,-2.7614 2.2352,-5.00129 4.996604,-5.0032 2.761615,-0.002 5.001506,2.2351 5.003411,4.99668 0.0018,2.8334 0.417689,2.99229 1.100702,2.99931 l 29.636684,-0.0198 c 1.968395,-0.001 1.264215,-0.4905 1.262486,-3.0009 -0.0018,-2.76151 2.23513,-5.0013 4.996601,-5.0032 2.76172,-0.002 5.00151,2.23509 5.00331,4.9966 0.001,1.80898 -0.42859,3.00031 0.4978,2.99971 l 30.83239,-0.0206 c 0.9549,-7e-4 0.67102,-1.16702 0.66982,-3.00062 -0.002,-2.76147 2.2352,-5.0002 4.9966,-5.002 2.76158,-0.002 5.00151,2.23383 5.00338,4.99541 0.001,2.12181 -0.39578,3.0003 0.92802,2.99942 l 29.85449,-0.0199 c 1.9668,-0.001 1.21909,-0.49111 1.2175,-3.0008 -0.002,-2.76148 2.2351,-5.0014 4.99671,-5.0032 2.76148,-0.002 5.0014,2.23502 5.0032,4.9966 0.002,2.38831 -0.48919,3.0003 1.25169,2.99911 l 30.1975,-0.0202 c 1.38522,0.0433 0.55252,-0.49492 0.55079,-3.00041 -0.002,-2.76151 2.2352,-5.0014 4.99671,-5.0032 2.76161,-0.002 5.00151,2.23498 5.00331,4.99671 0.002,2.81177 -0.35631,2.95599 1.10179,2.99917 10.319,-0.007 20.63799,-0.0137 30.95699,-0.0206 2.47791,-0.002 1.44311,-0.2666 1.44142,-3.00098 -0.002,-2.76151 2.23509,-5.0014 4.9966,-5.0033 4.15798,-0.003 5.4876,0.83199 5.49921,-1.13482 -0.006,-8.88319 -0.0119,-17.76638 -0.0178,-26.6495 -10e-4,-1.96677 -2.99131,-1.21747 -5.5009,-1.21578 -2.7614,0.002 -5.00129,-2.2352 -5.0032,-4.99671 -0.002,-2.76161 2.23509,-5.0015 4.99671,-5.0033 2.38809,-0.001 5.50019,0.48761 5.49899,-1.25328 l -0.019,-28.5309 c -10e-4,-1.96681 -2.9912,-1.21751 -5.50079,-1.21582 -2.76151,0.002 -5.00141,-2.2352 -5.00331,-4.99671 -0.002,-2.76158 2.23509,-5.0015 4.99671,-5.00337 2.3882,-0.001 5.5003,0.48768 5.4991,-1.25321 l -0.0191,-28.5308 c -0.001,-1.9668 -2.99109,-1.2175 -5.50082,-1.21581 -2.76148,0.002 -5.0013,-2.2352 -5.00321,-4.99671 -0.002,-2.76158 2.23513,-5.00147 4.99661,-5.00327 2.3883,-0.002 5.5003,0.48757 5.4992,-1.25331 l -0.018,-26.839617 c -0.0141,-1.966771 -1.34249,-0.909779 -5.5004,-0.907203 -2.76158,0.0018 -5.00162,-2.234883 -5.00341,-4.996498 -0.002,-2.73438 1.03261,-3.000692 -1.4453,-2.998999 z";
-                    const outsideModel = makerjs.importer.fromSVGPathData(path);
-                    const outsideModelScaled = makerjs.model.scale(outsideModel,operator);
-                    makerjs.model.addModel(models, outsideModelScaled);*/
-                    
+                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(42- mmDims[0]) * operator, (41 - mmDims[1]) * operator]); 
                 }
-
-
-
             }
             that.props.dispatch(saveModels(models));
 
@@ -725,7 +542,6 @@ class Cam extends React.Component {
                     .then(content => {
                         console.log(content);
                     });
-                //makerjs.model.addModel(models, oval);
 
                 let output = makerjs.exporter.toSVG(models );
             
@@ -733,10 +549,7 @@ class Cam extends React.Component {
                
                 let mmDims = dims.map(n => n / operator);
                
-                /*if (mmDims[0] > that.state.activeTemplate.maxWidth || mmDims[1] > that.state.activeTemplate.maxHeight) {
-                    alert("Please divide to two lines,the size of the words shouldn't be more than 28mm!!!")
-                    return;
-                }*/
+
                 that.setState({
                     svgOutpout: output,
                     svgModels: models,
@@ -756,7 +569,6 @@ class Cam extends React.Component {
                     'general state', generalState,
                      "Letters:  ", dims, max, mmDims, 'letter count:',
                  letterCount, 'letter width', letterWidth, layout);
-                //this.resolve(); resolve this means deepwork
                 let promise = new Promise( (resolve,reject) =>  { /// understand promises well with examples, async javascripting
                     that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
                 });
@@ -785,8 +597,6 @@ class Cam extends React.Component {
                 var finalist = final4.slice(0, secondInsertion) + ' transform="translate(56.2611671,63.47244096)" ' + final4.slice(secondInsertion);
 
 
-                //final.replace(/dims[1]/g, '1009.2939');
-                //const final = output.splice(insertionIndex, 0, framePath);var svgElement = document.getElementById("svgFile");
                 svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(finalist));
 
                 svgElement.setAttribute('download','File.svg');
@@ -953,7 +763,7 @@ class Cam extends React.Component {
 
 
     }
-    parseSVG(svg,that,margin,fileName,n,runJob){
+    parseSVG(svg,that,margin,fileName,n){
         let activeTemplate = that.state.activeTemplate;
         const release = captureConsole();
         const parser = new Parser({});
@@ -1031,13 +841,11 @@ class Cam extends React.Component {
                             if (errors.length)
                                 CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
                             imageTagPromise(tags).then((tags) => { 
-                                //that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
                             }).then(() => {
                                 if (n == 0) {
                                     that.setState({ originalShift: [that.props.documents[0].changes[4], that.props.documents[0].changes[5]] })
                                 }
                                 if (n > 4) {
-                                    // change indexes here
                                     that.props.dispatch(addOperation({
                                         documents: [
                                             that.props.documents[0].id,
@@ -1056,7 +864,6 @@ class Cam extends React.Component {
                                             
                                         ] }));*/
                                     that.props.dispatch(selectDocument(that.props.documents[0].id));
-                                    runJob();
                                     
                                 }
                             })
@@ -1088,8 +895,6 @@ class Cam extends React.Component {
     downloadFile(){
 
         const makerjs = require('makerjs');
-        const globalState = GlobalStore().getState();
-        //scaling according to dims
         const scale = 26.4 / this.state.dims[0];//or 28 instead of 32 we will see
         var downloadMe = () => {
             var svgElement = document.getElementById("svgFile");
@@ -1189,7 +994,6 @@ class Cam extends React.Component {
                 activeTemplate = chocoTemplates.templates[0];
             break;
         }
-        //this.nameInput.focus();
         this.setState({ step1: false, step2: true, activeTemplate: activeTemplate});
     }
     setPcsCount(count){
@@ -1254,22 +1058,15 @@ class Cam extends React.Component {
             cropWidth = cropRight - cropLeft,
             cropHeight = cropBottom - cropTop;
 
-        //var $croppedCanvas = $("<canvas>").attr({ width: cropWidth, height: cropHeight });
         inMemCanvas.width = cropWidth;
         inMemCanvas.height = cropHeight;
         inMemCtx.drawImage(canvas,
             cropLeft, cropTop, cropWidth, cropHeight,
             0, 0, cropWidth, cropHeight);
-        //inMemCtx.drawImage(canvas, 0, 0);
         canvas.width = cropWidth;
         canvas.height = cropHeight;
 
-        //canvas.width  = cropWidth;
-        // finally crop the guy
-        
         context.drawImage(inMemCanvas, 0, 0);
-
-
         return [cropLeft, cropTop, cropRight, cropBottom,cropWidth,cropHeight];
     };
 
@@ -1280,11 +1077,6 @@ class Cam extends React.Component {
         var ctx = canvas.getContext("2d");
         img.crossOrigin = "anonymous";
         ctx.drawImage(img, 0, 0);
-
-        /*ctx.drawImage(canvas,
-            croppedDimensions[0], croppedDimensions[1], canvas.width, canvas.height,
-            0, 0, canvas.width, canvas.height,);*/
-        //const imgData = ctx.getImageData(croppedDimensions[0], croppedDimensions[1], croppedDimensions[2], croppedDimensions[3]);// canvas width and height???
 
         var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const origData = imgData;
@@ -1299,7 +1091,7 @@ class Cam extends React.Component {
             imgData.data[i + 2] = colour;
             imgData.data[i + 3] = 255;
         }
-
+        var svgContent;
         ctx.putImageData(imgData, 0, 0);
         var pngImage = canvas.toDataURL("image/png");
         var updatedImageData = '';
@@ -1316,15 +1108,7 @@ class Cam extends React.Component {
                     img.width = i.width;
                     img.height = i.height;
                     img.src = response.data;
-                    /*
-                    const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
 
-                    /// minimize before you start
-                    var canvas = document.getElementById("canvas");
-                    var ctx = canvas.getContext("2d");
-                    img.crossOrigin = "anonymous";
-                    ctx.drawImage(img, 0, 0);
-                    */
                     const image = document.getElementById("eeveelutions");
                     ctx = canvas.getContext("2d");
                     img.crossOrigin = "anonymous";
@@ -1349,6 +1133,7 @@ class Cam extends React.Component {
                     imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
                     var pngImage = canvas.toDataURL("image/png");
                     var updatedImageData = '';
+                    
                     const payload = { data: pngImage };
                     const options = {
                         method: 'POST',
@@ -1377,8 +1162,10 @@ class Cam extends React.Component {
                             that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
                         }).then(() => {
                             const scale = 25 / that.state.dims[0];
-                            console.log(svgContent); /// bunu de handle
+                            console.log('before repeat',svgContent); /// bunu de handle
                             const updatedContent = that.minimizeSvgFile(svgContent, canvas.width / croppedDimensions[4], croppedDimensions[5] / canvas.height);
+                            console.log('after repeat', updatedContent); /// bunu de handle
+
                             /// handle this updated content
                             // write more code,enCourage.implement(it);
                             //return a new promise that resolves with this stuff all the time, and implement the process
@@ -1399,139 +1186,40 @@ class Cam extends React.Component {
                                     //we have to save this file and enable the user to download it
                                     console.log(response);
                                 })
-                            const repeatContent = that.repeatPattern(updatedContent);
                             that.scale(scale * 3.7795284176);
                         });
                 };
                 i.src = response.data;
 
-                
-
-                // load the image into canvas
-                /// now to trim white spaces
             })
             .catch(err => {
                 alert('error happened: '+ err)
                 console.error(err);
             });
-
-/*
-        const origData = imgData;
-
-        for (var i = 0; i < imgData.data.length; i += 4) {
-            var count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
-            var colour = 0;
-            if (count > 383) 
-                colour = 255;
-            imgData.data[i] = colour;
-            imgData.data[i + 1] = colour;
-            imgData.data[i + 2] = colour;
-            imgData.data[i + 3] = 255;
-        }
-
-        ctx.putImageData(imgData, 0, 0);
-
-        const croppedDimensions = this.removeBlanks(canvas, canvas.width, canvas.height);
-
-        imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
-
-
-        
-
-        const options = {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            cors: true, // allow cross-origin HTTP request
-            credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
-        };*/
-        /*const text ='<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN""http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg version="1.0" xmlns="http://www.w3.org/2000/svg"width="500.000000pt" height="352.000000pt" viewBox="0 0 500.000000 352.000000"preserveAspectRatio="xMidYMid meet">';
-        const dims = this.getDimensionAPI(text);*/
-        var svgContent;
-        /*if (imgData.data[0] == 255)
-        fetch('convertio/111111.svg')
-            .then(resp => resp.text())
-            .then(content => {
-                const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
-                const stdMargin = this.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                const extraMargin = [0, 0];
-                const image = content;
-                const dims = this.getDimensionAPI(content);
-                svgContent = content;
-                this.setState({ dims: dims }, () => {
-                    this.parseSVG(content, this, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0,()=>{
-                    });
-                });
-            })
-            .then((content) => {
-                const scale = 25 / this.state.dims[0];
-                console.log(svgContent); /// bunu de handle
-                const updatedContent = this.minimizeSvgFile(svgContent);
-                const repeatContent = this.repeatPattern(updatedContent);
-                this.scale(scale * 3.7795284176);
-                // change scale, repeat all gs add the framePath
- 
-            });*/
-
-
-
-
-        /*if(imgData.data[0] == 255)
-        {
-
-      
-            fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
-            .then((response) => { 
-                const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
-                const stdMargin = this.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                const extraMargin = [0, 0];
-                const image = response;
-                const dims = this.getDimensionAPI(response);
-                //now let's repeat it 
-
-                this.setState({ dims: dims }, () => {
-                    this.parseSVG(response, this, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0 );
-                });
-                svgContent = response;
-
-                this.setState({ fileLoaded: true, generatedFile: image,hideme:'hideMe' });
-            }).then(() => {
-                const scale = 25 / this.state.dims[0];
-                console.log(svgContent); /// bunu de handle
-                const updatedContent = this.minimizeSvgFile(svgContent, canvas.width / croppedDimensions[4], croppedDimensions[5]/canvas.height);
-                const repeatContent = this.repeatPattern(updatedContent);
-                this.scale(scale * 3.7795284176);                
-            });
-        }*/
     }
     
     minimizeSvgFile(svgFile,percentageX,percentageY){
         const ourFramePath = '<g stroke-linecap="round" fill-rule="evenodd" font-size="12px" stroke="#000" stroke-width="0.25mm" fill="none" style="fill:none;stroke:#000000;stroke-width:0.25mm" id="layer1" transform="matrix(2.8321,0,0,2.8321,2,-161)"><path d="m 233.83379,67.373184 c -2.53989,0.0018 -2.01422,0.247614 -2.01242,3.001398 0.002,2.761509 -2.23509,5.001401 -4.99667,5.003306 -2.76151,0.0018 -5.0014,-2.2352 -5.00331,-4.99678 -0.002,-2.438506 0.43819,-3.000199 -1.39322,-2.998999 l -29.58928,0.01979 c -1.57229,0.0011 -1.01899,0.713105 -1.01751,3.000798 0.002,2.76158 -2.23499,5.001401 -4.99661,5.003306 -2.76168,0.0018 -5.00157,-2.2352 -5.0033,-4.996709 -0.002,-2.569316 0.58282,-3.00041 -1.50619,-2.999105 l -29.08229,0.01951 c -2.01362,0.0014 -1.4133,0.467889 -1.4116,3.000904 0.002,2.761579 -2.2351,5.001507 -4.99661,5.003306 -2.76161,0.0018 -5.0015,-2.23513 -5.00341,-4.996709 -0.002,-2.664496 0.83831,-3.000516 -1.46477,-2.998894 l -29.06042,0.0193 c -2.04481,0.0014 -1.47641,0.452896 -1.47468,3.001081 0.002,2.761615 -2.23503,5.001507 -4.99671,5.003412 -2.76151,0.0018 -5.001402,-2.2352 -5.003201,-4.996815 -0.0018,-2.426476 0.550298,-3.000375 -1.258499,-2.99907 l -29.269619,0.01937 c -2.285682,0.0018 -1.473588,0.343923 -1.471789,3.00101 0.0018,2.761614 -2.235094,5.001506 -4.996709,5.003411 -2.76158,0.0018 -5.001471,-2.2352 -5.003376,-4.996815 -0.0018,-2.623678 0.825888,-3.00048 -1.382607,-2.998999 l -30.757812,0.0206 c -2.419703,0.0014 -1.361405,0.288889 -1.359676,3.000692 0.0019,2.761721 -2.235129,5.001613 -4.996603,5.003412 -4.260321,0.0028 -5.4871056,-0.635706 -5.4989942,1.399399 l 0.017568,26.354686 c 0.00113,1.74092 3.1126292,1.24742 5.5007232,1.2459 2.761579,-0.002 5.001507,2.23503 5.003376,4.99671 0.0018,2.76141 -2.235094,5.0014 -4.996568,5.00331 -2.509625,0.002 -5.5004051,-0.74369 -5.4992057,1.22319 l 0.019085,28.53069 c 0.00109,1.74092 3.1124877,1.24763 5.5006867,1.2459 2.761615,-0.002 5.001507,2.23509 5.003412,4.99671 0.0017,2.76151 -2.235094,5.00151 -4.996603,5.00341 -2.509591,0.002 -5.5005812,-0.74372 -5.4992054,1.22308 l 0.019015,28.53101 c 0.0012,1.74089 3.1124884,1.24739 5.5007934,1.24591 2.761509,-0.002 5.001401,2.23498 5.003306,4.9967 0.0018,2.76141 -2.235094,5.00141 -4.996497,5.0032 -2.509697,0.002 -5.5006174,-0.74362 -5.4992063,1.2233 0.00589,8.9566 0.011818,17.91321 0.017886,26.86988 0.014323,1.9957 1.2659083,0.90992 5.5004053,0.9071 2.761721,-0.002 5.001613,2.23502 5.003412,4.9966 0.0016,2.4421 -0.958603,3.0226 0.459987,2.9996 l 30.735199,-0.0205 c 2.399629,-0.002 2.306919,0.11 2.304908,-3.00168 -0.0018,-2.7614 2.2352,-5.00129 4.996604,-5.0032 2.761615,-0.002 5.001506,2.2351 5.003411,4.99668 0.0018,2.8334 0.417689,2.99229 1.100702,2.99931 l 29.636684,-0.0198 c 1.968395,-0.001 1.264215,-0.4905 1.262486,-3.0009 -0.0018,-2.76151 2.23513,-5.0013 4.996601,-5.0032 2.76172,-0.002 5.00151,2.23509 5.00331,4.9966 0.001,1.80898 -0.42859,3.00031 0.4978,2.99971 l 30.83239,-0.0206 c 0.9549,-7e-4 0.67102,-1.16702 0.66982,-3.00062 -0.002,-2.76147 2.2352,-5.0002 4.9966,-5.002 2.76158,-0.002 5.00151,2.23383 5.00338,4.99541 0.001,2.12181 -0.39578,3.0003 0.92802,2.99942 l 29.85449,-0.0199 c 1.9668,-0.001 1.21909,-0.49111 1.2175,-3.0008 -0.002,-2.76148 2.2351,-5.0014 4.99671,-5.0032 2.76148,-0.002 5.0014,2.23502 5.0032,4.9966 0.002,2.38831 -0.48919,3.0003 1.25169,2.99911 l 30.1975,-0.0202 c 1.38522,0.0433 0.55252,-0.49492 0.55079,-3.00041 -0.002,-2.76151 2.2352,-5.0014 4.99671,-5.0032 2.76161,-0.002 5.00151,2.23498 5.00331,4.99671 0.002,2.81177 -0.35631,2.95599 1.10179,2.99917 10.319,-0.007 20.63799,-0.0137 30.95699,-0.0206 2.47791,-0.002 1.44311,-0.2666 1.44142,-3.00098 -0.002,-2.76151 2.23509,-5.0014 4.9966,-5.0033 4.15798,-0.003 5.4876,0.83199 5.49921,-1.13482 -0.006,-8.88319 -0.0119,-17.76638 -0.0178,-26.6495 -10e-4,-1.96677 -2.99131,-1.21747 -5.5009,-1.21578 -2.7614,0.002 -5.00129,-2.2352 -5.0032,-4.99671 -0.002,-2.76161 2.23509,-5.0015 4.99671,-5.0033 2.38809,-0.001 5.50019,0.48761 5.49899,-1.25328 l -0.019,-28.5309 c -10e-4,-1.96681 -2.9912,-1.21751 -5.50079,-1.21582 -2.76151,0.002 -5.00141,-2.2352 -5.00331,-4.99671 -0.002,-2.76158 2.23509,-5.0015 4.99671,-5.00337 2.3882,-0.001 5.5003,0.48768 5.4991,-1.25321 l -0.0191,-28.5308 c -0.001,-1.9668 -2.99109,-1.2175 -5.50082,-1.21581 -2.76148,0.002 -5.0013,-2.2352 -5.00321,-4.99671 -0.002,-2.76158 2.23513,-5.00147 4.99661,-5.00327 2.3883,-0.002 5.5003,0.48757 5.4992,-1.25331 l -0.018,-26.839617 c -0.0141,-1.966771 -1.34249,-0.909779 -5.5004,-0.907203 -2.76158,0.0018 -5.00162,-2.234883 -5.00341,-4.996498 -0.002,-2.73438 1.03261,-3.000692 -1.4453,-2.998999 z" vector-effect="non-scaling-stroke" id="path5" /></g>';
         const fixedWidth = percentageX *27 * 3.7795284176/12.90; // assuming that there is no white space in the jpg image, if there is white space then it has to be handled differently
-        //const scalingStr = 
         const svgDims = this.getDimensionGeneral(svgFile);
         const scalingFactor = fixedWidth / svgDims[0];
         const scalingFactorY = fixedWidth / svgDims[1]*percentageY;
 
         console.log('svgFile:', svgFile);
 
-        const final1 = svgFile.replaceAll(svgDims[0], '800');
-        const final2 = final1.replaceAll(svgDims[1], '535');
+        const final1 = svgFile.replaceAll(svgDims[2], '800');
+        const final2 = final1.replaceAll(svgDims[3], '535');
         const tansformIndex = this.findStartEndIndices(final2,'transform="');
-        //stroke="none"
-        //
+
         const finalS = final2.replaceAll('fill="#000000"', ' fill="none" ');
 
         const final3 = finalS.replaceAll('stroke="none"', ' stroke="#76C2DA" stroke-width="0.1" ');
-        /// original
         const transform = ' transform="translate(147.9611671,130.17244096) scale(-' + scalingFactor + ',-' + scalingFactorY + ') ';//-0.0215,-0.0215 those has to be dynamically
         var final5 = final3.replace(final3.substring(tansformIndex[0], tansformIndex[1]), transform);
         const mainGStart = final5.indexOf('<g');
         const mainGEnd = final5.indexOf('</g>')+5;
         const g = final5.substring(mainGStart, mainGEnd);
+        var final = final5;
         for(let i=0;i<4;i++){
             for(let j=0;j<6;j++){
                 if (j == 0 && i == 0 )
@@ -1540,25 +1228,19 @@ class Cam extends React.Component {
                 var yTransform = parseFloat(130.17244096)+ i * 116.5;
                 const g1 = g.replace('147.9611671', xTransform).replace('130.17244096', yTransform);
                 const insertionIndex = final5.indexOf('</g>') + 4;
-                var final = final5.slice(0, insertionIndex) + g1 + final5.slice(insertionIndex);
+                final = final5.slice(0, insertionIndex) + g1 + final5.slice(insertionIndex);
                 final5 = final;
             }
 
         }
 
-        console.log('G:',g);
-
         const insertionIndex = final.indexOf('</g>') + 4;
         var final5 = final.slice(0, insertionIndex) + ourFramePath + final.slice(insertionIndex);
-        console.log('Final: ', final5);
         var svgElement = document.getElementById("svgFile");
-        svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(final5));
+        svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(final5));// changed final5 to final and let's see
 
         svgElement.setAttribute('download', 'File.svg');
         return final5;
-    }
-    repeatPattern(svgFile){
-        return svgFile;
     }
 
     // On file select (from the pop up)
@@ -1585,53 +1267,8 @@ class Cam extends React.Component {
 
     };
 
-    // On file upload (click the upload button)
-    onFileUpload (){
 
-        // Create an object of formData
-        const formData = new FormData();
 
-        // Update the formData object
-        formData.append(
-            "myFile",
-            this.state.selectedFile,
-            this.state.selectedFile.name
-        );
-
-        // Details of the uploaded file
-        console.log(this.state.selectedFile);
-
-        // Request made to the backend api
-        // Send formData object
-        //axios.post("api/uploadfile", formData);
-    };
-    testExpress(){
-        const payload = 'I love you';
-
-        axios.post('http://localhost:8090/http://localhost:4000',{data:payload})
-            .then((response) => {
-                console.log(response);
-        })
-        .catch(err => {
-            console.error(err);
-        });
-        /*let book = {
-            BookId: 1,
-            Title: "coolBook",
-            Author: "Me"
-        }
-
-        fetch("http://localhost:8090/http://localhost:4000",
-            {
-                method: "post",
-                data: JSON.stringify(book)
-            }*/
-        /*fetch('http://localhost:8090/http://localhost:4000', options).then(response => response.json())
-            .then((response) => {
-                console.log(response.portal,response.location,response.knowledge);
-            }).then(() => {                
-            });*/
-    }
     render() {
         /*
         list of changes to be made to this code
@@ -1771,7 +1408,7 @@ class Cam extends React.Component {
                                     }} 
                                         placeholder={this.state.moldPlaceHolder} autoFocus name="content" id="content" ref={(input) => {
                                             this.nameInput = input; }} maxLength="23"
-                                        onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}  ></textarea>
+                                        onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}  ></textarea>
                                     </div>
                                 </div>
                                 <div style={{margin:'20px'}}>
@@ -1827,24 +1464,6 @@ class Cam extends React.Component {
                         </div>
                     </Row>
                 )}
-                <div className="panel panel-danger hideMe" style={{ marginBottom: 0 }}>
-                    <div className="panel-heading" style={{ padding: 2 }}>
-                        <table style={{ width: 100 + '%' }}>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <label>Workspace</label>
-                                    </td>
-                                    <td>
-                                        <ApplicationSnapshotToolbar loadButton saveButton stateKeys={['documents', 'operations', 'currentOperation', 'settings.toolFeedUnits']} saveName="Laserweb-Workspace.json" label="Workspace" className="well well-sm">
-                                            <Button bsSize="xsmall" bsStyle="warning" onClick={e => this.props.resetWorkspace(e)}>Reset <Icon name="trash" /></Button>
-                                        </ApplicationSnapshotToolbar>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
                 {this.state.step4 && (<div>
                     
                     Font:
@@ -1879,12 +1498,9 @@ class Cam extends React.Component {
                             </div>
                         </div>
 
-                        <div >
-                            
-                        </div>
+                        <div ></div>
                         <div>
                             <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
-                            <Button name="generateAll" className='hideMe'  disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
                             &nbsp;&nbsp;
                             
                             <div  >
@@ -1916,36 +1532,11 @@ class Cam extends React.Component {
                 <Alert bsStyle="success" className="hideMe" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
-                            <tr className="hideMe">
-                                <th >Progress</th>
-                                <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
-                                    <ButtonToolbar style={{ float: "right" }}>
-                                        <button  title="Generate G-Code from Operations below" 
-                                        className={"btn btn-xs btn-attention hideMe " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} 
-                                        disabled={!valid || this.props.gcoding.enable} 
-                                        onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />
-                                        &nbsp;Generate
-                                        </button>
-                                        <ButtonGroup>
-                                            <button  title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs hideMe" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
-                                            <button style={{ display: 'none' }} title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
-                                            <FileField style={{ display: 'none' }} onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
-                                                <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
-                                            </FileField>
-                                        </ButtonGroup>
-                                        <button title="Clear" style={{ display: 'none' }} className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
-                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}
-                                </td>
-                            </tr>
+                           
                             <tr>
                                 <th >Progress</th>
-                                <td className='hideMe'><span id="serverStatus">{this.state.statusMsg}</span></td>
-                                <td className='hideMe'><span id="machineStatus"></span></td>
-                                <td className='hideMe'><button className="btn btn-warning btn-l" onClick={this.testExpress} >Test ExpressJS</button></td>
                                 <td><input type="file" onChange={this.onFileChange} />
-                                    <button onClick={this.onFileUpload}>
-                                        Upload!
-                                    </button></td>
+                                    </td>
                                 <td><button className="btn btn-warning btn-l" onClick={this.convert} >Convert</button></td>
                                 {/*<td><span id='msgStatus'></span></td>*/}
                             </tr>
@@ -1957,29 +1548,7 @@ class Cam extends React.Component {
                 <div>
                     
                 </div>
-                <div className="Resizer horizontal hideMe" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
-                <div className="panel panel-info hideMe" style={{ marginBottom: 3 }}>
-                    <div className="panel-heading" style={{ padding: 2 }}>
-                        <table style={{ width: 100 + '%' }}>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <label>Documents {Info(<small>Tip:  Hold <kbd>Ctrl</kbd> to click multiple documents</small>)}</label>
-                                    </td>
-                                    <td style={{ display: "flex", justifyContent: "flex-end" }}>
-                                        <FileField style={{ position: 'relative', cursor: 'pointer' }} onChange={loadDocument} accept={DOCUMENT_FILETYPES}>
-                                            <button title="Add a DXF/SVG/PNG/BMP/JPG document to the document tree" className="btn btn-xs btn-primary">
-                                                <i className="fa fa-fw fa-folder-open" />Add Document</button>
-                                            {(this.props.panes.visible) ? <NoDocumentsError camBounds={bounds} settings={settings} documents={documents} operations={operations} /> : undefined}
-                                        </FileField>&nbsp;
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
+              
                 <Splitter style={{ flexShrink: 0,display:'block' }} split="horizontal" initialSize={100} resizerStyle={{ marginTop: 2, marginBottom: 2 }} splitterId="cam-documents">
                     <div style={{ height: "100%", display: "flex", flexDirection: "column", display:'none' }} >
                         <div style={{ overflowY: 'auto', flexGrow: 1 }}><Documents documents={documents} filter={this.state.filter} toggleExpanded={toggleDocumentExpanded} /></div>
@@ -2007,14 +1576,8 @@ class Cam extends React.Component {
                     <img src="" id="eeveelutions"/>
                     <canvas id="canvas" height="398" width="500" />
                     <canvas id="canvasMod"  />
-
                 </div>
-                <Operations
-                    style={{ flexGrow: 2, display: "flex", flexDirection: "column", display:"none" }}
-                /*genGCode = {this./*generateGcode*//*docuementAdded}*/
-                />
-                <Com id="com" title="Comms" icon="plug" />
-
+               
             </div>
 
             );
@@ -2028,23 +1591,14 @@ Cam = connect(
         documents: state.documents,
         operations: state.operations,
         currentOperation: state.currentOperation,
-        gcode: state.gcode.content,
-        gcoding: state.gcode.gcoding,
         dirty: state.gcode.dirty,
         panes: state.panes,
-        saveGcode: (e) => {
-            prompt('Save as', 'gcode.gcode', (file) => {
-                if (file !== null) sendAsFile(appendExt(file, '.gcode'), state.gcode.content)
-            }, !e.shiftKey)
-        },
-        viewGcode: () => openDataWindow(state.gcode.content),
+       
     }),
     dispatch => ({
         dispatch,
         toggleDocumentExpanded: d => dispatch(setDocumentAttrs({ expanded: !d.expanded }, d.id)),
-        clearGcode: () => {
-            dispatch(setGcode(""))
-        },
+       
         resetWorkspace: () => {
             confirm("Are you sure?", (data) => { if (data) dispatch(resetWorkspace()); })
         },
@@ -2092,22 +1646,14 @@ Cam = connect(
                             .catch(e => console.log('error:', e))
                     }
                     reader.readAsDataURL(file);
-                } else if (file.name.match(/\.(nc|gc|gcode)$/gi)) {
-                    let reader = new FileReader;
-                    reader.onload = () => dispatch(setGcode(reader.result));
-                    reader.readAsText(file);
-                }
+                } 
                 else {
                     reader.onload = () => dispatch(loadDocument(file, reader.result, modifiers));
                     reader.readAsDataURL(file);
                 }
             }
         },
-        loadGcode: e => {
-            let reader = new FileReader;
-            reader.onload = () => dispatch(setGcode(reader.result));
-            reader.readAsText(e.target.files[0]);
-        },
+
     }),
 )(Cam);
 

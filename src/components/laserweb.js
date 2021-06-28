@@ -21,32 +21,25 @@ import React from 'react'
 import { connect } from 'react-redux'
 
 // Main components
-import Sidebar from './sidebar'
 import Workspace from './workspace'
 
-// Inner components
-import Com from './com'
-//import Creator from './creator'
 
-import Jog from './jog'
+
 import Cam from './cam'
-import Quote from './quote'
-import Settings from './settings'
-import About from './about'
+
 
 import { AllowCapture } from './capture'
 import { DocumentCacheHolder } from './document-cache'
 
 import { keyboardUndoAction } from '../actions/laserweb';
 
-import { keyboardLogger, bindKeys, unbindKeys } from './keyboard';
+import { keyboardLogger } from './keyboard';
 
 import { fireMacroById } from '../actions/macros'
 
 import { GlobalStore } from '../index'
 
 import { VideoCapture } from '../lib/video-capture'
-import { fetchRelease } from '../lib/releases'
 
 import { DrawCommands } from '../draw-commands'
 
@@ -58,7 +51,6 @@ import 'vex-js/dist/css/vex-theme-default.css';
 
 import { version } from '../reducers/settings'
 
-import { setSettingsAttrs } from '../actions/settings'
 
 /**
  * LaserWeb main component (layout).
@@ -96,7 +88,7 @@ export const alert = (unsafeMessage) => {
 }
 
 const updateTitle=()=>{
-    document.title = `Laserweb ${version}`;
+    document.title = `Choco Grave Simple`;
 }
 
 class LaserWeb extends React.Component {
@@ -126,19 +118,8 @@ class LaserWeb extends React.Component {
 
     componentDidMount() {
         updateTitle();
-        if (this.glOk) {
+        if (this.glOk) 
             this.setupKeybindings();
-            //this.setupVideoCapture();
-        }
-        fetchRelease().then(function(data){
-            if (this.props.settings.__latestRelease) {
-                if (Math.abs(new Date(data.created_at).getTime() - new Date(this.props.settings.__latestRelease).getTime()))
-                {
-                    alert(`New release (<a href="${data.html_url}" target="__blank">${data.tag_name}</a>) available`);
-                }
-            }
-            this.props.dispatch(setSettingsAttrs({__latestRelease: data.created_at}))
-        }.bind(this))
     }
 
     setupKeybindings(){
@@ -170,30 +151,18 @@ class LaserWeb extends React.Component {
 
 
     render() {
-        // 2017-01-21 Pvdw - removed the following from Dock
-        // <Gcode id="gcode" title="G-Code" icon="file-code-o" />
-        // <Quote id="quote" title="Quote" icon="money" />
 
         if (!this.glOk) {
             return (
                 <h1>OpenGL won't start. This app can't run without it.</h1>
             );
         }
-        //<Creator id="creator" title="Creator" icon="pencil-square-o" /><Settings id="settings" title="Settings" icon="cogs" />                            
-        //<About id="about" title="About" icon="question" />
-
-
 
         return (
             <AllowCapture style={{ height: '100%' }}>
                 <DocumentCacheHolder style={{ width: '100%' }}  documents={this.props.documents}>
                     <div style={{ display: 'flex', flexDirection: 'row', height: '100%', backgroundColor:"#332C26" }}>
-                        <Sidebar ref="sidebar" style={{ flexGrow: 0, flexShrink: 0,display:'none' }}>
-                            <Com id="com" title="Comms" icon="plug" />
-                            <Jog id="jog"  title="Control" icon="arrows-alt" />
-                        </Sidebar>
                         <Cam id="cam" title="Files" icon="pencil-square-o" style={{ flexGrow: 0, flexShrink: 0, backgroundColor:"#443B34"}} />
-
                         <Workspace  style={{ flexGrow: 1, position: "relative" }} />
                     </div>
                 </DocumentCacheHolder>
