@@ -487,7 +487,7 @@ class Cam extends React.Component {
         const heightIndex = svgObject.indexOf('height="') + 7;
         const heightFin = svgObject.indexOf('"', heightIndex+1);
         const height = svgObject.slice(heightIndex + 1, heightFin);
-        return [parseFloat(width), parseFloat(height)];
+        return [parseFloat(width), parseFloat(height), width, height];
 
     }
     findStartEndIndices(string,substring){
@@ -1518,7 +1518,7 @@ class Cam extends React.Component {
 
         console.log('svgFile:', svgFile);
 
-        const final1 = svgFile.replaceAll(svgDims[0], '800');
+        const final1 = svgFile.replaceAll(svgDims[0], '800');// have to fix this but how
         const final2 = final1.replaceAll(svgDims[1], '535');
         const tansformIndex = this.findStartEndIndices(final2,'transform="');
         //stroke="none"
