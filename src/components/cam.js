@@ -1207,8 +1207,8 @@ class Cam extends React.Component {
 
         console.log('svgFile:', svgFile);
 
-        const final1 = svgFile.replaceAll(svgDims[2], '800');
-        const final2 = final1.replaceAll(svgDims[3], '535');
+        const final1 = svgFile.replaceAll(svgDims[0], '800');// have to fix this  bug but how
+        const final2 = final1.replaceAll(svgDims[1], '535');// the replace has to be done in a different way
         const tansformIndex = this.findStartEndIndices(final2,'transform="');
 
         const finalS = final2.replaceAll('fill="#000000"', ' fill="none" ');
