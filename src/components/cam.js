@@ -16,7 +16,7 @@
 import React from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text,Row,Col,Container,Grid } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { cloneDocumentSelected, colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsMoving, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
+import { cloneDocumentSelected,  colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsMoving, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
 import { generatingGcode, setGcode,saveModels } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
 import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
@@ -52,6 +52,7 @@ var socket, connectVia;
 var serverConnected = false;
 var machineConnected = false;
 const framePath = '<g stroke-linecap="round" fill-rule="evenodd" font-size="12px" stroke="#000" stroke-width="0.25mm" fill="none" style="fill:none;stroke:#000000;stroke-width:0.25mm" id="layer1" transform="matrix(3.7795173,0,0,3.80101,-36.012742,-254.21432)"><path d="m 233.83379,67.373184 c -2.53989,0.0018 -2.01422,0.247614 -2.01242,3.001398 0.002,2.761509 -2.23509,5.001401 -4.99667,5.003306 -2.76151,0.0018 -5.0014,-2.2352 -5.00331,-4.99678 -0.002,-2.438506 0.43819,-3.000199 -1.39322,-2.998999 l -29.58928,0.01979 c -1.57229,0.0011 -1.01899,0.713105 -1.01751,3.000798 0.002,2.76158 -2.23499,5.001401 -4.99661,5.003306 -2.76168,0.0018 -5.00157,-2.2352 -5.0033,-4.996709 -0.002,-2.569316 0.58282,-3.00041 -1.50619,-2.999105 l -29.08229,0.01951 c -2.01362,0.0014 -1.4133,0.467889 -1.4116,3.000904 0.002,2.761579 -2.2351,5.001507 -4.99661,5.003306 -2.76161,0.0018 -5.0015,-2.23513 -5.00341,-4.996709 -0.002,-2.664496 0.83831,-3.000516 -1.46477,-2.998894 l -29.06042,0.0193 c -2.04481,0.0014 -1.47641,0.452896 -1.47468,3.001081 0.002,2.761615 -2.23503,5.001507 -4.99671,5.003412 -2.76151,0.0018 -5.001402,-2.2352 -5.003201,-4.996815 -0.0018,-2.426476 0.550298,-3.000375 -1.258499,-2.99907 l -29.269619,0.01937 c -2.285682,0.0018 -1.473588,0.343923 -1.471789,3.00101 0.0018,2.761614 -2.235094,5.001506 -4.996709,5.003411 -2.76158,0.0018 -5.001471,-2.2352 -5.003376,-4.996815 -0.0018,-2.623678 0.825888,-3.00048 -1.382607,-2.998999 l -30.757812,0.0206 c -2.419703,0.0014 -1.361405,0.288889 -1.359676,3.000692 0.0019,2.761721 -2.235129,5.001613 -4.996603,5.003412 -4.260321,0.0028 -5.4871056,-0.635706 -5.4989942,1.399399 l 0.017568,26.354686 c 0.00113,1.74092 3.1126292,1.24742 5.5007232,1.2459 2.761579,-0.002 5.001507,2.23503 5.003376,4.99671 0.0018,2.76141 -2.235094,5.0014 -4.996568,5.00331 -2.509625,0.002 -5.5004051,-0.74369 -5.4992057,1.22319 l 0.019085,28.53069 c 0.00109,1.74092 3.1124877,1.24763 5.5006867,1.2459 2.761615,-0.002 5.001507,2.23509 5.003412,4.99671 0.0017,2.76151 -2.235094,5.00151 -4.996603,5.00341 -2.509591,0.002 -5.5005812,-0.74372 -5.4992054,1.22308 l 0.019015,28.53101 c 0.0012,1.74089 3.1124884,1.24739 5.5007934,1.24591 2.761509,-0.002 5.001401,2.23498 5.003306,4.9967 0.0018,2.76141 -2.235094,5.00141 -4.996497,5.0032 -2.509697,0.002 -5.5006174,-0.74362 -5.4992063,1.2233 0.00589,8.9566 0.011818,17.91321 0.017886,26.86988 0.014323,1.9957 1.2659083,0.90992 5.5004053,0.9071 2.761721,-0.002 5.001613,2.23502 5.003412,4.9966 0.0016,2.4421 -0.958603,3.0226 0.459987,2.9996 l 30.735199,-0.0205 c 2.399629,-0.002 2.306919,0.11 2.304908,-3.00168 -0.0018,-2.7614 2.2352,-5.00129 4.996604,-5.0032 2.761615,-0.002 5.001506,2.2351 5.003411,4.99668 0.0018,2.8334 0.417689,2.99229 1.100702,2.99931 l 29.636684,-0.0198 c 1.968395,-0.001 1.264215,-0.4905 1.262486,-3.0009 -0.0018,-2.76151 2.23513,-5.0013 4.996601,-5.0032 2.76172,-0.002 5.00151,2.23509 5.00331,4.9966 0.001,1.80898 -0.42859,3.00031 0.4978,2.99971 l 30.83239,-0.0206 c 0.9549,-7e-4 0.67102,-1.16702 0.66982,-3.00062 -0.002,-2.76147 2.2352,-5.0002 4.9966,-5.002 2.76158,-0.002 5.00151,2.23383 5.00338,4.99541 0.001,2.12181 -0.39578,3.0003 0.92802,2.99942 l 29.85449,-0.0199 c 1.9668,-0.001 1.21909,-0.49111 1.2175,-3.0008 -0.002,-2.76148 2.2351,-5.0014 4.99671,-5.0032 2.76148,-0.002 5.0014,2.23502 5.0032,4.9966 0.002,2.38831 -0.48919,3.0003 1.25169,2.99911 l 30.1975,-0.0202 c 1.38522,0.0433 0.55252,-0.49492 0.55079,-3.00041 -0.002,-2.76151 2.2352,-5.0014 4.99671,-5.0032 2.76161,-0.002 5.00151,2.23498 5.00331,4.99671 0.002,2.81177 -0.35631,2.95599 1.10179,2.99917 10.319,-0.007 20.63799,-0.0137 30.95699,-0.0206 2.47791,-0.002 1.44311,-0.2666 1.44142,-3.00098 -0.002,-2.76151 2.23509,-5.0014 4.9966,-5.0033 4.15798,-0.003 5.4876,0.83199 5.49921,-1.13482 -0.006,-8.88319 -0.0119,-17.76638 -0.0178,-26.6495 -10e-4,-1.96677 -2.99131,-1.21747 -5.5009,-1.21578 -2.7614,0.002 -5.00129,-2.2352 -5.0032,-4.99671 -0.002,-2.76161 2.23509,-5.0015 4.99671,-5.0033 2.38809,-0.001 5.50019,0.48761 5.49899,-1.25328 l -0.019,-28.5309 c -10e-4,-1.96681 -2.9912,-1.21751 -5.50079,-1.21582 -2.76151,0.002 -5.00141,-2.2352 -5.00331,-4.99671 -0.002,-2.76158 2.23509,-5.0015 4.99671,-5.00337 2.3882,-0.001 5.5003,0.48768 5.4991,-1.25321 l -0.0191,-28.5308 c -0.001,-1.9668 -2.99109,-1.2175 -5.50082,-1.21581 -2.76148,0.002 -5.0013,-2.2352 -5.00321,-4.99671 -0.002,-2.76158 2.23513,-5.00147 4.99661,-5.00327 2.3883,-0.002 5.5003,0.48757 5.4992,-1.25331 l -0.018,-26.839617 c -0.0141,-1.966771 -1.34249,-0.909779 -5.5004,-0.907203 -2.76158,0.0018 -5.00162,-2.234883 -5.00341,-4.996498 -0.002,-2.73438 1.03261,-3.000692 -1.4453,-2.998999 z" vector-effect="non-scaling-stroke" id="path5" /></g>';
+const operator = 3.7795284176;
 
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
 function NoDocumentsError(props) {
@@ -199,6 +200,9 @@ class Cam extends React.Component {
         //onFileChange
         this.onFileChange = this.onFileChange.bind(this);
         this.onFileUpload = this.onFileUpload.bind(this);
+        this.generateDate = this.generateDate.bind(this);
+        this.newProcess   = this.newProcess.bind(this);
+        this.combine = this.combine.bind(this);
 
     }
 
@@ -540,7 +544,6 @@ class Cam extends React.Component {
     calcMargins(svgOutput){
 
         let dims = this.getDimension(this.state.svgOutpout);
-        const operator = 3.7795284176;// the division of unit per mm
         let mmDims = dims.map(n => n / operator);
         let margins = [(42 - mmDims[0]) / 2, (41 - mmDims[1]) / 2];
         return margins;
@@ -570,7 +573,6 @@ class Cam extends React.Component {
         var that = this;
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
-        const operator = 3.7795284176;// the division of unit per mm
 
         console.log('this.state.font', font);
         var lines = text.split("\n");
@@ -587,7 +589,7 @@ class Cam extends React.Component {
 
             fontSize = that.state.fontSize;
             let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-            let finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
+            const finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
 
             let layoutOptions = {
                 "align": "center",
@@ -627,7 +629,7 @@ class Cam extends React.Component {
                 lines.forEach((line, i) => {
                     wordModel = new makerjs.models.Text(font, line, fontSize, true);
                     shiftY = shiftY + maxWHeight + 3;
-                    shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * 3.78));/// what is this equation?
+                    shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * operator));/// what is this equation?
 
                     let shiftingFactor = 0;
                     if (i > 0) {
@@ -853,14 +855,14 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[0].id));
         this.props.dispatch(transform2dSelectedDocuments(rotateArray));
     }
-    rotateClockwise(){
+    rotateClockwise(id){
         var rotateArray = [0.9986295347545738,
             0.05233595624294383,
             -0.05233595624294383,
             0.9986295347545738,
             4.684298907150151,
             -4.699918052283735];
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
+        this.props.dispatch(selectDocument(this.props.documents[id+1].id));
         this.props.dispatch(transform2dSelectedDocuments(rotateArray));
 
     }
@@ -1086,9 +1088,6 @@ class Cam extends React.Component {
         this.textWrapping(this.downloadFile,false);
     }
     downloadFile(){
-
-        const makerjs = require('makerjs');
-        const globalState = GlobalStore().getState();
         //scaling according to dims
         const scale = 26.4 / this.state.dims[0];//or 28 instead of 32 we will see
         var downloadMe = () => {
@@ -1393,14 +1392,14 @@ class Cam extends React.Component {
                                 cors: true, // allow cross-origin HTTP request
                                 credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
                             };
-                            fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/toAi.php', aIOptions).then(response => response.json())
+                            /*fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/toAi.php', aIOptions).then(response => response.json())
                                 .then((response) => {
                                     const aiFile = response;
                                     //we have to save this file and enable the user to download it
                                     console.log(response);
-                                })
+                                })*/
                             const repeatContent = that.repeatPattern(updatedContent);
-                            that.scale(scale * 3.7795284176);
+                            that.scale(scale * operator);
                         });
                 };
                 i.src = response.data;
@@ -1452,29 +1451,7 @@ class Cam extends React.Component {
         const dims = this.getDimensionAPI(text);*/
         var svgContent;
         /*if (imgData.data[0] == 255)
-        fetch('convertio/111111.svg')
-            .then(resp => resp.text())
-            .then(content => {
-                const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
-                const stdMargin = this.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                const extraMargin = [0, 0];
-                const image = content;
-                const dims = this.getDimensionAPI(content);
-                svgContent = content;
-                this.setState({ dims: dims }, () => {
-                    this.parseSVG(content, this, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0,()=>{
-                    });
-                });
-            })
-            .then((content) => {
-                const scale = 25 / this.state.dims[0];
-                console.log(svgContent); /// bunu de handle
-                const updatedContent = this.minimizeSvgFile(svgContent);
-                const repeatContent = this.repeatPattern(updatedContent);
-                this.scale(scale * 3.7795284176);
-                // change scale, repeat all gs add the framePath
- 
-            });*/
+        */
 
 
 
@@ -1483,54 +1460,188 @@ class Cam extends React.Component {
         {
 
       
-            fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
-            .then((response) => { 
-                const moldShifts = this.state.moldShifts;//[105,96];//[70, 65];             
-                const stdMargin = this.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                const extraMargin = [0, 0];
-                const image = response;
-                const dims = this.getDimensionAPI(response);
-                //now let's repeat it 
-
-                this.setState({ dims: dims }, () => {
-                    this.parseSVG(response, this, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0 );
-                });
-                svgContent = response;
-
-                this.setState({ fileLoaded: true, generatedFile: image,hideme:'hideMe' });
-            }).then(() => {
-                const scale = 25 / this.state.dims[0];
-                console.log(svgContent); /// bunu de handle
-                const updatedContent = this.minimizeSvgFile(svgContent, canvas.width / croppedDimensions[4], croppedDimensions[5]/canvas.height);
-                const repeatContent = this.repeatPattern(updatedContent);
-                this.scale(scale * 3.7795284176);                
-            });
+            
         }*/
     }
-    
+    newProcess(){
+        const modifiers = {};
+        const release = captureConsole();
+        const parser = new Parser({});
+        let file = {
+            name: "template.svg",
+            type: "image/svg+xml"
+        };
+
+        var stdMarginY = 0;
+        var stdMarginY = 1;
+        const ourDate = this.generateDate('30/6/2021');
+        const that = this;
+        fetch('hat.svg')
+            .then(resp => resp.text())
+            .then(content => {
+                const dims = that.getDimensionAPI(content);
+                parser.parse(content).then((tags)=>{
+                    let captures = release(true);
+                    let warns = captures.filter(i => i.method == 'warn')
+                    let errors = captures.filter(i => i.method == 'errors')
+                    if (warns.length)
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                    if (errors.length)
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                    imageTagPromise(tags).then((tags) => {
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                    }).then(() => {
+                        that.props.dispatch(selectDocument(that.props.documents[3].id));
+                        that.props.dispatch(selectDocuments(false));
+                        that.props.dispatch(selectDocument(that.props.documents[0].id));
+                        that.setState({ dims: dims }, () => {
+                            that.scale(0.35);
+                        });
+                })
+            });
+        });
+        fetch('readSampleProcessed.svg')
+            .then(resp => resp.text())
+            .then(content => {
+                parser.parse(content).then((tags) => {
+                    let captures = release(true);
+                    let warns = captures.filter(i => i.method == 'warn')
+                    let errors = captures.filter(i => i.method == 'errors')
+                    if (warns.length)
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                    if (errors.length)
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                    imageTagPromise(tags).then((tags) => {
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                    }).then(() => {
+                        that.props.dispatch(selectDocument(that.props.documents[3].id));
+                        that.props.dispatch(selectDocuments(false));
+                        that.props.dispatch(selectDocument(that.props.documents[0].id));
+                    })
+                });
+            });    
+    }
+    combine() {
+        var shapeId;
+        const modifiers = {};
+        const release = captureConsole();
+        const parser = new Parser({});
+        let file = {
+            name: "template.svg",
+            type: "image/svg+xml"
+        };
+
+        var stdMarginY = 0;
+        var stdMarginY = 1;
+        const that = this;
+        fetch('bride.svg')
+            .then(resp => resp.text())
+            .then(content => {
+                parser.parse(content).then((tags) => {
+                    shapeId = that.props.documents.length;
+                    let captures = release(true);
+                    let warns = captures.filter(i => i.method == 'warn')
+                    let errors = captures.filter(i => i.method == 'errors')
+                    if (warns.length)
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                    if (errors.length)
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                    imageTagPromise(tags).then((tags) => {
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                    }).then(() => {
+                        
+                    })
+                });
+            });
+        fetch('sampleextrea.svg')
+            .then(resp => resp.text())
+            .then(content => {
+                parser.parse(content).then((tags) => {
+                    let captures = release(true);
+                    let warns = captures.filter(i => i.method == 'warn')
+                    let errors = captures.filter(i => i.method == 'errors')
+                    if (warns.length)
+                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
+                    if (errors.length)
+                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
+                    imageTagPromise(tags).then((tags) => {
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                    }).then(() => {
+                        that.props.dispatch(selectDocuments(false));
+                        that.props.dispatch(selectDocument(that.props.documents[0].id));
+                        that.scale(-1);
+                    })
+                });
+            });
+            // get the number of documents dynamically
+
+    }
+    generateDate(ourdate){
+        // we define the font and the font size so that it won't take more than the limit
+        const computeLayout = require('opentype-layout');
+        const font = this.state.font;
+        const makerjs = require('makerjs');
+        var layout;
+        var svgDate;
+        var svgDateDims; // dimensions
+        ourdate = '30/6/2021';
+        var that = this;
+        opentype.load(font,function (err, font){
+            const lineHeight = 1.3 * font.unitsPerEm;
+            var fontSize = that.state.fontSize;// depending on the max width that will be set
+            let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
+            const finalWidth = 110;
+            let layoutOptions = {
+                "align": "center",
+                lineHeight: lineHeight,
+                width: finalWidth / scale,
+                mode: 'nowrap'
+            };
+            try {
+                var models = [];
+                layout = computeLayout(font, ourdate, layoutOptions);
+                layout.glyphs.forEach((glyph, i)=>{
+                    var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                    character.origin = makerjs.point.scale(glyph.position, scale);
+                    makerjs.model.addModel(models, character, i); // we will check the mirror thing later
+
+                });
+                svgDate = makerjs.exporter.toSVG(models);
+                svgDateDims = that.getDimension(svgDate).map(n => n / operator);
+                that.props.dispatch(saveModels(models)); // should we save the models now or later?
+                // how to add this svg file to the workspace
+
+            }
+            catch(ex){
+                console.log('Exception',ex);
+            }
+
+            return [models,svgDate,svgDateDims];
+        })
+    }
     minimizeSvgFile(svgFile,percentageX,percentageY){
         const ourFramePath = '<g stroke-linecap="round" fill-rule="evenodd" font-size="12px" stroke="#000" stroke-width="0.25mm" fill="none" style="fill:none;stroke:#000000;stroke-width:0.25mm" id="layer1" transform="matrix(2.8321,0,0,2.8321,2,-161)"><path d="m 233.83379,67.373184 c -2.53989,0.0018 -2.01422,0.247614 -2.01242,3.001398 0.002,2.761509 -2.23509,5.001401 -4.99667,5.003306 -2.76151,0.0018 -5.0014,-2.2352 -5.00331,-4.99678 -0.002,-2.438506 0.43819,-3.000199 -1.39322,-2.998999 l -29.58928,0.01979 c -1.57229,0.0011 -1.01899,0.713105 -1.01751,3.000798 0.002,2.76158 -2.23499,5.001401 -4.99661,5.003306 -2.76168,0.0018 -5.00157,-2.2352 -5.0033,-4.996709 -0.002,-2.569316 0.58282,-3.00041 -1.50619,-2.999105 l -29.08229,0.01951 c -2.01362,0.0014 -1.4133,0.467889 -1.4116,3.000904 0.002,2.761579 -2.2351,5.001507 -4.99661,5.003306 -2.76161,0.0018 -5.0015,-2.23513 -5.00341,-4.996709 -0.002,-2.664496 0.83831,-3.000516 -1.46477,-2.998894 l -29.06042,0.0193 c -2.04481,0.0014 -1.47641,0.452896 -1.47468,3.001081 0.002,2.761615 -2.23503,5.001507 -4.99671,5.003412 -2.76151,0.0018 -5.001402,-2.2352 -5.003201,-4.996815 -0.0018,-2.426476 0.550298,-3.000375 -1.258499,-2.99907 l -29.269619,0.01937 c -2.285682,0.0018 -1.473588,0.343923 -1.471789,3.00101 0.0018,2.761614 -2.235094,5.001506 -4.996709,5.003411 -2.76158,0.0018 -5.001471,-2.2352 -5.003376,-4.996815 -0.0018,-2.623678 0.825888,-3.00048 -1.382607,-2.998999 l -30.757812,0.0206 c -2.419703,0.0014 -1.361405,0.288889 -1.359676,3.000692 0.0019,2.761721 -2.235129,5.001613 -4.996603,5.003412 -4.260321,0.0028 -5.4871056,-0.635706 -5.4989942,1.399399 l 0.017568,26.354686 c 0.00113,1.74092 3.1126292,1.24742 5.5007232,1.2459 2.761579,-0.002 5.001507,2.23503 5.003376,4.99671 0.0018,2.76141 -2.235094,5.0014 -4.996568,5.00331 -2.509625,0.002 -5.5004051,-0.74369 -5.4992057,1.22319 l 0.019085,28.53069 c 0.00109,1.74092 3.1124877,1.24763 5.5006867,1.2459 2.761615,-0.002 5.001507,2.23509 5.003412,4.99671 0.0017,2.76151 -2.235094,5.00151 -4.996603,5.00341 -2.509591,0.002 -5.5005812,-0.74372 -5.4992054,1.22308 l 0.019015,28.53101 c 0.0012,1.74089 3.1124884,1.24739 5.5007934,1.24591 2.761509,-0.002 5.001401,2.23498 5.003306,4.9967 0.0018,2.76141 -2.235094,5.00141 -4.996497,5.0032 -2.509697,0.002 -5.5006174,-0.74362 -5.4992063,1.2233 0.00589,8.9566 0.011818,17.91321 0.017886,26.86988 0.014323,1.9957 1.2659083,0.90992 5.5004053,0.9071 2.761721,-0.002 5.001613,2.23502 5.003412,4.9966 0.0016,2.4421 -0.958603,3.0226 0.459987,2.9996 l 30.735199,-0.0205 c 2.399629,-0.002 2.306919,0.11 2.304908,-3.00168 -0.0018,-2.7614 2.2352,-5.00129 4.996604,-5.0032 2.761615,-0.002 5.001506,2.2351 5.003411,4.99668 0.0018,2.8334 0.417689,2.99229 1.100702,2.99931 l 29.636684,-0.0198 c 1.968395,-0.001 1.264215,-0.4905 1.262486,-3.0009 -0.0018,-2.76151 2.23513,-5.0013 4.996601,-5.0032 2.76172,-0.002 5.00151,2.23509 5.00331,4.9966 0.001,1.80898 -0.42859,3.00031 0.4978,2.99971 l 30.83239,-0.0206 c 0.9549,-7e-4 0.67102,-1.16702 0.66982,-3.00062 -0.002,-2.76147 2.2352,-5.0002 4.9966,-5.002 2.76158,-0.002 5.00151,2.23383 5.00338,4.99541 0.001,2.12181 -0.39578,3.0003 0.92802,2.99942 l 29.85449,-0.0199 c 1.9668,-0.001 1.21909,-0.49111 1.2175,-3.0008 -0.002,-2.76148 2.2351,-5.0014 4.99671,-5.0032 2.76148,-0.002 5.0014,2.23502 5.0032,4.9966 0.002,2.38831 -0.48919,3.0003 1.25169,2.99911 l 30.1975,-0.0202 c 1.38522,0.0433 0.55252,-0.49492 0.55079,-3.00041 -0.002,-2.76151 2.2352,-5.0014 4.99671,-5.0032 2.76161,-0.002 5.00151,2.23498 5.00331,4.99671 0.002,2.81177 -0.35631,2.95599 1.10179,2.99917 10.319,-0.007 20.63799,-0.0137 30.95699,-0.0206 2.47791,-0.002 1.44311,-0.2666 1.44142,-3.00098 -0.002,-2.76151 2.23509,-5.0014 4.9966,-5.0033 4.15798,-0.003 5.4876,0.83199 5.49921,-1.13482 -0.006,-8.88319 -0.0119,-17.76638 -0.0178,-26.6495 -10e-4,-1.96677 -2.99131,-1.21747 -5.5009,-1.21578 -2.7614,0.002 -5.00129,-2.2352 -5.0032,-4.99671 -0.002,-2.76161 2.23509,-5.0015 4.99671,-5.0033 2.38809,-0.001 5.50019,0.48761 5.49899,-1.25328 l -0.019,-28.5309 c -10e-4,-1.96681 -2.9912,-1.21751 -5.50079,-1.21582 -2.76151,0.002 -5.00141,-2.2352 -5.00331,-4.99671 -0.002,-2.76158 2.23509,-5.0015 4.99671,-5.00337 2.3882,-0.001 5.5003,0.48768 5.4991,-1.25321 l -0.0191,-28.5308 c -0.001,-1.9668 -2.99109,-1.2175 -5.50082,-1.21581 -2.76148,0.002 -5.0013,-2.2352 -5.00321,-4.99671 -0.002,-2.76158 2.23513,-5.00147 4.99661,-5.00327 2.3883,-0.002 5.5003,0.48757 5.4992,-1.25331 l -0.018,-26.839617 c -0.0141,-1.966771 -1.34249,-0.909779 -5.5004,-0.907203 -2.76158,0.0018 -5.00162,-2.234883 -5.00341,-4.996498 -0.002,-2.73438 1.03261,-3.000692 -1.4453,-2.998999 z" vector-effect="non-scaling-stroke" id="path5" /></g>';
-        const fixedWidth = percentageX *27 * 3.7795284176/12.90; // assuming that there is no white space in the jpg image, if there is white space then it has to be handled differently
+        const fixedWidth = percentageX *27 * operator/12.90; // assuming that there is no white space in the jpg image, if there is white space then it has to be handled differently
         //const scalingStr = 
         const svgDims = this.getDimensionGeneral(svgFile);
         const scalingFactor = fixedWidth / svgDims[0];
         const scalingFactorY = fixedWidth / svgDims[1]*percentageY;
 
         console.log('svgFile:', svgFile);
+        const viewboxIndex = this.findStartEndIndices(svgFile, 'viewBox="');
 
-        const final1 = svgFile.replaceAll(svgDims[0], '800');// have to fix this but how
-        const final2 = final1.replaceAll(svgDims[1], '535');
+        const final2 = svgFile.replaceAll('fill="#000000"', ' fill="none" ').replaceAll('width="' + svgDims[2] + '"', 'width="800.000000pt"')
+            .replaceAll('height="' + svgDims[3] + '"', 'height="535.000000pt"').replaceAll(svgFile.substring(viewboxIndex[0], viewboxIndex[1]+1),'viewBox="0 0 800.000000 500.000000"');// have to fix this but how
         const tansformIndex = this.findStartEndIndices(final2,'transform="');
-        //stroke="none"
-        //
-        const finalS = final2.replaceAll('fill="#000000"', ' fill="none" ');
-
-        const final3 = finalS.replaceAll('stroke="none"', ' stroke="#76C2DA" stroke-width="0.1" ');
+        const final3 = final2.replaceAll('stroke="none"', ' stroke="#76C2DA" stroke-width="0.1" ');
         /// original
         const transform = ' transform="translate(147.9611671,130.17244096) scale(-' + scalingFactor + ',-' + scalingFactorY + ') ';//-0.0215,-0.0215 those has to be dynamically
         var final5 = final3.replace(final3.substring(tansformIndex[0], tansformIndex[1]), transform);
         const mainGStart = final5.indexOf('<g');
-        const mainGEnd = final5.indexOf('</g>')+5;
+        // I can add date to here can I ? yes of course
+        const ourDate = '30/6/2021';
+        const date = this.generateDate(ourDate);
+        const mainGEnd = final5.indexOf('</g>') + 5;
         const g = final5.substring(mainGStart, mainGEnd);
         for(let i=0;i<4;i++){
             for(let j=0;j<6;j++){
@@ -1545,8 +1656,6 @@ class Cam extends React.Component {
             }
 
         }
-
-        console.log('G:',g);
 
         const insertionIndex = final.indexOf('</g>') + 4;
         var final5 = final.slice(0, insertionIndex) + ourFramePath + final.slice(insertionIndex);
@@ -1605,32 +1714,63 @@ class Cam extends React.Component {
         // Send formData object
         //axios.post("api/uploadfile", formData);
     };
-    testExpress(){
-        const payload = 'I love you';
 
-        axios.post('http://localhost:8090/http://localhost:4000',{data:payload})
-            .then((response) => {
-                console.log(response);
-        })
-        .catch(err => {
-            console.error(err);
-        });
-        /*let book = {
-            BookId: 1,
-            Title: "coolBook",
-            Author: "Me"
+    detectX(){
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        const img = document.getElementById("testXPos");//eeveelutions  //eeveelutions
+        ctx.drawImage(img, 0, 0);
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var locations = []; //
+        for (var i = 0; i < imgData.data.length; i += 4) {
+            if (imgData.data[i] > 220 && imgData.data[i+1]<230) {
+                locations.push(i/4);
+                imgData.data[i] = 255;
+                imgData.data[i + 1] = 255;
+                imgData.data[i + 2] = 255;
+                imgData.data[i + 3] = 255;
+            }
         }
+        console.log('the locations are ',locations);
+        ctx.putImageData(imgData, 0, 0);
 
-        fetch("http://localhost:8090/http://localhost:4000",
+        /*canvas.width = 225;
+        canvas.height = 248;
+        img.crossOrigin = "anonymous";*/
+
+        /*ctx.drawImage(canvas,
+            croppedDimensions[0], croppedDimensions[1], canvas.width, canvas.height,
+            0, 0, canvas.width, canvas.height,);*/
+        //const imgData = ctx.getImageData(croppedDimensions[0], croppedDimensions[1], croppedDimensions[2], croppedDimensions[3]);// canvas width and height???
+
+        /*var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        for (var i = 0; i < imgData.data.length; i += 4) {
+            if (imgData.data[i] > 200 && imgData.data[i + 1] < 80 && imgData.data[i + 2] < 80)
             {
-                method: "post",
-                data: JSON.stringify(book)
-            }*/
-        /*fetch('http://localhost:8090/http://localhost:4000', options).then(response => response.json())
-            .then((response) => {
-                console.log(response.portal,response.location,response.knowledge);
-            }).then(() => {                
-            });*/
+                console.log(i);// we need to define position from this and make this white
+                imgData.data[i] = 255;
+                imgData.data[i + 1] = 255;
+                imgData.data[i + 2] = 255;
+                imgData.data[i + 3] = 255;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        var canvasMod2 = document.getElementById('canvasMod2');
+        var inMemCtx = canvasMod.getContext('2d');
+        canvasMod2.width = img.width;
+        canvasMod2.height = img.height;
+
+        inMemCtx.drawImage(img,
+            0, 0, img.width, img.height,
+            0, 0, img.width, img.height);
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(canvasMod2, 0, 0);*/
+
+    }
+    testExpress(){
     }
     render() {
         /*
@@ -1947,6 +2087,11 @@ class Cam extends React.Component {
                                         Upload!
                                     </button></td>
                                 <td><button className="btn btn-warning btn-l" onClick={this.convert} >Convert</button></td>
+                                <td><button className="btn btn-warning btn-l" onClick={this.generateDate} >Gen Date</button></td>
+                                <td><button className="btn btn-warning btn-l" onClick={this.newProcess} >New Process</button></td>
+                                <td><button className="btn btn-warning btn-l" onClick={this.detectX} >Detect X</button></td>
+                                <td><button className="btn btn-warning btn-l" onClick={this.combine} >Combine</button></td>
+
                                 {/*<td><span id='msgStatus'></span></td>*/}
                             </tr>
                             <tr><td><a href={this.state.svgFile} id="svgFile">File</a></td></tr>
@@ -2005,8 +2150,11 @@ class Cam extends React.Component {
                 <div className="">
                     <div className={this.state.hideme} dangerouslySetInnerHTML={{ __html: this.state.generatedFile }} />
                     <img src="" id="eeveelutions"/>
+                    <img src="Sample4X.jpg" className="" id="testXPos" />
+
                     <canvas id="canvas" height="398" width="500" />
                     <canvas id="canvasMod"  />
+                    <canvas id="canvasMod2" />
 
                 </div>
                 <Operations
