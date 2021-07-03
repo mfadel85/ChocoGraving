@@ -203,6 +203,7 @@ class Cam extends React.Component {
         this.generateDate = this.generateDate.bind(this);
         this.newProcess   = this.newProcess.bind(this);
         this.combine = this.combine.bind(this);
+        this.flip = this.flip.bind(this);
 
     }
 
@@ -865,6 +866,35 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[id+1].id));
         this.props.dispatch(transform2dSelectedDocuments(rotateArray));
 
+    }
+    flip(){
+        const s = -1;
+        const dim = this.state.dims;
+        if ((dim[0] * s > this.state.activeTemplate.maxWidth || dim[1] * s > this.state.activeTemplate.maxHeight) && s > 1) {
+            //alert('You reached the maximum size');
+            return;
+        }
+
+        let scalingCount = this.state.scalingCount;
+
+        this.setState({ scalingCount: scalingCount });
+        let x = this.state.moldShifts[0] + (44 - this.state.dims[0]) / 2;
+        let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2;
+        let cx = (2 * x + this.state.dims[0]) / 2;
+        let cy = (2 * y + this.state.dims[1]) / 2;
+        let changes = this.state.changesScaling;
+        changes[0] *= s;
+        changes[4] += cx - s * cx;
+        if (this.props.documents.length > 0) {
+            this.setState({ changesScaling: changes, dims: [dim[0] * s, dim[1] * s] });
+            let shiftingChanges = this.state.changesXY;
+            //shiftingChanges[4] += changes[4];
+            //shiftingChanges[5] += changes[5];
+
+            this.setState({ changesXY: shiftingChanges });
+            this.props.dispatch(selectDocument(this.props.documents[0].id));
+            this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, 1, cx - s * cx, cy]));
+        }
     }
     scale(s){
         const dim = this.state.dims;
@@ -1537,6 +1567,8 @@ class Cam extends React.Component {
         fetch('bride.svg')
             .then(resp => resp.text())
             .then(content => {
+                const dims = that.getDimensionAPI(content);
+                that.setState({dims:dims});
                 parser.parse(content).then((tags) => {
                     shapeId = that.props.documents.length;
                     let captures = release(true);
@@ -1569,7 +1601,7 @@ class Cam extends React.Component {
                     }).then(() => {
                         that.props.dispatch(selectDocuments(false));
                         that.props.dispatch(selectDocument(that.props.documents[0].id));
-                        that.scale(-1);
+                        that.flip(-1);
                     })
                 });
             });
