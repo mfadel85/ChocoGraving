@@ -23,7 +23,7 @@ import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth
 import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
-import { getG, getGPosition, findStartEndIndices, getDimensionAPI, getPosition, validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
+import { getG, getGPosition, findStartEndIndices, getDimensionAPI,removeBlanks, getPosition, validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
 import { runJob} from './com.js';
@@ -1099,78 +1099,7 @@ class Cam extends React.Component {
     setPcsCount(count){
         this.setState({pcsCount:count});
     }
-    removeBlanks(canvas,imgWidth, imgHeight) {
-        const context = canvas.getContext("2d");
 
-        var imageData = context.getImageData(0, 0, imgWidth, imgHeight),
-        data = imageData.data,
-        getRBG = function (x, y) {
-            var offset = imgWidth * y + x;
-            return {
-                red: data[offset * 4],
-                green: data[offset * 4 + 1],
-                blue: data[offset * 4 + 2],
-                opacity: data[offset * 4 + 3]
-            };
-        },
-        isWhite = function (rgb) {
-            // many images contain noise, as the white is not a pure #fff white
-            return rgb.red > 210 && rgb.green > 210 && rgb.blue > 210;
-        },
-        scanY = function (fromTop) {
-            var offset = fromTop ? 1 : -1;
-
-            // loop through each row
-            for (var y = fromTop ? 0 : imgHeight - 1; fromTop ? (y < imgHeight) : (y > -1); y += offset) {
-
-                // loop through each column
-                for (var x = 0; x < imgWidth; x++) {
-                    var rgb = getRBG(x, y);
-                    if (!isWhite(rgb)) {
-                        return y;
-                    }
-                }
-            }
-            return null; // all image is white
-        },
-        scanX = function (fromLeft) {
-            var offset = fromLeft ? 1 : -1;
-
-            // loop through each column
-            for (var x = fromLeft ? 0 : imgWidth - 1; fromLeft ? (x < imgWidth) : (x > -1); x += offset) {
-
-                // loop through each row
-                for (var y = 0; y < imgHeight; y++) {
-                    var rgb = getRBG(x, y);
-                    if (!isWhite(rgb)) {
-                        return x;
-                    }
-                }
-            }
-            return null; // all image is white
-        };
-        var inMemCanvas = document.createElement('canvas');
-        var inMemCtx = inMemCanvas.getContext('2d');
-        var cropTop = scanY(true),
-            cropBottom = scanY(false),
-            cropLeft = scanX(true),
-            cropRight = scanX(false),
-            cropWidth = cropRight - cropLeft,
-            cropHeight = cropBottom - cropTop;
-
-        //var $croppedCanvas = $("<canvas>").attr({ width: cropWidth, height: cropHeight });
-        inMemCanvas.width = cropWidth;
-        inMemCanvas.height = cropHeight;
-        inMemCtx.drawImage(canvas,
-            cropLeft, cropTop, cropWidth, cropHeight,
-            0, 0, cropWidth, cropHeight);
-        canvas.width = cropWidth;
-        canvas.height = cropHeight;
-
-        // finally crop the guy
-        context.drawImage(inMemCanvas, 0, 0);
-        return [cropLeft, cropTop, cropRight, cropBottom,cropWidth,cropHeight];
-    };
 
     convert(){
         const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
@@ -1225,7 +1154,7 @@ class Cam extends React.Component {
                     canvas.height = img.height;
 
                     ctx.drawImage(canvasMod, 0, 0);
-                    const croppedDimensions = that.removeBlanks(canvas, canvas.width, canvas.height);
+                    const croppedDimensions = removeBlanks(canvas, canvas.width, canvas.height);
 
                     imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
                     var pngImage = canvas.toDataURL("image/png");
