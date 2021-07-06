@@ -55,3 +55,40 @@ export function getDimensionGeneral(svgObject){
     const height = svgObject.slice(heightIndex + 1, heightFin);
     return [parseFloat(width), parseFloat(height), width, height];
 }
+
+export function getDimensionStr(svgObject) {
+    let widthStart = getPosition(svgObject, '"', 1);
+    let widthFin = getPosition(svgObject, '"', 2);
+    let width = svgObject.slice(widthStart + 1, widthFin)
+    let heightStart = getPosition(svgObject, '"', 3);
+    let heightEnd = getPosition(svgObject, '"', 4);
+    let height = svgObject.slice(heightStart + 1, heightEnd)
+    console.log('width : ', width, 'height:', height);
+    return [width, height];
+}
+
+export function calcMargins(svgOutput) {
+
+    let dims = getDimension(this.state.svgOutpout);
+    let mmDims = dims.map(n => n / operator);
+    let margins = [(42 - mmDims[0]) / 2, (41 - mmDims[1]) / 2];
+    return margins;
+}
+
+export function validateLayout(layout, text, maxLines) { //// add another condition which is if the number of lines is bigger than the number of words
+    return layout.lines.length > maxLines ? false : true;
+}
+
+export function isWrappedWord(layout, text) {
+    let result = true;
+    var words = text.split(" ");
+    words.forEach((word) => {
+        layout.lines.forEach((line, j) => {
+            console.log('end', layout.lines[j].end, 'start', layout.lines[j].start, 'word length:', word.length);
+            if (layout.lines[j].end - layout.lines[j].start < word.length) {
+                result = false;
+            }
+        })
+    })
+    return true;
+}

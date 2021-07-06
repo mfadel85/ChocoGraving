@@ -23,7 +23,7 @@ import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth
 import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
-import { getG, getGPosition, findStartEndIndices, getDimensionAPI, getPosition, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
+import { getG, getGPosition, findStartEndIndices, getDimensionAPI, getPosition, validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
 import { runJob} from './com.js';
@@ -188,7 +188,6 @@ class Cam extends React.Component {
         this.handleFontChange = this.handleFontChange.bind(this);
         this.downloadFile = this.downloadFile.bind(this);
         this.automatedProcess = this.automatedProcess.bind(this);
-        this.handleOutsideLines = this.handleOutsideLines.bind(this);        
         this.convert = this.convert.bind(this);
         //onFileChange
         this.onFileChange = this.onFileChange.bind(this);
@@ -366,7 +365,7 @@ class Cam extends React.Component {
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
         // check if machine is connected first
-        if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
+        if (!playing && !paused ) {
             let cmd = this.props.gcode;
             console.log('runJob(' + cmd.length + ')');
             runJob(cmd);
@@ -377,24 +376,6 @@ class Cam extends React.Component {
         }
     }
    
-    isWrappedWord(layout, text) {
-        let result = true;
-        var words = text.split(" ");
-        words.forEach((word) => {
-            layout.lines.forEach((line, j) => {
-                console.log('end', layout.lines[j].end, 'start', layout.lines[j].start, 'word length:', word.length);
-                if (layout.lines[j].end - layout.lines[j].start < word.length) {
-                    result = false;
-                }
-            })
-        })
-        return true;
-    }
-    /// to bet tested this I guess there are some conditions to be solved
-
-    validateLayout(layout, text, maxLines) { //// add another condition which is if the number of lines is bigger than the number of words
-        return layout.lines.length > maxLines ? false:true;        
-    }
     init() {
         console.log('clean everything before you start again: delete documents,clean gcode');
         if (this.state.templateDocID != '')
@@ -428,17 +409,8 @@ class Cam extends React.Component {
         this.setState({ fontSize: fontSize + amount });
     }
 
-
-
-    
-
-
-
     async generateAll(){ 
-        /*if($("#machineStatus").text() != "Machine is connected!!"){
-            alert('Machine is not connected, please ask for help, from the administrator!!!');
-            return;
-        }*/
+
         this.props.documents.forEach((element,index) => {
             if(index >this.state.activeTemplate.filePcsCount){
                 this.props.dispatch(selectDocument(this.props.documents[index].id));
@@ -448,7 +420,7 @@ class Cam extends React.Component {
         /// remove all documents
         this.setState({ textEnabled:false});
         console.log('ttt',this.state);
-        let margins = this.calcMargins(this.state.svgOutpout);
+        let margins = calcMargins(this.state.svgOutpout);
         console.log('calc margins', margins);
         let that = this;
         let runJob = function () {
@@ -464,17 +436,6 @@ class Cam extends React.Component {
                 await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file' + index + '.svg', i, runJob);
         }
         await this.props.dispatch(selectDocument(this.props.documents[0].id));
-    }
-    calcMargins(svgOutput){
-
-        let dims = getDimension(this.state.svgOutpout);
-        let mmDims = dims.map(n => n / operator);
-        let margins = [(42 - mmDims[0]) / 2, (41 - mmDims[1]) / 2];
-        return margins;
-    }
-
-    updateShifts(){
-        console.log('test');
     }
 
     textWrapping(downloadMe,final) {
@@ -573,7 +534,7 @@ class Cam extends React.Component {
                 catch (ex) {
                     console.log(ex);
                 }
-                let result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
+                let result = validateLayout(layout, text, that.state.activeTemplate.maxLines);
                 while (!result) {
                     that.setState({
                         activeTemplate: activeTemplate
@@ -601,7 +562,7 @@ class Cam extends React.Component {
                         activeTemplate.shiftY -= 2;
                     activeTemplate.shiftX -= 3;
                     console.log('new layout is ', layout);
-                    result = that.validateLayout(layout, text, that.state.activeTemplate.maxLines);
+                    result = validateLayout(layout, text, that.state.activeTemplate.maxLines);
                 }
 
                 that.setState({ layout: layout })
@@ -725,13 +686,6 @@ class Cam extends React.Component {
                 console.log(Exception);
             }
         })
-    }
-    handleOutsideLines(svgFile){
-        console.log(svgFile);
-    }
-    deleteDocuments(){// to delete all documents except the first one
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
-
     }
 
     moveUp(){
@@ -1210,16 +1164,11 @@ class Cam extends React.Component {
         inMemCtx.drawImage(canvas,
             cropLeft, cropTop, cropWidth, cropHeight,
             0, 0, cropWidth, cropHeight);
-        //inMemCtx.drawImage(canvas, 0, 0);
         canvas.width = cropWidth;
         canvas.height = cropHeight;
 
-        //canvas.width  = cropWidth;
         // finally crop the guy
-        
         context.drawImage(inMemCanvas, 0, 0);
-
-
         return [cropLeft, cropTop, cropRight, cropBottom,cropWidth,cropHeight];
     };
 
@@ -1230,12 +1179,6 @@ class Cam extends React.Component {
         var ctx = canvas.getContext("2d");
         img.crossOrigin = "anonymous";
         ctx.drawImage(img, 0, 0);
-
-        /*ctx.drawImage(canvas,
-            croppedDimensions[0], croppedDimensions[1], canvas.width, canvas.height,
-            0, 0, canvas.width, canvas.height,);*/
-        //const imgData = ctx.getImageData(croppedDimensions[0], croppedDimensions[1], croppedDimensions[2], croppedDimensions[3]);// canvas width and height???
-
         var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const origData = imgData;
 
@@ -1262,7 +1205,6 @@ class Cam extends React.Component {
                 var i = new Image();
 
                 i.onload = function () {
-                    //alert(i.width + ", " + i.height);
                     img.width = i.width;
                     img.height = i.height;
                     img.src = response.data;
@@ -1336,7 +1278,6 @@ class Cam extends React.Component {
                                     //we have to save this file and enable the user to download it
                                     console.log(response);
                                 })*/
-                            const repeatContent = that.repeatPattern(updatedContent);
                             that.scale(scale * operator);
                         });
                 };
@@ -1544,9 +1485,6 @@ class Cam extends React.Component {
         svgElement.setAttribute('download', 'File.svg');
         return final5;
     }
-    repeatPattern(svgFile){
-        return svgFile;
-    }
 
     // On file select (from the pop up)
     onFileChange(event){
@@ -1566,30 +1504,19 @@ class Cam extends React.Component {
 
         }
         reader.readAsDataURL(event.target.files[0]);
-
         // Update the state
         this.setState({ selectedFile: event.target.files[0] });
-
     };
 
     // On file upload (click the upload button)
     onFileUpload (){
-
-        // Create an object of formData
         const formData = new FormData();
-
-        // Update the formData object
         formData.append(
             "myFile",
             this.state.selectedFile,
             this.state.selectedFile.name
         );
-
-        // Details of the uploaded file
         console.log(this.state.selectedFile);
-
-        // Request made to the backend api
-        // Send formData object
         //axios.post("api/uploadfile", formData);
     };
 
@@ -1611,45 +1538,8 @@ class Cam extends React.Component {
         }
         console.log('the locations are ',locations);
         ctx.putImageData(imgData, 0, 0);
-
-        /*canvas.width = 225;
-        canvas.height = 248;
-        img.crossOrigin = "anonymous";*/
-
-        /*ctx.drawImage(canvas,
-            croppedDimensions[0], croppedDimensions[1], canvas.width, canvas.height,
-            0, 0, canvas.width, canvas.height,);*/
-        //const imgData = ctx.getImageData(croppedDimensions[0], croppedDimensions[1], croppedDimensions[2], croppedDimensions[3]);// canvas width and height???
-
-        /*var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        for (var i = 0; i < imgData.data.length; i += 4) {
-            if (imgData.data[i] > 200 && imgData.data[i + 1] < 80 && imgData.data[i + 2] < 80)
-            {
-                console.log(i);// we need to define position from this and make this white
-                imgData.data[i] = 255;
-                imgData.data[i + 1] = 255;
-                imgData.data[i + 2] = 255;
-                imgData.data[i + 3] = 255;
-            }
-        }
-        ctx.putImageData(imgData, 0, 0);
-
-        var canvasMod2 = document.getElementById('canvasMod2');
-        var inMemCtx = canvasMod.getContext('2d');
-        canvasMod2.width = img.width;
-        canvasMod2.height = img.height;
-
-        inMemCtx.drawImage(img,
-            0, 0, img.width, img.height,
-            0, 0, img.width, img.height);
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(canvasMod2, 0, 0);*/
-
     }
-    testExpress(){
-    }
+
     render() {
         /*
         list of changes to be made to this code
@@ -1959,7 +1849,6 @@ class Cam extends React.Component {
                                 <th >Progress</th>
                                 <td className='hideMe'><span id="serverStatus">{this.state.statusMsg}</span></td>
                                 <td className='hideMe'><span id="machineStatus"></span></td>
-                                <td className='hideMe'><button className="btn btn-warning btn-l" onClick={this.testExpress} >Test ExpressJS</button></td>
                                 <td><input type="file" onChange={this.onFileChange} />
                                     <button onClick={this.onFileUpload}>
                                         Upload!
