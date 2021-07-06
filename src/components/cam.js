@@ -23,7 +23,7 @@ import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth
 import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
-import { getG, getGPosition} from '../lib/general'
+import { getG, getGPosition, findStartEndIndices} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
 import { runJob} from './com.js';
@@ -169,7 +169,6 @@ class Cam extends React.Component {
         this.textWrapping = this.textWrapping.bind(this);
         this.generateAll = this.generateAll.bind(this);
         this.runJob = this.runJob.bind(this);
-        this.wordWrapped = this.wordWrapped.bind(this);
         this.moveDown = this.moveDown.bind(this);
         this.moveUp = this.moveUp.bind(this);
         this.moveLeft = this.moveLeft.bind(this);
@@ -363,9 +362,7 @@ class Cam extends React.Component {
         );
     }
 
-    runJob() {/// bug here to be solved
-
-
+    runJob() {
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
         // check if machine is connected first
@@ -380,11 +377,6 @@ class Cam extends React.Component {
         }
     }
    
-    wordWrapped() {
-        console.log("maybe help later!!");
-    }
-
-    /// to test this I guess there are some conditions to be solved
     isWrappedWord(layout, text) {
         let result = true;
         var words = text.split(" ");
@@ -472,12 +464,7 @@ class Cam extends React.Component {
         return [parseFloat(width), parseFloat(height), width, height];
 
     }
-    findStartEndIndices(string,substring){
-        const startIndex = string.indexOf(substring);
-        const endIndex = string.indexOf('"', startIndex+11);
-        return [startIndex, endIndex]
 
-    }
     getDimensionStr(svgObject) {
         let widthStart = this.getPosition(svgObject, '"', 1);
         let widthFin = this.getPosition(svgObject, '"', 2);
@@ -1496,7 +1483,7 @@ class Cam extends React.Component {
 
         g = g.replace(replacedString, tranformStatement);
         calligraphy = calligraphy.slice(0, insertionIndex) + g + calligraphy.slice(insertionIndex);
-        const viewboxIndex = this.findStartEndIndices(calligraphy, 'viewBox="');
+        const viewboxIndex = findStartEndIndices(calligraphy, 'viewBox="');
         const final2 = calligraphy.replaceAll('width="' + sampleDimension[2] + '"', 'width="'+shapeDimensions[2]+'"')
             .replaceAll('height="' + sampleDimension[3] + '"', 'height=="' + shapeDimensions[3] + '"')
             .replaceAll(calligraphy.substring(viewboxIndex[0], viewboxIndex[1] + 1), 'viewBox="0 0' + ' ' + shapeDimensions[0] + ' ' + shapeDimensions[1]+ '"');
@@ -1560,11 +1547,11 @@ class Cam extends React.Component {
         const scalingFactorY = fixedWidth / svgDims[1]*percentageY;
 
         console.log('svgFile:', svgFile);
-        const viewboxIndex = this.findStartEndIndices(svgFile, 'viewBox="');
+        const viewboxIndex = findStartEndIndices(svgFile, 'viewBox="');
 
         const final2 = svgFile.replaceAll('fill="#000000"', ' fill="none" ').replaceAll('width="' + svgDims[2] + '"', 'width="800.000000pt"')
             .replaceAll('height="' + svgDims[3] + '"', 'height="535.000000pt"').replaceAll(svgFile.substring(viewboxIndex[0], viewboxIndex[1]+1),'viewBox="0 0 800.000000 500.000000"');// have to fix this but how
-        const tansformIndex = this.findStartEndIndices(final2,'transform="');
+        const tansformIndex = findStartEndIndices(final2,'transform="');
         const final3 = final2.replaceAll('stroke="none"', ' stroke="#76C2DA" stroke-width="0.1" ');
         /// original
         const transform = ' transform="translate(147.9611671,130.17244096) scale(-' + scalingFactor + ',-' + scalingFactorY + ') ';//-0.0215,-0.0215 those has to be dynamically
