@@ -23,6 +23,7 @@ import { addOperation, clearOperations, setOperationAttrs, setFormData, setDepth
 import { GlobalStore } from '../index';
 import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
+import { getG, getGPosition} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
 import { runJob} from './com.js';
@@ -168,7 +169,6 @@ class Cam extends React.Component {
         this.textWrapping = this.textWrapping.bind(this);
         this.generateAll = this.generateAll.bind(this);
         this.runJob = this.runJob.bind(this);
-        this.handleMoves = this.handleMoves(this);
         this.wordWrapped = this.wordWrapped.bind(this);
         this.moveDown = this.moveDown.bind(this);
         this.moveUp = this.moveUp.bind(this);
@@ -250,20 +250,11 @@ class Cam extends React.Component {
         this.QE = window.generateGcode(run);
     }
 
-
-    resetFontSize(e) { // a bug here!!!
-        let activeTemplateName = this.state.activeTemplateName;
-        //this.handleTemplateChange(e, activeTemplateName);
-    }
-
-
-
     handleDepthChange(e) {
         this.props.dispatch(setDepth(e.target.value));
         this.setState({ chocolateDepth: e.target.value });
     }
     handleChange(e) {
-        this.resetFontSize(e);
         if(e.target.value == ''){
             this.setState({forwardEnabled:false});
         }
@@ -288,7 +279,6 @@ class Cam extends React.Component {
         this.setState({ content: e.target.value,textEnabled:true });
     }
     handleFontChange(selectedOption) {
-        //this.resetFontSize(e);
         switch (selectedOption.value) {
 
             case 'Almarai-Bold.ttf':
@@ -324,9 +314,6 @@ class Cam extends React.Component {
                 case 39: this.moveRight();break;
             }
         }
-        /*var words = e.target.value.split(" ");
-        if (words.length > this.state.activeTemplate.maxWordsEn) {
-        }*/
     }
     handleTemplateChange(e, templateName = null) {
         let { value } = e.target;
@@ -378,7 +365,6 @@ class Cam extends React.Component {
 
     runJob() {/// bug here to be solved
 
-        //this.generateGcode();
 
         let globalState = GlobalStore().getState();
         console.log('globalState', globalState);
@@ -386,11 +372,8 @@ class Cam extends React.Component {
         if (!playing && !paused /*&& !globalState.com.paused && !globalState.com.playing*/) {
             let cmd = this.props.gcode;
             console.log('runJob(' + cmd.length + ')');
-            //playing = true;
             runJob(cmd);
             this.step1();
-            //dispatch(resetWorkspace()); 
-            //this.props.dispatch(resetWorkspace());
         }
         else {
             console.log("didn't work", 'Playing', playing, 'Paused', paused);
@@ -804,9 +787,7 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocument(this.props.documents[0].id));
 
     }
-    handleMoves(){
-        console.log('testyyyy');
-    }
+
     moveUp(){
         //check limits: get current up limit
         let changes = this.state.changesXY;
@@ -1339,15 +1320,7 @@ class Cam extends React.Component {
                     img.width = i.width;
                     img.height = i.height;
                     img.src = response.data;
-                    /*
-                    const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
 
-                    /// minimize before you start
-                    var canvas = document.getElementById("canvas");
-                    var ctx = canvas.getContext("2d");
-                    img.crossOrigin = "anonymous";
-                    ctx.drawImage(img, 0, 0);
-                    */
                     const image = document.getElementById("eeveelutions");
                     ctx = canvas.getContext("2d");
                     img.crossOrigin = "anonymous";
@@ -1362,9 +1335,6 @@ class Cam extends React.Component {
                         0, 0, img.width, img.height);
                     canvas.width = img.width;
                     canvas.height = img.height;
-
-                    //canvas.width  = cropWidth;
-                    // finally crop the guy
 
                     ctx.drawImage(canvasMod, 0, 0);
                     const croppedDimensions = that.removeBlanks(canvas, canvas.width, canvas.height);
@@ -1402,9 +1372,7 @@ class Cam extends React.Component {
                             const scale = 25 / that.state.dims[0];
                             console.log(svgContent); /// bunu de handle
                             const updatedContent = that.minimizeSvgFile(svgContent, canvas.width / croppedDimensions[4], croppedDimensions[5] / canvas.height);
-                            /// handle this updated content
-                            // write more code,enCourage.implement(it);
-                            //return a new promise that resolves with this stuff all the time, and implement the process
+
                             const payload = { data: updatedContent };
                             const aIOptions = {
                                 method: 'POST',
@@ -1428,64 +1396,13 @@ class Cam extends React.Component {
                 };
                 i.src = response.data;
 
-                
-
-                // load the image into canvas
-                /// now to trim white spaces
             })
             .catch(err => {
                 alert('error happened: '+ err)
                 console.error(err);
             });
-
-/*
-        const origData = imgData;
-
-        for (var i = 0; i < imgData.data.length; i += 4) {
-            var count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
-            var colour = 0;
-            if (count > 383) 
-                colour = 255;
-            imgData.data[i] = colour;
-            imgData.data[i + 1] = colour;
-            imgData.data[i + 2] = colour;
-            imgData.data[i + 3] = 255;
-        }
-
-        ctx.putImageData(imgData, 0, 0);
-
-        const croppedDimensions = this.removeBlanks(canvas, canvas.width, canvas.height);
-
-        imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
-
-
-        
-
-        const options = {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            cors: true, // allow cross-origin HTTP request
-            credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
-        };*/
-        /*const text ='<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN""http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg version="1.0" xmlns="http://www.w3.org/2000/svg"width="500.000000pt" height="352.000000pt" viewBox="0 0 500.000000 352.000000"preserveAspectRatio="xMidYMid meet">';
-        const dims = this.getDimensionAPI(text);*/
         var svgContent;
-        /*if (imgData.data[0] == 255)
-        */
 
-
-
-
-        /*if(imgData.data[0] == 255)
-        {
-
-      
-            
-        }*/
     }
     newProcess(){
         const modifiers = {};
@@ -1559,19 +1476,17 @@ class Cam extends React.Component {
             });
     }
 
-    getGPosition(string, subString, index) {
-        return string.split(subString, index).join(subString).length;
-    }
+
 
     async combineShapeCalligraphy(shape,calligraphy){
         const shapeDimensions = this.getDimensionAPI(shape);
         const sampleDimension = this.getDimensionAPI(calligraphy);
-        var g = this.getG(shape);// get G from a file that contains only one G, or get the first g of a file.
+        var g = getG(shape);// get G from a file that contains only one G, or get the first g of a file.
         // now to modify this G: modify translate, and modify scale to
         // starts with translate,  
         var tranformIndex = g.indexOf('transform');
         var tranformStatement = 'transform="translate(470.000000,420.000000) scale(-0.1000,-0.10000)"';
-        const closingPosition = this.getGPosition(g,'"',2)+1;
+        const closingPosition = getGPosition(g,'"',2)+1;
         var replacedString = g.substring(tranformIndex, closingPosition);
         const insertionIndex = calligraphy.indexOf('</g>') + 4;
         const print = (results) =>{
@@ -1589,12 +1504,6 @@ class Cam extends React.Component {
         return final2;
     }
 
-    getG(content){
-        const startIndex = content.indexOf('<g');
-        const endIndex = content.indexOf('/g>');
-        const G = content.substring(startIndex, endIndex+3);
-        return G;
-    }
 
     generateDate(ourdate,print){
         //test this code why it is not working??????
@@ -2173,19 +2082,16 @@ class Cam extends React.Component {
                 <div className="">
                     <div className={this.state.hideme} dangerouslySetInnerHTML={{ __html: this.state.generatedFile }} />
                     <img src="" id="eeveelutions"/>
-                    <img src="Sample4X.jpg" className="" id="testXPos" />
-
+                    <img src="" className="" id="testXPos" />
                     <canvas id="canvas" height="398" width="500" />
                     <canvas id="canvasMod"  />
                     <canvas id="canvasMod2" />
-
                 </div>
                 <Operations
                     style={{ flexGrow: 2, display: "flex", flexDirection: "column", display:"none" }}
                 /*genGCode = {this./*generateGcode*//*docuementAdded}*/
                 />
                 <Com id="com" title="Comms" icon="plug" />
-
             </div>
 
             );
