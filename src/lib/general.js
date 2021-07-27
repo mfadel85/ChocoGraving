@@ -289,7 +289,6 @@ export function removeBlanks(canvas, imgWidth, imgHeight) {
     canvas.width = cropWidth;
     canvas.height = cropHeight;
 
-    // finally crop the guy
     context.drawImage(inMemCanvas, 0, 0);
     return [cropLeft, cropTop, cropRight, cropBottom, cropWidth, cropHeight];
 };

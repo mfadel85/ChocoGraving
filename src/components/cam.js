@@ -26,7 +26,7 @@ import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/he
 import { getG, getGPosition, findStartEndIndices, getDimensionAPI, rotateRect, minimizeSvgFile, minimizeSvgFileRect, removeBlanks, detectX, getPosition, validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
-import { runJob} from './com.js';
+//import { runJob} from './com.js';
 import CommandHistory from './command-history';
 import { Documents } from './document';
 import { withDocumentCache } from './document-cache';
@@ -40,15 +40,32 @@ import { OperationDiagram } from './operation-diagram';
 import { ApplicationSnapshotToolbar } from './settings';
 import Splitter from './splitter';
 import Select from 'react-select';
-import Com from './com.js'
+
+import Eid from './eid';
+import ILoveYOU from './iloveyou';
+import Birthday from './birthday';
+import GeneralGroup from './generalGroup';
+
+//import Com from './com.js'
 import axios from 'axios';
 import { framePath, operator} from '../data/staticData.js'
 import { image } from '../draw-commands/image';
 const opentype = require('opentype.js');
 var playing = false;
 var paused = false;
-
+//const Jimp = require('jimp');
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
+/*
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="/__/firebase/8.8.0/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="/__/firebase/8.8.0/firebase-analytics.js"></script>
+
+<!-- Initialize Firebase -->
+<script src="/__/firebase/init.js"></script>
+*/
 function NoDocumentsError(props) {
     let { settings, documents, operations, camBounds } = props;
     if (documents.length === 0 && (operations.length === 0 || !settings.toolCreateEmptyOps))
@@ -124,10 +141,21 @@ const initialState = {
     changesXY: [1, 0, 0, 1, 0, 0],
     changesScaling: [1, 0, 0, 1, 0, 0],
     scalingCount: 0,
-    step1: true,
-    step2: false,
+    step1: false,
+    step2: true,
     step3: false,
     step4: false,
+    step5: false,
+    step6: false,
+    loadImageEnabled:false,
+    readyMade:false,
+    readyMadeTemplate:'Eid',
+    activeImageGroup:'Eid',
+    activeGroupEid: false,
+    activeGroupiloveyou:false,
+    activeGroupGeneral:false,
+    activeGroupBirthday:false,
+    textMode:false,
     pcsCount: 6,
     mold: 'mold1.png',
     moldWidth: '231px',
@@ -161,27 +189,22 @@ class Cam extends React.Component {
 
         this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
-        this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
+        this.handleShapeChange = this.handleShapeChange.bind(this);
         this.handleSubmission = this.handleSubmission.bind(this);
         this.handleTemplateChange = this.handleTemplateChange.bind(this);
         this.generateGcode = this.generateGcode.bind(this);
         this.docuementAdded = this.docuementAdded.bind(this);
         this.textWrapping = this.textWrapping.bind(this);
         this.generateAll = this.generateAll.bind(this);
-        this.runJob = this.runJob.bind(this);
-        this.moveDown = this.moveDown.bind(this);
-        this.moveUp = this.moveUp.bind(this);
-        this.moveLeft = this.moveLeft.bind(this);
-        this.moveRight = this.moveRight.bind(this);
+        //this.runJob = this.runJob.bind(this);
+
         this.scale = this.scale.bind(this);
-        this.wheel = this.wheel.bind(this);
         this.handleShape = this.handleShape.bind(this);
         this.step1 = this.step1.bind(this);
         this.step2 = this.step2.bind(this);
         this.step3 = this.step3.bind(this);
         this.setPcsCount = this.setPcsCount.bind(this);
-        this.rotate = this.rotate.bind(this);
 
         this.changeFont = this.changeFont.bind(this);
         this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
@@ -193,8 +216,6 @@ class Cam extends React.Component {
         //onFileChange
         this.onFileChange = this.onFileChange.bind(this);
         this.onFileUpload = this.onFileUpload.bind(this);
-        this.generateDate = this.generateDate.bind(this);
-        this.newProcess   = this.newProcess.bind(this);
         this.combine = this.combine.bind(this);
         this.flip = this.flip.bind(this);
 
@@ -229,14 +250,6 @@ class Cam extends React.Component {
             );
             return QE;
         }
-
-        document.addEventListener("keydown", this.handleKeyDown);
-        document.addEventListener("wheel", this.wheel);
-
-        this.generateGcode.bind(this);
-        //this.handleConnectServer.bind(this);
-        //this.handleConnectServer();
-        this.stopGcode.bind(this);
     }
     componentWillMount() {
         if(this.state.fileLoaded == true){
@@ -295,25 +308,29 @@ class Cam extends React.Component {
         }
         this.props.dispatch(setFont(selectedOption.value));
         this.setState({ font: selectedOption.value });
-    };
-    wheel(e) {
-        // if there is no document ignore this event or if it has been sent to the machine,
-        console.log('e is ', e);
-        //e.preventDefault();
-        this.scale(Math.exp(e.deltaY / 20000));
-        //this.zoom(e.pageX, e.pageY, Math.exp(e.deltaY / 2000));
     }
-    handleKeyDown(e) {
-        
-        if(e.keyCode == 40 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39){
-            switch(e.keyCode){
-                case 40:this.moveDown();break;
-                case 38:this.moveUp();break;
-                case 37:this.moveLeft();break;
-                case 39: this.moveRight();break;
-            }
+    handleShapeChange(selectedOption){
+        this.setState({ readyMadeTemplate: selectedOption.value });
+        switch (selectedOption.value) {
+            case 'eid':
+                this.setState({ activeGroupEid: true,activeGroupBirthday:false,activeGroupGeneral: false,activeGroupiloveyou:false});
+            break;
+            case 'iloveyou':
+                this.setState({ activeGroupEid: false, activeGroupBirthday: false, activeGroupGeneral: false, activeGroupiloveyou: true });
+            break;
+            case 'general':
+                this.setState({ activeGroupEid: false, activeGroupBirthday: false, activeGroupGeneral: true, activeGroupiloveyou: false });
+            break;
+            case 'birthday':
+                this.setState({ activeGroupEid: false, activeGroupBirthday: true, activeGroupGeneral: false, activeGroupiloveyou: false });
+                break;
+            default:
+            break;
         }
+
     }
+
+
     handleTemplateChange(e, templateName = null) {
         let { value } = e.target;
 
@@ -335,9 +352,7 @@ class Cam extends React.Component {
             this.setState({ direction: 'LTR',textEnabled:true });
         return rtlDirCheck.test(s.target.value);
     };
-    stopGcode() {
-        if (this.QE) { this.QE.end(); }
-    }
+
     docuementAdded() {
         console.log('Document Added');
     }
@@ -355,28 +370,26 @@ class Cam extends React.Component {
             nextState.step1 !== this.state.step1 ||
             nextState.step2 !== this.state.step2 ||
             nextState.step3 !== this.state.step3 || 
+            nextState.step4 !== this.state.step4 ||
+            nextState.step5 !== this.state.step5 ||
+            nextState.step6 !== this.state.step6 ||
+            nextState.textMode !== this.state.textMode ||
+            nextState.activeGroupEid !== this.state.activeGroupEid ||
+            nextState.activeGroupGeneral !== this.state.activeGroupGeneral ||
+            nextState.activeGroupiloveyou !== this.state.activeGroupiloveyou ||
+            nextState.activeGroupBirthday !== this.state.activeGroupBirthday ||
+
+            nextState.readyMade !== this.state.readyMade ||
+            nextState.activeImageGroup !== this.state.activeImageGroup ||
+            nextState.readyMadeTemplate !== this.state.readyMadeTemplate ||
+            nextState.loadImageEnabled !== this.state.loadImageEnabled ||
             nextState.pcsCount !== this.state.pcsCount ||
             nextState.content !== this.state.content  ||
             nextState.statusMsg !== this.state.statusMsg ||
             nextState.fileLoaded !== this.state.fileLoaded
         );
     }
-
-    runJob() {
-        let globalState = GlobalStore().getState();
-        console.log('globalState', globalState);
-        // check if machine is connected first
-        if (!playing && !paused ) {
-            let cmd = this.props.gcode;
-            console.log('runJob(' + cmd.length + ')');
-            runJob(cmd);
-            this.step1();
-        }
-        else {
-            console.log("didn't work", 'Playing', playing, 'Paused', paused);
-        }
-    }
-   
+ 
     init() {
         console.log('clean everything before you start again: delete documents,clean gcode');
         if (this.state.templateDocID != '')
@@ -688,57 +701,8 @@ class Cam extends React.Component {
         })
     }
 
-    moveUp(){
-        //check limits: get current up limit
-        let changes = this.state.changesXY;
-        changes[5] += 0.3;
-        this.setState({ changesXY: changes});
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1,0,0.3]));
-    }
+ 
 
-    moveDown() {
-        //check limits: get current down limit
-
-        let changes = this.state.changesXY;
-        changes[5] -= 0.3;
-        this.setState({ changesXY: changes });
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, -0.3]));
-    }
-  
-    moveLeft() {
-        let changes = this.state.changesXY;
-        changes[4] -= 0.3;
-        this.setState({ changesXY: changes });
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, -0.3, 0]));
-    }
-
-    moveRight() {
-        let changes = this.state.changesXY;
-        changes[4] += 0.3;
-        this.setState({ changesXY: changes });
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0.3, 0]));
-    }
-    rotate(){
-        //
-        var rotateArray = [0.9986295347545738, -0.05233595624294383,0.05233595624294383,0.9986295347545738,-4.43159518811045,4.9364512620398955]
-        this.props.dispatch(selectDocument(this.props.documents[0].id));
-        this.props.dispatch(transform2dSelectedDocuments(rotateArray));
-    }
-    rotateClockwise(id){
-        var rotateArray = [0.9986295347545738,
-            0.05233595624294383,
-            -0.05233595624294383,
-            0.9986295347545738,
-            4.684298907150151,
-            -4.699918052283735];
-        this.props.dispatch(selectDocument(this.props.documents[id+1].id));
-        this.props.dispatch(transform2dSelectedDocuments(rotateArray));
-
-    }
     flip(){
         const s = -1;
         const dim = this.state.dims;
@@ -851,9 +815,7 @@ class Cam extends React.Component {
                         that.props.dispatch(selectDocument(that.props.documents[0].id));
                     })
                 });
-            });
-
-
+            }); 
     }
     parseSVG(svg,that,margin,fileName,n,runJob){
         let activeTemplate = that.state.activeTemplate;
@@ -1005,7 +967,7 @@ class Cam extends React.Component {
         var chocoTemplates = require("../data/chocolateTemplates.json");
         let activeTemplate = chocoTemplates.templates[2];
         switch(shape){
-            case 'SinS':// square in square
+            case 'decorated':// square in square
                 activeTemplate = chocoTemplates.templates[2];
                 this.setState({ 
                     mold: 'mold1.png',
@@ -1104,31 +1066,62 @@ class Cam extends React.Component {
         }
         this.setState({ step1: false, step2: true, activeTemplate: activeTemplate});
     }
-    setPcsCount(count){
+    setPcsCount(name,count){
+        switch(count){
+            case 1://we have to set some settings
+            break;
+            case 2://we have to
+            break;
+            case 3://we have to
+            break;
+            case 4://we have to
+            break;
+            case 6://we have to
+            break;
+            case 8://we have to
+            break;
+            case 12://we have to
+            break;
+            case 16://we have to
+            break;
+            case 24://we have to
+            break;
+            case 32://we have to
+            break;
+            case 50://we have to
+            break;
+            default:
+            break;
+        }
         this.setState({pcsCount:count});
+        this.setState({ step1: false, step2: false,step3:true});
+
+    }
+    mainTemplate(template){
+        switch (template){
+            case 'readymade':
+                this.setState({ loadImageEnabled: false, readyMade: true, textMode: false });
+                $("#eeveelutions").attr("src", "");
+            break;
+            case 'photo':
+                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false });
+            break;
+            case 'text':
+                this.setState({ loadImageEnabled: false, textMode: true, readyMade: false });
+                $("#eeveelutions").attr("src", "");
+            break;
+            case 'logo':
+                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false });
+            break;
+            default:
+            break;
+        }
+        // if readymade : enable choose theme: inside this theme load stuff, text, ribbon
+        // if name:       enable choose shape, text,ribbon,
+        // if photo:      enable load photo, ribbon, text
+        // if logo:       enable load logo, ribbon
     }
 
-    rotateNinety(){
-        /*gm("mold4.png")
-            .rotate('white', -90)
-            .write('rotated-file.png', function (err) {
-                if (!err) console.log('done');
-            });*/
-        /*fetch('111111.svg')
-            .then(resp => resp.text())
-            .then(content => {
-                const result = rotateRect(content);
-                const updatedContent = minimizeSvgFileRect(
-                    svgContent,
-                    canvas.width / croppedDimensions[4],
-                    croppedDimensions[5] / canvas.height,
-                    this.state.scalingOperatorX,
-                    this.state.scalingOperatorY,
-                    this.state.moldName);
-                console.log(result);
-
-            });*/
-    }
     prepareImage(){
         const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
 
@@ -1142,11 +1135,11 @@ class Cam extends React.Component {
         const origData = imgData;
         // First Stage: white and black
         var start = window.performance.now();
-
+        const threshold = 377;
         for (var i = 0; i < imgData.data.length; i += 4) {
             var count = imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2];
             var colour = 0;
-            if (count > 383)
+            if (count > threshold) // we can play on this number
                 colour = 255;
             imgData.data[i] = colour;
             imgData.data[i + 1] = colour;
@@ -1165,6 +1158,7 @@ class Cam extends React.Component {
     convert(){
         
         var payload = this.prepareImage();// the result is a white and black image.
+        // add opencv call here
         const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
         var canvas = document.getElementById("canvas");
         var ctx = canvas.getContext("2d");
@@ -1174,181 +1168,130 @@ class Cam extends React.Component {
 
         const that = this;
         axios.post('http://localhost:8090/http://localhost:4000', { data: payload })
-            .then((response) => {
-                updatedImageData = response;
-                console.log('resop',response);
-                var i = new Image();
+        //axios.post('http://localhost:4001', { data: payload })
+        //axios.post('https://sawtru.com.tr/testme', { data: payload })
+        .then((response) => {
+            updatedImageData = response;
+            console.log('resop',response);
+            var i = new Image();
 
-                i.onload = function () {
-                    img.width = i.width;
-                    img.height = i.height;
-                    img.src = response.data;
+            i.onload = function () {
+                img.width = i.width;
+                img.height = i.height;
+                img.src = response.data;
 
-                    const image = document.getElementById("eeveelutions");
-                    ctx = canvas.getContext("2d");
-                    img.crossOrigin = "anonymous";
-                    var canvasMod = document.getElementById('canvasMod');
-                    var inMemCtx = canvasMod.getContext('2d');
-                    canvasMod.width = img.width;
-                    canvasMod.height = img.height;
-                    canvasMod.width = img.width;
-                    canvasMod.height = img.height;
-                    inMemCtx.drawImage(img,
-                        0, 0, img.width, img.height,
-                        0, 0, img.width, img.height);
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    var start = window.performance.now();
+                const image = document.getElementById("eeveelutions");
+                ctx = canvas.getContext("2d");
+                img.crossOrigin = "anonymous";
+                var canvasMod = document.getElementById('canvasMod');
+                var inMemCtx = canvasMod.getContext('2d');
+                canvasMod.width = img.width;
+                canvasMod.height = img.height;
+                canvasMod.width = img.width;
+                canvasMod.height = img.height;
+                inMemCtx.drawImage(img,
+                    0, 0, img.width, img.height,
+                    0, 0, img.width, img.height);
+                canvas.width = img.width;
+                canvas.height = img.height;
+                var start = window.performance.now();
 
-                    ctx.drawImage(canvasMod, 0, 0);
-                    const croppedDimensions = removeBlanks(canvas, canvas.width, canvas.height);
-                    var end = window.performance.now();
-                    console.log(`Execution time1: ${end - start} ms`);
-                    
-                    imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
-                    var pngImage = canvas.toDataURL("image/png");
-                    const payload = { data: pngImage };
-                    const options = {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload),
-                        cors: true, // allow cross-origin HTTP request
-                        credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
-                    };
-
-                    // From Scratch, algorithms, tests, interviews code, challenge your thinking,
-                    // @hometimeutilize, thnkfurcreroltmnotthnkofthemupcvrerdwrkdesc wrkonprjblg
-                    //temporary I will change this to  
-                    fetch('111111.svg').then(resp => resp.text())
-                    //fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
-                        .then((response) => {
-                            const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];             
-                            const stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                            const extraMargin = [0, 0];
-                            const image = response;
-                            const dims = getDimensionAPI(response);
-                            //now let's repeat it 
-
-                            that.setState({ dims: dims }, () => {
-                                //that.parseSVG(response, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
-                            });
-                            svgContent = response;
-
-                            that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
-                        }).then(() => {
-                            // for the heart change percentageX,percentageY
-                            const scale = 25 / that.state.dims[0];
-                            console.log(svgContent); /// bunu de handle
-                            var updatedContent;
-                        if (that.state.moldName != 'Rectangle')
-                            updatedContent = minimizeSvgFile(
-                                svgContent,
-                                canvas.width / croppedDimensions[4],
-                                croppedDimensions[5] / canvas.height,
-                                that.state.scalingOperatorX,
-                                that.state.scalingOperatorY,
-                                that.state.moldName);
-                        else
-                            updatedContent = minimizeSvgFileRect(
-                                svgContent,
-                                canvas.width / croppedDimensions[4],
-                                croppedDimensions[5] / canvas.height,
-                                that.state.scalingOperatorX,
-                                that.state.scalingOperatorY,
-                                that.state.moldName);
-                            const payload = { data: updatedContent };
-                            const aIOptions = {
-                                method: 'POST',
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify(payload),
-                                cors: true, // allow cross-origin HTTP request
-                                credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
-                            };
-                            alert('File is ready');
-
-                            /*fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/toAi.php', aIOptions)
-                            .then(response => response.json())
-                                .then((response) => {
-                                    console.log(response);
-                                    alert('File is ready');
-                                })*/
-                            //that.scale(scale * operator);
-                        });
+                ctx.drawImage(canvasMod, 0, 0);
+                const croppedDimensions = removeBlanks(canvas, canvas.width, canvas.height);
+                var end = window.performance.now();
+                console.log(`Execution time1: ${end - start} ms`);
+                
+                imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
+                var pngImage = canvas.toDataURL("image/png");
+                const payload = { data: pngImage };
+                const options = {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                    cors: true, // allow cross-origin HTTP request
+                    credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
                 };
-                i.src = response.data;
-            })
-            .catch(err => {
-                alert('error happened: '+ err)
-                console.error(err);
-            });
-        var svgContent;
+                // From Scratch, algorithms, tests, interviews code, challenge your thinking,
+                // @hometimeutilize, thnkfurcreroltmnotthnkofthemupcvrerdwrkdesc wrkonprjblg
+                //temporary I will change this to  
+                
+                //return;
+                fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
+                //fetch('testing2.svg').then(resp => resp.text())
+                    .then((response) => {
+                        const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];             
+                        const stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
+                        const extraMargin = [0, 0];
+                        const image = response;
+                        //const dims = getDimensionAPI(response);//original bu
+                        const dims = getDimensionGeneral(response);
 
-    }
+                        //now let's repeat it 
 
-    newProcess(){
-        const modifiers = {};
-        const release = captureConsole();
-        const parser = new Parser({});
-        let file = {
-            name: "template.svg",
-            type: "image/svg+xml"
-        };
-
-        var stdMarginY = 0;
-        var stdMarginY = 1;
-        const ourDate = this.generateDate('30/6/2021');
-        const that = this;
-        fetch('hat.svg')
-            .then(resp => resp.text())
-            .then(content => {
-                const dims = getDimensionAPI(content);
-                parser.parse(content).then((tags)=>{
-                    let captures = release(true);
-                    let warns = captures.filter(i => i.method == 'warn')
-                    let errors = captures.filter(i => i.method == 'errors')
-                    if (warns.length)
-                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                    if (errors.length)
-                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                    imageTagPromise(tags).then((tags) => {
-                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                    }).then(() => {
-                        that.props.dispatch(selectDocument(that.props.documents[3].id));
-                        that.props.dispatch(selectDocuments(false));
-                        that.props.dispatch(selectDocument(that.props.documents[0].id));
                         that.setState({ dims: dims }, () => {
-                            that.scale(0.35);
+                            //that.parseSVG(response, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
                         });
-                })
-            });
-        });
-        fetch('readSampleProcessed.svg')
-            .then(resp => resp.text())
-            .then(content => {
-                parser.parse(content).then((tags) => {
-                    let captures = release(true);
-                    let warns = captures.filter(i => i.method == 'warn')
-                    let errors = captures.filter(i => i.method == 'errors')
-                    if (warns.length)
-                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                    if (errors.length)
-                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                    imageTagPromise(tags).then((tags) => {
-                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                        svgContent = response;
+
+                        that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
                     }).then(() => {
-                        that.props.dispatch(selectDocument(that.props.documents[3].id));
-                        that.props.dispatch(selectDocuments(false));
-                        that.props.dispatch(selectDocument(that.props.documents[0].id));
-                    })
-                });
-            });    
+                        // for the heart change percentageX,percentageY
+                        const scale = 25 / that.state.dims[0];
+                        console.log(svgContent); /// bunu de handle
+                        var updatedContent;
+                    if (that.state.moldName != 'Rectangle')
+                        updatedContent = minimizeSvgFile(
+                            svgContent,
+                            canvas.width / croppedDimensions[4],
+                            croppedDimensions[5] / canvas.height,
+                            that.state.scalingOperatorX,
+                            that.state.scalingOperatorY,
+                            that.state.moldName);
+                    else
+                        updatedContent = minimizeSvgFileRect(
+                            svgContent,
+                            canvas.width / croppedDimensions[4],
+                            croppedDimensions[5] / canvas.height,
+                            that.state.scalingOperatorX,
+                            that.state.scalingOperatorY,
+                            that.state.moldName);
+                        const payload = { data: updatedContent };
+                        const aIOptions = {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload),
+                            cors: true, // allow cross-origin HTTP request
+                            credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
+                        };
+                        alert('File is ready');
+                        const svgFile = document.getElementById("svgFile");
+                        svgFile.click();
+                        /*fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/toAi.php', aIOptions)
+                        .then(response => response.json())
+                            .then((response) => {
+                                console.log(response);
+                                alert('File is ready');
+                            })*/
+                        //that.scale(scale * operator);
+                    });
+            };
+            i.src = response.data;
+        })
+        .catch(err => {
+            alert('error happened: '+ err)
+            console.error(err);
+        });
+        var svgContent;
+        //this.setState(initialState);
     }
+
+   
 
     combine() {
         const that = this;
@@ -1380,7 +1323,6 @@ class Cam extends React.Component {
         const print = (results) =>{
             console.log(results,'results')
         }
-        const svgDate = await this.generateDate('30/6/2021',print); //later we think about the svgDate
 
         g = g.replace(replacedString, tranformStatement);
         calligraphy = calligraphy.slice(0, insertionIndex) + g + calligraphy.slice(insertionIndex);
@@ -1391,55 +1333,6 @@ class Cam extends React.Component {
         // we need to change the height and viewbox to another values after adding the date
         return final2;
     }
-
-
-    generateDate(ourdate,print){
-        //test this code why it is not working??????
-        // we define the font and the font size so that it won't take more than the limit
-        const computeLayout = require('opentype-layout');
-        const font = this.state.font;
-        const makerjs = require('makerjs');
-        var layout;
-        var svgDate;
-        var svgDateDims; // dimensions
-        ourdate = '30/6/2021';
-        var that = this;
-        opentype.load(font,function (err, font){
-            const lineHeight = 1.3 * font.unitsPerEm;
-            var fontSize = that.state.fontSize;// depending on the max width that will be set
-            let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
-            const finalWidth = 110;
-            let layoutOptions = {
-                "align": "center",
-                lineHeight: lineHeight,
-                width: finalWidth / scale,
-                mode: 'nowrap'
-            };
-            try {
-                var models = [];
-                layout = computeLayout(font, ourdate, layoutOptions);
-                layout.glyphs.forEach((glyph, i)=>{
-                    var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                    character.origin = makerjs.point.scale(glyph.position, scale);
-                    makerjs.model.addModel(models, character, i); // we will check the mirror thing later
-
-                });
-                svgDate = makerjs.exporter.toSVG(models);
-                svgDateDims = getDimension(svgDate).map(n => n / operator);
-                that.props.dispatch(saveModels(models)); // should we save the models now or later?
-                // how to add this svg file to the workspace
-                print(svgDate);
-                return [models, svgDate, svgDateDims];// change these parmeters
-
-            }
-            catch(ex){
-                console.log('Exception',ex);
-            }
-
-        })
-    }
-
-
 
     // On file select (from the pop up)
     onFileChange(event){
@@ -1493,188 +1386,264 @@ class Cam extends React.Component {
         let valid = validator.passes();
         let someSelected = documents.some((i) => (i.selected));
 
-        const Fonts = [
-            { value: 'Almarai-Bold.ttf', label: 'Arslan' },
-            { value: 'ITCKRIST.TTF', label: 'ITCKRIST' },
-            { value: 'Bevan.ttf', label: 'Bevan' },
+        const imageGroups = [
+            { value: 'eid', label: 'Eid' },
+            { value: 'iloveyou', label: 'I love you' },
+            { value: 'general', label: 'General' },
+            { value: 'birthday', label: 'Birthday' },
+
         ];
+
         return (
             
-            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '800px' }} >
+            <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '1000px' }} >
 
-                { this.state.step1 && (<div id="main2" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
+                { this.state.step1 && (
+                <div id="main3" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
                     <div className="well-sm" style={{ padding:'15px',backgroundColor: "#332C26", color:"white" }}>
-                        <span style={{fontSize:'16px'}}>SELECT SHAPE</span><br/>
+                        <span style={{fontSize:'16px'}}>SELECT Box Type</span><br/>
                         <span style={{fontSize:'12px'}}>Choose a shape of your choice to start customizing.</span>
                     </div>
                     <Form onSubmit={this.handleSubmission} >
-                    <div style={{ backgroundColor: '#443B34'}}>
-                        <div style={{ fontSize: '16px', textAlign: 'center'}}> Small Shapes</div>
-                        
-                            <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center'}}>
+                        <div style={{ backgroundColor: '#443B34'}}>                        
+                            <Row style={{ marginLeft: '10px', fontSize: "15px", textAlign: 'center'}}>
                                 <Col>
-                                    <div style={{ width: '85px', display:'inline-block',margin:'10px',paddingBottom:'5px'}}>
-                                        <img className="shape" src="shape1.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('SinS') } ></img>
-                                            <span >Square in Square</span>
-                                        </div>
-                                    <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                        <img src="shape2.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('CinS')}></img>
-                                            <br />
-                                            <span >Circle in Square</span>
+                                    <div style={{ width: '235px', display:'inline-block',margin:'10px',paddingBottom:'5px'}}>
+                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated') } ></img>
+                                        <span>Decorated Boxes</span>
                                     </div>
-                                    <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                        <img src="shape3.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('HinS')} ></img>
-                                            <br />
-                                            <span >Heart in Square</span>
+                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
+                                        <span>Leather Boxes</span>
                                     </div>
-                                <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                        <img src="shape5.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Circle')} ></img>
-                                            <br />
-                                    <span >Circle</span>
+                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
+                                        <span>Wooden Boxes</span>
+                                    </div>
+                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
+                                        <span>Golden Boxes</span>
+                                    </div>
+                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
+                                        <span>Magentic Boxes</span>
                                     </div>
                                 </Col>
-                            <Col>
-                                <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                        <img src="shape6.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('BabyS')}  ></img>
-                                    <span >Baby Shirt</span>
-                                </div>
-                                <div style={{ width: '85px', display: 'inline-block', margin: '10px', textAlign: 'center' }}>
-                                        <img src="shape7.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('BabySt')} ></img>
-                                    <br />
-                                    <span >Stroller</span>
-                                </div>
-                                <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                        <img src="shape8.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Heart')} ></img>
-                                    <br />
-                                    <span >Heart</span>
-                                </div>
-                                <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                        <img src="shape9.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Oval')}></img>
-                                    <br />
-                                    <span >Oval</span>
-                                </div>
-                            </Col>
-                            <Col>
-                                <div style={{ width: '85px', display: 'inline-block', margin: '10px' }}>
-                                        <img src="shape4.png" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('Rect')}></img>
-                                    <span style={{ fontSize: "10px" }}>Rectangle</span>
-                                </div>
-                            </Col>
-                            </Row>
-                            <Row className='hideMe' style={{ backgroundColor: "#332C26",  fontSize: "11px", textAlign: 'center' }}>
-                                <div style={{ fontSize: '16px', textAlign: 'center' }}> Big Bars</div>
-                                <Col>
-                                    <div style={{ width: '225px', display: 'inline-block', margin: '10px' }}>
-                                        <img src="shape10.png" onClick={() => this.handleShape('Rect')} style={{ paddingBottom: '5px' }}></img>
-                                        <span style={{ fontSize: "10px" }}>Rectangle</span>
-                                    </div>
-                                </Col>
-                            </Row>
-                            
-                        </div>
-                       
-                </Form>
+                            </Row>   
+                        </div>     
+                    </Form>
                 </div>)}
                 {this.state.step2 && (
-                    <Row style={{ fontSize: "11px" }}>
-                        <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "#E0E1DC", marginLeft: '30px' }}>
-                            <span style={{ fontSize: '18px' }}>CREATE CONTENT</span><br />
-                            <span style={{ fontSize: '12px' }}>Place a content of your choice on the piece.</span>
+                    <div id="main2" className="panel panel-danger  well-sm" style={{ padding: '0', marginBottom: 7, color: 'white' }}  >
+                        <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
+                            <span style={{ fontSize: '16px' }}>SELECT Box Type</span><br />
+                            <span style={{ fontSize: '12px' }}>Choose a shape of your choice to start customizing.</span>
                         </div>
-                        <div style={{ padding: '10px', backgroundColor: '#443B36', color: "#706762" }}>
-                            <div style={{textAlign:'center',fontSize:'15px',marginBottom:'10px'}}>
-                                {this.state.moldName}
-                            </div>
-                            <div 
-                                style={{ marginLeft: '20px', marginRight: '20px',
-                                backgroundColor: "#28211B", color: "black",
-                                height: '340px', borderStyle: 'solid', borderColor: '#45413F',borderWidth:'2px' }}>
-                                <div style={{ display: 'inline-block', width: '15%', height: '340px', borderRightStyle: 'solid', borderRightColor: '#45413F', borderWidth: '2px'}}>
-                                    <Grid>
-                                        <Row className="show-grid" >
-                                            <Col xs={1} md={1} lg={1} style={{ padding: '10px', fontSize: '13px',margin:'10px' }}>
-                                                <div className='icons' onClick={() => { }}><img src='icon1.png'></img></div>
-                                                <div className='icons' onClick={() => {
-                                                    this.nameInput.focus();
+                        <Form onSubmit={this.handleSubmission} >
+                            <div style={{ backgroundColor: '#443B34' }}>
+                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                                    <Col>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold1',1)} ></img>
+                                            <span >Golden 1 PC</span>
+                                        </div>
+                                   
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold2',2)} ></img>
+                                            <span >Golden 2 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold3',3)} ></img>
+                                            <span >Golden 3 PCs</span>
+                                        </div>
 
-                                                    }}><img src='icon2.png'></img></div>
-                                                <div className='icons' onClick={() => { }}><img src='icon3.png'></img></div>
-                                                <div className='icons' onClick={() => this.rotate()}><img src='icon4.png'></img></div>
-                                                <div className='icons ' onClick={() => this.rotateClockwise()}><img className='reverse' src='icon4.png'></img></div>
-
-                                                <div className='icons' onClick={() => { }}><img src='icon5.png'></img></div>
-
-
-                                            </Col>
-
-                                        </Row>
-                                    </Grid>
-                                </div>
-                                <div style={{ display: 'inline-block', width: '85%', height: '340px'}}>
-                                    <textarea className='textChoco' 
-                                    style={{ 
-                                        backgroundImage:"URL('http://localhost:8080/"+this.state.mold+"')",
-                                        width:this.state.moldWidth,
-                                        height:this.state.moldHeight,
-                                        paddingTop:this.state.paddingTop
-                                    }} 
-                                        placeholder={this.state.moldPlaceHolder} autoFocus name="content" id="content" ref={(input) => {
-                                            this.nameInput = input; }} maxLength="23"
-                                        onKeyDown={this.handleKeyDown} onChange={this.handleChange} onKeyPress={this.checkRTL} defaultValue={globalState.gcode.text.data}  ></textarea>
-                                    </div>
-                                </div>
-                                <div style={{margin:'20px'}}>
-                                    <Button bsSize="lg" bsStyle="warning" onClick={this.step1}> <Icon name="angle-left" /></Button>
-                                    <Button bsSize="lg" bsStyle="warning" style={{ marginLeft: '8px'}}> <Icon name="plus" /></Button>
-                                    <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} disabled={!this.state.content} onClick={this.step3}  bsStyle="warning"> <Icon name="angle-right" /></Button>
-                                <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} disabled={!this.state.content} onClick={this.automatedProcess} bsStyle="warning">Download</Button>
-
-                                    <Button style={{ float: 'right', marginLeft: '8px' }} bsSize="lg" onClick={this.textWrapping} bsStyle="warning"> Generate</Button>
-                                </div>
-                        </div>
-                    </Row>
-                )}
-                {this.state.step3 && (
-                    <Row style={{ fontSize: "11px" }}>
-                        <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "#E0E1DC", marginLeft: '30px' }}>
-                            <span style={{ fontSize: '18px' }}>MOLD ARRANGEMENT</span><br />
-                            <span style={{ fontSize: '12px' }}>Choose the mold size to arrange content accordingly.</span>
-                        </div>
-                        <div style={{ padding: '10px', marginTop: "25px", backgroundColor: '#443B36', color: "#635A56" }}>
-                            <div style={{ marginLeft: '20px', marginRight: '20px', backgroundColor: "#28201B", color: "#B2B0AD", height: '340', borderStyle: 'solid', borderColor: '#45413F', borderWidth: '2px' }}>
-                                <div style={{ display: 'inline-block', width: '15%', height: '340px' }}>
-                                    <Grid>
-                                        <Row className="show-grid" >
-                                            <Col xs={1} md={1} lg={1} style={{padding:'10px',fontSize:'13px'}}>
-                                                <div className={`pcsCount ${this.state.pcsCount == 1 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(1)}>1 Pc</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 2 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(2)}>2 PC</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 3 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(3)}>3 PC</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 4 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(4)}>4 PC</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 6 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(6)}>6 PC</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 12 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(12)}>12 PC</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 24 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(24)}>24 PC</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 32 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(32)}>32 PC</div>
-                                                <div className={`pcsCount ${this.state.pcsCount == 50 ? "activeCount" : ""}`} onClick={() => this.setPcsCount(50)}>50 PC</div>
-                                            </Col>
-
-                                        </Row>
-                                    </Grid>
-                                </div>
-                                <div style={{ display: 'inline-block', width: '85%', height: '340', backgroundColor: "#514641", borderLeftStyle: 'solid', borderLeftColor: '#453B36', borderWidth: '10px' }}>
-                                    <div style={{ width: '100%', height: '100%', backgroundImage:` URL('http://localhost:8080/moldpcs.png')`,backgroundPosition:'center',backgroundRepeat:'no-repeat'}}></div>
-
-                                </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold4',4)} ></img>
+                                            <span >Golden 4 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold6',6)} ></img>
+                                            <span >Golden 6 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold8',8)} ></img>
+                                            <span >Golden 8 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold12',12)} ></img>
+                                            <span >Golden 12 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold16',16)} ></img>
+                                            <span >Golden 16 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold24',24)} ></img>
+                                            <span >Golden 24 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold32',32)} ></img>
+                                            <span >Golden 32 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold50',50)} ></img>
+                                            <span >Golden 50 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver1',1)} ></img>
+                                            <span >Silver 1 PC</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver2',2)} ></img>
+                                            <span >Silver 2 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver3',3)} ></img>
+                                            <span >Silver 3 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver4',4)} ></img>
+                                            <span >Silver 4 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver6',6)} ></img>
+                                            <span >Silver 6 PCs</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver12',12)} ></img>
+                                            <span >Silver 12 PCs</span>
+                                        </div>
+                                    </Col>
+                                </Row>
                             </div>
                             <div style={{ margin: '20px' }}>
-                                <Button bsSize="lg" bsStyle="warning" onClick={this.step2}> <Icon name="angle-left" /></Button>
-                                <Button bsSize="lg" bsStyle="warning" style={{ marginLeft: '8px' }} > <Icon name="plus" /></Button>
-                                <Button type='button' bsSize="lg" id="playBtn" style={{ float: 'right' }}  onClick={this.generateAll} title={this.state.warnings} >
-                                    <Icon name="play" />
-                                </Button>
+                                <Button bsSize="lg" bsStyle="warning" onClick={this.step1}> <Icon name="angle-left" /></Button>
+                                <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }}  onClick={this.step3} bsStyle="warning"> <Icon name="angle-right" /></Button>
+                            </div>
+                        </Form>
+                    </div>)}
+                {this.state.step3 && (<div id="main2" className="panel panel-danger  well-sm" style={{ padding: '0', marginBottom: 7, color: 'white' }}  >
+                    <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
+                        <span style={{ fontSize: '16px' }}>SELECT Box Type</span><br />
+                        <span style={{ fontSize: '12px' }}>Choose a shape of your choice to start customizing.</span>
+                    </div>
+                    <Form onSubmit={this.handleSubmission} >
+                        <div style={{ backgroundColor: '#443B34' }}>
+                            <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                                <Col>
+                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="girl.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('photo')} ></img>
+                                        <span >Your Photo Here</span>
+                                    </div>
+
+                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="baby_clothes_boy.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('readymade')} ></img>
+                                        <span >Baby Clothes</span>
+                                    </div>
+                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('text')} ></img>
+                                        <span >Text</span>
+                                    </div>
+
+                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                        <img className="shape" src="logo.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('logo')} ></img>
+                                        <span >Logo</span>
+                                    </div>
+
+                                </Col>
+                            </Row>
+                        </div>
+                        {this.state.loadImageEnabled && (
+                            <div style={{ backgroundColor: '#443B34' }}>
+                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                                    <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
+                                        <span style={{ fontSize: '16px' }}> Upload your Photo Here</span>                                       
+                                    </div>
+                                    <input type="file" style={{ display: 'inline-block' }} onChange={this.onFileChange} />
+                                    <button onClick={this.onFileUpload} style={{ display: 'inline-block' }} >Upload!</button>
+                                </Row>
+                            </div>
+                        )}
+                        {this.state.readyMade && (
+                            <div style={{ backgroundColor: '#443B34' }}>
+
+                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                                    <Col>
+                                        {/**/}
+                                        <Select className="success " value={this.state.readyMadeTemplate} defaultValue={this.state.readyMadeTemplate} 
+                                            placeholder='Choose Shape' onChange={this.handleShapeChange} options={imageGroups} >
+                                        </Select>
+                                    </Col>
+                                </Row>
+                                {this.state.activeGroupEid && (
+                                    <Eid></Eid>
+                                )}
+                                {this.state.activeGroupiloveyou && (
+                                    <ILoveYOU></ILoveYOU>
+                                )}
+                                {this.state.activeGroupGeneral && (
+                                    <GeneralGroup></GeneralGroup>
+                                )}
+                                {this.state.activeGroupBirthday && (
+                                    <Birthday></Birthday>
+                                )}
+                                <Row style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>
+                                    <Col>
+                                        <span style={{ fontSize: '16px' }}>Your Name</span>
+                                    </Col>
+                                </Row>
+                                <Col>
+                                    <label style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>Text Field: &nbsp;&nbsp;&nbsp;</label>
+                                    <input type="text" placeholder="your name here"></input><br></br><br></br>
+                                </Col>
 
                             </div>
+                        )}
+                        {this.state.textMode && (
+                            <div style={{ backgroundColor: '#443B34' }}>
+                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                                    <Col>
+                                        <span style={{ fontSize: '16px' }}>SELECT Shape</span>
+                                    </Col>
+                                </Row>
+                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                                    <Col>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="graduation_with_text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('photo')} ></img>
+                                            <span >Graduation Cap</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="graduation_with_textLight.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('readymade')} ></img>
+                                            <span >Graduation Cap</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('text')} ></img>
+                                            <span >Only Text</span>
+                                        </div>
+                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
+                                            <img className="shape" src="newlyweds_with_text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('logo')} ></img>
+                                            <span >Newly Weds</span>
+                                        </div>
+
+                                    </Col>
+                                    <Row style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>
+                                        <Col>
+                                            <span style={{ fontSize: '16px' }}>Your Name</span>
+                                        </Col>
+                                    </Row>
+                                    <Col>
+                                        <label style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>Text Field: &nbsp;&nbsp;&nbsp;</label>
+                                        <input type="text" placeholder="your name here"></input><br></br><br></br>
+                                    </Col>
+                                </Row>
+                            </div>
+                        )}
+                        <div style={{ margin: '20px' }}>
+                            <Button bsSize="lg" bsStyle="warning" onClick={this.step2}> <Icon name="angle-left" /></Button>
+                            <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} onClick={this.step4} bsStyle="warning"> <Icon name="angle-right" /></Button>
                         </div>
-                    </Row>
+                    </Form>
+                </div>
                 )}
                 <div className="panel panel-danger hideMe" style={{ marginBottom: 0 }}>
                     <div className="panel-heading" style={{ padding: 2 }}>
@@ -1727,33 +1696,23 @@ class Cam extends React.Component {
                                 <img src="rectangle.jpg" height="50" width="50" />
                             </div>
                         </div>
-
-                        <div >
-                            
+                        <div>
                         </div>
                         <div>
                             <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
                             <Button name="generateAll" className='hideMe'  disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
-                            &nbsp;&nbsp;
-                            
-                            <div  >
+                            &nbsp;&nbsp;                        
+                            <div>
                                 <br />
                                 <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.02) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
-                                <Button title="up" name="fontminus" onClick={() => { this.moveUp(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-up"} ></Button>
-                                <Button title="smaller" name="fontminus" onClick={() => { this.scale(0.98) }} bsSize="large" bsStyle="primary" className={"fa fa-minus-circle"} ></Button>
                                 <br />
-                                <Button title="to the left" name="fontminus" onClick={() => { this.moveLeft(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-left"} ></Button>
-                                <Button title="down" name="fontminus" onClick={() => { this.moveDown(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-down"} ></Button>
-                                <Button title="to the right" name="fontminus" onClick={() => { this.moveRight(-0.5) }} bsSize="large" bsStyle="primary" className={"fa fa-arrow-right"} ></Button>
                             </div>
-
-
                         </div>
                     </FormGroup>
                 </div>)}
                 <div className="success hideMe" >Choose Font:</div>
                 <Select className="success hideMe" value={globalState.gcode.chocolateFont.data} placeholder='Choose Font'
-                    onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={Fonts} >
+                    onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={imageGroups} >
                     <option value="GreatVibes">Great Vibes</option>
                     <option value="Arslan">ArslanFont</option>
                     <option value="chocolatePristina">Pristina</option>
@@ -1761,50 +1720,9 @@ class Cam extends React.Component {
                     <option value="TrajanPro-Bold">TrajanPro-B</option>
                     <option value="Bevan">Eevan</option>
                 </Select>
-                <a href={this.state.svgFile} id="svgFile">File</a>
+                <a href={this.state.svgFile} className="hideMe" id="svgFile">File</a>
                 <Alert bsStyle="success" className="hideMe" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
-                    <table style={{ width: 100 + '%' }}>
-                        <tbody>
-                            <tr className="hideMe">
-                                <th >Progress</th>
-                                <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
-                                    <ButtonToolbar style={{ float: "right" }}>
-                                        <button  title="Generate G-Code from Operations below" 
-                                        className={"btn btn-xs btn-attention hideMe " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} 
-                                        disabled={!valid || this.props.gcoding.enable} 
-                                        onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />
-                                        &nbsp;Generate
-                                        </button>
-                                        <ButtonGroup>
-                                            <button  title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs hideMe" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
-                                            <button style={{ display: 'none' }} title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
-                                            <FileField style={{ display: 'none' }} onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
-                                                <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
-                                            </FileField>
-                                        </ButtonGroup>
-                                        <button title="Clear" style={{ display: 'none' }} className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
-                                    </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode()} />}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th >Progress</th>
-                                <td className='hideMe'><span id="serverStatus">{this.state.statusMsg}</span></td>
-                                <td className='hideMe'><span id="machineStatus"></span></td>
-                                <td><input type="file" onChange={this.onFileChange} />
-                                    <button onClick={this.onFileUpload}>
-                                        Upload!
-                                    </button></td>
-                                <td><button className="btn btn-warning btn-l" onClick={this.convert} >Convert</button></td>
-                                <td><button className="btn btn-warning btn-l " onClick={this.rotateNinety} >Rotate</button></td>
-                                <td><button className="btn btn-warning btn-l hideMe" onClick={this.newProcess} >New Process</button></td>
-                                <td><button className="btn btn-warning btn-l hideMe" onClick={detectX} >Detect X</button></td>
-                                <td><button className="btn btn-warning btn-l hideMe" onClick={this.combine} >Combine</button></td>
-
-                                {/*<td><span id='msgStatus'></span></td>*/}
-                            </tr>
-                            <tr><td><a href={this.state.svgFile} id="svgFile">File</a></td></tr>
-                        </tbody>
-                    </table>
+                    
 
                 </Alert>
                 <div>
@@ -1857,7 +1775,7 @@ class Cam extends React.Component {
                 {/* <FileUpload /> */}
                 <div className="">
                     <div className={this.state.hideme} dangerouslySetInnerHTML={{ __html: this.state.generatedFile }} />
-                    <img src="" id="eeveelutions"/>
+                    <img src="" id="eeveelutions" width="30%" />
                     <img src="" className="" id="testXPos" />
                     <canvas id="canvas" height="398" width="500" />
                     <canvas id="canvasMod"  />
@@ -1867,7 +1785,6 @@ class Cam extends React.Component {
                     style={{ flexGrow: 2, display: "flex", flexDirection: "column", display:"none" }}
                 /*genGCode = {this./*generateGcode*//*docuementAdded}*/
                 />
-                <Com id="com" title="Comms" icon="plug" />
             </div>
 
             );
