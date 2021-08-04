@@ -1,4 +1,5 @@
 import React from 'react'
+import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text, Row, Col, Container, Grid } from 'react-bootstrap';
 
 class GeneralGroup extends React.Component {
     constructor(props) {

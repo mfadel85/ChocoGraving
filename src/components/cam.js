@@ -1,99 +1,34 @@
-// Copyright 2016 Todd Fleming
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import React from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Form, FormGroup, ProgressBar, Text,Row,Col,Container,Grid } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { cloneDocumentSelected,  colorDocumentSelected, loadDocument, setOperatonRotating, removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments, transform2dSelectedDocumentsMoving, transform2dSelectedDocumentsScaling, toggleSelectDocument } from '../actions/document';
-import { generatingGcode, setGcode,saveModels } from '../actions/gcode';
-import { resetWorkspace } from '../actions/laserweb';
-import { addOperation, clearOperations, setOperationAttrs,  setFormData, setDepth, setFont, operationAddDocuments } from '../actions/operation';
+import {  loadDocument,removeDocumentSelected, selectDocument, selectDocuments, setDocumentAttrs, transform2dSelectedDocuments } from '../actions/document';
+import { addOperation, clearOperations,  setFormData, setDepth, setFont } from '../actions/operation';
 import { GlobalStore } from '../index';
-import { getGcode } from '../lib/cam-gcode';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
-import { getG, getGPosition, findStartEndIndices, getDimensionAPI, rotateRect, minimizeSvgFile, minimizeSvgFileRect, removeBlanks, detectX, getPosition, validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
+import {    getDimensionAPI, minimizeSvgFile, minimizeSvgFileRect, removeBlanks,  validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
-//import { runJob} from './com.js';
-import CommandHistory from './command-history';
-import { Documents } from './document';
 import { withDocumentCache } from './document-cache';
 import Icon from './font-awesome';
-import { ColorPicker, FileField, Info, SearchButton } from './forms';
 import { GetBounds, withGetBounds } from './get-bounds.js';
 import { imageTagPromise, promisedImage } from './image-filters';
 import { alert, confirm, prompt } from './laserweb';
-import { Error, Operations } from './operation';
-import { OperationDiagram } from './operation-diagram';
-import { ApplicationSnapshotToolbar } from './settings';
-import Splitter from './splitter';
 import Select from 'react-select';
 
 import Eid from './eid';
 import ILoveYOU from './iloveyou';
 import Birthday from './birthday';
 import GeneralGroup from './generalGroup';
-
-//import Com from './com.js'
+import Decorated  from './decorated';
+import MainTemplates from './mainTemplates';
+import MainShapes from './mainShapes'
+import ShapeGroups from './shapeGroups'
 import axios from 'axios';
-import { framePath, operator} from '../data/staticData.js'
-import { image } from '../draw-commands/image';
+import { framePath,allShapes, operator,shapeTemplats,allSvgFileNames, graduationHatPart1,graduationHatPart2} from '../data/staticData.js'
 const opentype = require('opentype.js');
-var playing = false;
-var paused = false;
-//const Jimp = require('jimp');
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
-/*
-<!-- The core Firebase JS SDK is always required and must be listed first -->
-<script src="/__/firebase/8.8.0/firebase-app.js"></script>
 
-<!-- TODO: Add SDKs for Firebase products that you want to use
-     https://firebase.google.com/docs/web/setup#available-libraries -->
-<script src="/__/firebase/8.8.0/firebase-analytics.js"></script>
-
-<!-- Initialize Firebase -->
-<script src="/__/firebase/init.js"></script>
-*/
-function NoDocumentsError(props) {
-    let { settings, documents, operations, camBounds } = props;
-    if (documents.length === 0 && (operations.length === 0 || !settings.toolCreateEmptyOps))
-        return <GetBounds Type="span"><Error operationsBounds={camBounds} message='Click here to begin' /></GetBounds>;
-    else
-        return <span />;
-}
-
-function GcodeProgress({ gcoding, onStop }) {
-    return <div style={{ display: "flex", flexDirection: "row" }}><ProgressBar now={gcoding.percent} active={gcoding.enable} label={`${gcoding.percent}%`} style={{ flexGrow: 1, marginBottom: "0px" }} /><Button onClick={onStop} bsSize="xs" bsStyle="danger"><Icon name="hand-paper-o" /></Button></div>
-}
-
-GcodeProgress = connect((state) => { return { gcoding: state.gcode.gcoding } })(GcodeProgress)
-
-export class CAMValidator extends React.Component {
-    render() {
-        let { noneOnSuccess, documents, className, style } = this.props;
-        let errors = (!documents) ? "Add files to begin" : undefined
-        if (noneOnSuccess && !errors) return null;
-        return <span className={className} title={errors ? errors : "Good to go!"} style={style}><Icon name={errors ? 'warning' : 'check'} /></span>
-    }
-}
-
-CAMValidator = connect((state) => { return { documents: state.documents.length } })(CAMValidator)
-
-let __interval;
 const initialState = {
-    filter: null,
     content: "",
     svg: "",
     font: 'Almarai-Bold.ttf',
@@ -102,21 +37,54 @@ const initialState = {
     activeTemplateName: 'Square',
     activeTemplate: {
         "id": "SquareModel",
-        "maxHeight": 32,
-        "maxWidth": 25,
-        chocolateWidth: 44,
-        chocolateHeight: 44,
-        marginChocolate: [50, 50],
-        "maxLines": 3,
-        "maxWordsAr": 4,
-        "maxWordsEn": 3,
-        "shiftX": 10,
-        "shiftY": 10,
         "file": "../Square.svg",//this file will change depending on the template adding profiles
         "scale": 0.001,
-        fontSize: 24,
         "moldShifts": [70, 65],
-        filePcsCount:32// the number of pcs in svg file according to template, square in square :32,circle in square:49
+        filePcsCount:32,// the number of pcs in svg file according to template, square in square :32,circle in square:49
+        fontSize: 40,
+        pcsCount:6,
+        layoutWidth:10000, 
+        xCount:2, 
+        yCount:3,
+        marginBetweenPCs:[184,184],
+        initialMargin:[181.7,335],//should change based on the size of the text and shape
+        textScalingPercetage:[0.7,0.7],
+        shapeMargins: [
+            '100,100',
+            '585.5,100',
+            '100,585.5',
+            '585.5,585.5',
+            '100,1071',
+            '585.5,1071',
+        ],
+        shapePosition:1,
+        textPosition:1,
+        shapeScalingPercentage:'0.7,0.7',
+        shapeSVGName : allShapes[0],
+        decorationMargin: [
+            // for the tempale 4 : it is 128.5*operator + initialMargin
+            // is the initial y margin, x is not at the zero point
+            '179,85',
+            //'0,0',
+            //485.5 is the standard margin which is compared to 
+            '664,85',
+            '179,570.5',
+            '664,570.5',
+            '179,1056',
+            '664,1056'
+        ],
+        decorationDMargin: [
+            '60,203',
+            '545,203',
+            '60,688',
+            '545,688',
+            '60,1173',
+            '545,1173'
+        ],
+        shapePosition: 1,
+        textPosition: 1,
+        shapeScalingPercentage: '2,2',
+        hasDecoration:true,
     },
     marginX: 0,
     marginY: 0,
@@ -136,9 +104,7 @@ const initialState = {
     moldShifts: [70, 65],
     extraShift: [1, 0, 0, 1, 0, 0],
     originalShift: [0, 0],
-    stdMargin: 50,
     svgDim: [],
-    changesXY: [1, 0, 0, 1, 0, 0],
     changesScaling: [1, 0, 0, 1, 0, 0],
     scalingCount: 0,
     step1: false,
@@ -157,10 +123,7 @@ const initialState = {
     activeGroupBirthday:false,
     textMode:false,
     pcsCount: 6,
-    mold: 'mold1.png',
-    moldWidth: '231px',
-    moldHeight: '232px',
-    moldName: 'Square',
+    boxDims:[],
     moldPlaceHolder: '\nname\nhere',
     paddingTop: '35px',
     forwardEnabled: false,
@@ -172,99 +135,55 @@ const initialState = {
     selectedFile: null,
     scalingOperatorX:25.2,//for circleModel
     scalingOperatorY:25.2,//for circle, when choosing shape this will change.
-
-    /*
-
-
-    */
+    templateName:'',
+    textField:'', 
+    shapeModelNo:0,
+    shapeFile:'9877.svg',
 };
 class Cam extends React.Component {
 
     constructor(props) {
         super(props);
         this.chocoalteDepthRef;
-    
         this.state = initialState;
         let { settings, documents, operations } = this.props;
-
-        this.handleDepthChange = this.handleDepthChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.changeTextTemplateName = this.changeTextTemplateName.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
         this.handleShapeChange = this.handleShapeChange.bind(this);
         this.handleSubmission = this.handleSubmission.bind(this);
         this.handleTemplateChange = this.handleTemplateChange.bind(this);
         this.generateGcode = this.generateGcode.bind(this);
-        this.docuementAdded = this.docuementAdded.bind(this);
-        this.textWrapping = this.textWrapping.bind(this);
-        this.generateAll = this.generateAll.bind(this);
-        //this.runJob = this.runJob.bind(this);
-
-        this.scale = this.scale.bind(this);
+        this.generateBox = this.generateBox.bind(this);
         this.handleShape = this.handleShape.bind(this);
         this.step1 = this.step1.bind(this);
         this.step2 = this.step2.bind(this);
         this.step3 = this.step3.bind(this);
         this.setPcsCount = this.setPcsCount.bind(this);
-
-        this.changeFont = this.changeFont.bind(this);
-        this.updateFontChangeAmount = this.updateFontChangeAmount.bind(this);
         this.checkRTL = this.checkRTL.bind(this);
         this.handleFontChange = this.handleFontChange.bind(this);
-        this.downloadFile = this.downloadFile.bind(this);
-        this.automatedProcess = this.automatedProcess.bind(this);
         this.convert = this.convert.bind(this);
         //onFileChange
         this.onFileChange = this.onFileChange.bind(this);
         this.onFileUpload = this.onFileUpload.bind(this);
-        this.combine = this.combine.bind(this);
-        this.flip = this.flip.bind(this);
-
+        this.mainTemplate = this.mainTemplate.bind(this);
+        this.selectModelNo = this.selectModelNo.bind(this);
     }
 
-
-    componentWillMount() {
-        //this.handleConnectServer();
-
-        let that = this
-        console.log('this', this);
-        window.generateGcode = (run) => {
-            let { settings, documents, operations } = that.props;
-            let percent = 0;
-            __interval = setInterval(() => {
-                that.props.dispatch(generatingGcode(true, isNaN(percent) ? 0 : Number(percent)));
-            }, 100)
-            settings.stepOver = that.state.stepOver;
-            console.log("settings are: ", settings,'documents',documents);
-            let QE = getGcode(settings, documents, operations, that.props.documentCacheHolder,
-                (msg, level) => { CommandHistory.write(msg, level); },
-                (gcode) => {
-                    clearInterval(__interval)
-                    that.props.dispatch(setGcode(gcode));
-                    console.log('gcode is ready');
-                    that.props.dispatch(generatingGcode(false))
-                    run();
-                },
-                (threads) => {
-                    percent = ((Array.isArray(threads)) ? (threads.reduce((a, b) => a + b, 0) / threads.length) : threads).toFixed(2);
-                }
-            );
-            return QE;
-        }
-    }
-    componentWillMount() {
-        if(this.state.fileLoaded == true){
-            console.log('testory file loaded!!');
-
-        }
-    }
+    componentWillMount() {}
+    componentWillMount() {}
     generateGcode(run) {
-        console.log("game started now!");
         this.QE = window.generateGcode(run);
     }
 
-    handleDepthChange(e) {
-        this.props.dispatch(setDepth(e.target.value));
-        this.setState({ chocolateDepth: e.target.value });
+    changeTextTemplateName(e) {
+        if (e.target.value == '') {
+            this.setState({ forwardEnabled: false });
+        }
+        else {
+            this.setState({ forwardEnabled: true });
+        }
+        this.setState({ templateName: e.target.value, textEnabled: true });
     }
     handleChange(e) {
         if(e.target.value == ''){
@@ -327,9 +246,7 @@ class Cam extends React.Component {
             default:
             break;
         }
-
     }
-
 
     handleTemplateChange(e, templateName = null) {
         let { value } = e.target;
@@ -342,7 +259,6 @@ class Cam extends React.Component {
     };
 
     checkRTL(s) {
-
         var ltrChars = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' + '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF',
             rtlChars = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC',
             rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']');
@@ -353,20 +269,11 @@ class Cam extends React.Component {
         return rtlDirCheck.test(s.target.value);
     };
 
-    docuementAdded() {
-        console.log('Document Added');
-    }
+
     shouldComponentUpdate(nextProps, nextState) {
         return (
             nextState.font !== this.state.font || /*nextState.fontSize !== this.state.fontSize || */
             nextProps.documents !== this.props.documents ||
-            nextProps.operations !== this.props.operations ||
-            nextProps.currentOperation !== this.props.currentOperation ||
-            nextProps.bounds !== this.props.bounds ||
-            nextProps.gcode !== this.props.gcode ||    // Needed for saveGcode() to work
-            nextProps.gcoding.percent !== this.props.gcoding.percent ||
-            nextProps.gcoding.enable !== this.props.gcoding.enable ||
-            nextState.filter !== this.state.filter || 
             nextState.step1 !== this.state.step1 ||
             nextState.step2 !== this.state.step2 ||
             nextState.step3 !== this.state.step3 || 
@@ -378,7 +285,6 @@ class Cam extends React.Component {
             nextState.activeGroupGeneral !== this.state.activeGroupGeneral ||
             nextState.activeGroupiloveyou !== this.state.activeGroupiloveyou ||
             nextState.activeGroupBirthday !== this.state.activeGroupBirthday ||
-
             nextState.readyMade !== this.state.readyMade ||
             nextState.activeImageGroup !== this.state.activeImageGroup ||
             nextState.readyMadeTemplate !== this.state.readyMadeTemplate ||
@@ -399,537 +305,124 @@ class Cam extends React.Component {
         this.props.dispatch(selectDocuments(true));
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
-        this.setState({ 
-            changesXY:[1,0,0,1,0,0],
-            changesScaling:[1,0,0,1,0,0],
-            dims:[0,0]
-        });
     }
 
-    changeFont(amount) {
-        console.log('amount', amount);
-        if (amount > 0)
-            console.log('Bigger Font');
-        else
-            console.log('Smaller Font');
-        this.updateFontChangeAmount(amount);
-        console.log('chnage Font');
-
-        this.textWrapping();
-    }
-
-    updateFontChangeAmount(amount) {
-        let fontSize = this.state.fontSize;
-        this.setState({ fontSize: fontSize + amount });
-    }
-
-    async generateAll(){ 
-
-        this.props.documents.forEach((element,index) => {
-            if(index >this.state.activeTemplate.filePcsCount){
-                this.props.dispatch(selectDocument(this.props.documents[index].id));
-                this.props.dispatch(removeDocumentSelected(this.props.documents[index].id));
-            }
-        });
-        /// remove all documents
-        this.setState({ textEnabled:false});
-        console.log('ttt',this.state);
-        let margins = calcMargins(this.state.svgOutpout);
-        console.log('calc margins', margins);
-        let that = this;
-        let runJob = function () {
-            that.generateGcode(function () {
-            });
-        };
-        for(let i=1;i<this.state.pcsCount;i++){
-            let index = i+1;
-            if( index < 5 )
-                await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file'+index+'.svg', i);
-            else 
-                await this.parseSVG(this.state.svgOutpout, this, [this.state.moldShifts, margins], 'file' + index + '.svg', i, runJob);
-        }
-        await this.props.dispatch(selectDocument(this.props.documents[0].id));
-    }
-
-    textWrapping(downloadMe,final) {
-        const downloaable = final;
-        //final= true;
-        this.props.documents.forEach((element, index) => {
-            if (index > 0) {
-                this.props.dispatch(selectDocument(this.props.documents[index].id));
-                this.props.dispatch(removeDocumentSelected(this.props.documents[index].id));
-            }
-        });
-        let text = GlobalStore().getState().gcode.text.data;
-        let globalState = GlobalStore().getState();
-        console.log('globalState', globalState);
-        if (text == '' || text == undefined) {
+    generateBox(){
+        var text = this.state.templateName;
+        if ( text == '' || text == undefined ) {
             alert('no text???');
             return;
-        } 
-        console.log('Text Wrapping started directoin', this.state.direction, 'fontsize', this.state.fontSize);
-        var that = this;
+        }
+        var models = {};
+
+        const that = this;
         const computeLayout = require('opentype-layout');
         let font = this.state.font;
-
-        console.log('this.state.font', font);
-        var lines = text.split("\n");
-        let models = {};
-        let fontSize;
+        var fontSize;
         this.init();
+        var downloaable = false;
         const makerjs = require('makerjs');
-        let layout;
-        opentype.load(font, function (err, font) {//for arabic fonst we will see
-
-            let activeTemplate = that.state.activeTemplate;
-            console.log(font);
-            let lineHeight = 1.3 * font.unitsPerEm;
-
-            fontSize = that.state.fontSize;
-            let scale = 1 / font.unitsPerEm * that.state.fontSize; //1 / font.unitsPerEm * fontSize0
-            const finalWidth = 110;// should be maxMM * 301 (which is point in mm) 5000
-
+        var layout;
+        opentype.load(font, function (err, font) {
+            var activeTemplate = that.state.activeTemplate;
+            var lineHeight = 1.3*font.unitsPerEm;
+            fontSize = activeTemplate.fontSize;
+            var scale = 1 / font.unitsPerEm * fontSize;
+            const finalWidth = 20;
+            console.log('width should be', finalWidth / scale);
+            // let width to be constant value: 3000 should not change
             let layoutOptions = {
                 "align": "center",
                 lineHeight: lineHeight,
-                width: finalWidth / scale,
+                width: activeTemplate.layoutWidth,//finalWidth / scale
                 mode: 'nowrap'
             };
-
-            if (that.state.direction == 'RTL') {
-                layout = computeLayout(font, text, layoutOptions);
-
-                console.log('started RTL');
-                let wordModel = '';
-
-                let wordWidths = [];// line widths
-                let wordHeigths = [];
-                let svgWords = [];
-
-                let shiftX = 0;
-                let shiftY = 0;
-                let shifts = [shiftX, shiftY];
-                models = {};
-                console.log('lines are : ', layout.lines);
-                lines.forEach((line, i) => {
-                    wordModel = new makerjs.models.Text(font, line, fontSize);
-                    makerjs.model.addModel(models, wordModel);
-                    svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
-                    models = {};
-                    let parts = svgWords[i].split("\"");
-                    wordWidths[i] = parseFloat(parts[1]);
-                    wordHeigths[i] = parseFloat(parts[3]);
-                });
-                let maxWHeight = Math.max(...wordHeigths);
-                console.log('widths', wordWidths, 'heights', wordHeigths);//  
-
-                models = {};
-                lines.forEach((line, i) => {
-                    wordModel = new makerjs.models.Text(font, line, fontSize, true);
-                    shiftY = shiftY + maxWHeight + 3;
-                    shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * operator));/// what is this equation?
-
-                    let shiftingFactor = 0;
-                    if (i > 0) {
-                        shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
-                    }
-                    for (let index = 0; index < Object.keys(wordModel.models).length; index++) {
-                        shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
-                        wordModel.models[index].origin = [shifts[0], shifts[1]];
-                    }
-                    makerjs.model.addModel(models, wordModel);
-                });
-            }
-            else {// LTR
-                try {
-                    layout = computeLayout(font, text, layoutOptions);
-                }
-                catch (ex) {
-                    console.log(ex);
-                }
-                let result = validateLayout(layout, text, that.state.activeTemplate.maxLines);
-                while (!result) {
-                    that.setState({
-                        activeTemplate: activeTemplate
-                    });
-
-                    fontSize = that.state.fontSize * 0.8; /// we should change font size
-                    activeTemplate.fontSize = fontSize;
-                    that.setState({ activeTemplate: activeTemplate });
-                    let scale = 1 / font.unitsPerEm * fontSize; //1 / font.unitsPerEm * fontSize0
-                    let finalWidth = 120;// should be maxMM * 301 (which is point in mm) 5000
-
-
-                    let layoutOptions = {
-                        "align": "center",
-                        lineHeight: lineHeight,
-                        width: finalWidth / scale
-                    };
-                    layoutOptions = { // depends on the situation we change the layout option
-                        "align": "center",
-                        lineHeight: lineHeight,
-                        width: finalWidth / scale
-                    }
-                    layout = computeLayout(font, text, layoutOptions);
-                    if (layout.lines.length > 1)
-                        activeTemplate.shiftY -= 2;
-                    activeTemplate.shiftX -= 3;
-                    console.log('new layout is ', layout);
-                    result = validateLayout(layout, text, that.state.activeTemplate.maxLines);
-                }
-
-                that.setState({ layout: layout })
-                layout.glyphs.forEach((glyph, i) => {
-                    let character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                    character.origin = makerjs.point.scale(glyph.position, scale);
-                    var newChar;
-                    if (downloaable)// only for final if(final) which is a parameter for the function
-                    {
-                        newChar = makerjs.model.mirror(character, true, false);
-                    }
-                    else {
-                        newChar = character;
-                        makerjs.model.addModel(models, newChar, i);
-
-                    }
-                    if (downloaable){
-                        makerjs.model.addModel(models, newChar, i);
-                        that.loadSVGChocoTemplate([[0, 0], [0, 0],[-3, -3]], 0);
-                    }
-                });
-                // next steps: enable upload file to the server, read that file, make it white and black, save it as jpg and upload it
-                // to the php page, in the php page call the convertio api, download the results in the dist folder
-                // you will have the svg file in the dist folder and then read it, make the other operations on it.
-                let mmDims = getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
-
-                if (downloaable){
-                    models = makerjs.layout.cloneToGrid(models, 6, 4, [(42- mmDims[0]) * operator, (41 - mmDims[1]) * operator]);
-                    /*const path = "M 233.83379,67.373184 c -2.53989,0.0018 -2.01422,0.247614 -2.01242,3.001398 0.002,2.761509 -2.23509,5.001401 -4.99667,5.003306 -2.76151,0.0018 -5.0014,-2.2352 -5.00331,-4.99678 -0.002,-2.438506 0.43819,-3.000199 -1.39322,-2.998999 l -29.58928,0.01979 c -1.57229,0.0011 -1.01899,0.713105 -1.01751,3.000798 0.002,2.76158 -2.23499,5.001401 -4.99661,5.003306 -2.76168,0.0018 -5.00157,-2.2352 -5.0033,-4.996709 -0.002,-2.569316 0.58282,-3.00041 -1.50619,-2.999105 l -29.08229,0.01951 c -2.01362,0.0014 -1.4133,0.467889 -1.4116,3.000904 0.002,2.761579 -2.2351,5.001507 -4.99661,5.003306 -2.76161,0.0018 -5.0015,-2.23513 -5.00341,-4.996709 -0.002,-2.664496 0.83831,-3.000516 -1.46477,-2.998894 l -29.06042,0.0193 c -2.04481,0.0014 -1.47641,0.452896 -1.47468,3.001081 0.002,2.761615 -2.23503,5.001507 -4.99671,5.003412 -2.76151,0.0018 -5.001402,-2.2352 -5.003201,-4.996815 -0.0018,-2.426476 0.550298,-3.000375 -1.258499,-2.99907 l -29.269619,0.01937 c -2.285682,0.0018 -1.473588,0.343923 -1.471789,3.00101 0.0018,2.761614 -2.235094,5.001506 -4.996709,5.003411 -2.76158,0.0018 -5.001471,-2.2352 -5.003376,-4.996815 -0.0018,-2.623678 0.825888,-3.00048 -1.382607,-2.998999 l -30.757812,0.0206 c -2.419703,0.0014 -1.361405,0.288889 -1.359676,3.000692 0.0019,2.761721 -2.235129,5.001613 -4.996603,5.003412 -4.260321,0.0028 -5.4871056,-0.635706 -5.4989942,1.399399 l 0.017568,26.354686 c 0.00113,1.74092 3.1126292,1.24742 5.5007232,1.2459 2.761579,-0.002 5.001507,2.23503 5.003376,4.99671 0.0018,2.76141 -2.235094,5.0014 -4.996568,5.00331 -2.509625,0.002 -5.5004051,-0.74369 -5.4992057,1.22319 l 0.019085,28.53069 c 0.00109,1.74092 3.1124877,1.24763 5.5006867,1.2459 2.761615,-0.002 5.001507,2.23509 5.003412,4.99671 0.0017,2.76151 -2.235094,5.00151 -4.996603,5.00341 -2.509591,0.002 -5.5005812,-0.74372 -5.4992054,1.22308 l 0.019015,28.53101 c 0.0012,1.74089 3.1124884,1.24739 5.5007934,1.24591 2.761509,-0.002 5.001401,2.23498 5.003306,4.9967 0.0018,2.76141 -2.235094,5.00141 -4.996497,5.0032 -2.509697,0.002 -5.5006174,-0.74362 -5.4992063,1.2233 0.00589,8.9566 0.011818,17.91321 0.017886,26.86988 0.014323,1.9957 1.2659083,0.90992 5.5004053,0.9071 2.761721,-0.002 5.001613,2.23502 5.003412,4.9966 0.0016,2.4421 -0.958603,3.0226 0.459987,2.9996 l 30.735199,-0.0205 c 2.399629,-0.002 2.306919,0.11 2.304908,-3.00168 -0.0018,-2.7614 2.2352,-5.00129 4.996604,-5.0032 2.761615,-0.002 5.001506,2.2351 5.003411,4.99668 0.0018,2.8334 0.417689,2.99229 1.100702,2.99931 l 29.636684,-0.0198 c 1.968395,-0.001 1.264215,-0.4905 1.262486,-3.0009 -0.0018,-2.76151 2.23513,-5.0013 4.996601,-5.0032 2.76172,-0.002 5.00151,2.23509 5.00331,4.9966 0.001,1.80898 -0.42859,3.00031 0.4978,2.99971 l 30.83239,-0.0206 c 0.9549,-7e-4 0.67102,-1.16702 0.66982,-3.00062 -0.002,-2.76147 2.2352,-5.0002 4.9966,-5.002 2.76158,-0.002 5.00151,2.23383 5.00338,4.99541 0.001,2.12181 -0.39578,3.0003 0.92802,2.99942 l 29.85449,-0.0199 c 1.9668,-0.001 1.21909,-0.49111 1.2175,-3.0008 -0.002,-2.76148 2.2351,-5.0014 4.99671,-5.0032 2.76148,-0.002 5.0014,2.23502 5.0032,4.9966 0.002,2.38831 -0.48919,3.0003 1.25169,2.99911 l 30.1975,-0.0202 c 1.38522,0.0433 0.55252,-0.49492 0.55079,-3.00041 -0.002,-2.76151 2.2352,-5.0014 4.99671,-5.0032 2.76161,-0.002 5.00151,2.23498 5.00331,4.99671 0.002,2.81177 -0.35631,2.95599 1.10179,2.99917 10.319,-0.007 20.63799,-0.0137 30.95699,-0.0206 2.47791,-0.002 1.44311,-0.2666 1.44142,-3.00098 -0.002,-2.76151 2.23509,-5.0014 4.9966,-5.0033 4.15798,-0.003 5.4876,0.83199 5.49921,-1.13482 -0.006,-8.88319 -0.0119,-17.76638 -0.0178,-26.6495 -10e-4,-1.96677 -2.99131,-1.21747 -5.5009,-1.21578 -2.7614,0.002 -5.00129,-2.2352 -5.0032,-4.99671 -0.002,-2.76161 2.23509,-5.0015 4.99671,-5.0033 2.38809,-0.001 5.50019,0.48761 5.49899,-1.25328 l -0.019,-28.5309 c -10e-4,-1.96681 -2.9912,-1.21751 -5.50079,-1.21582 -2.76151,0.002 -5.00141,-2.2352 -5.00331,-4.99671 -0.002,-2.76158 2.23509,-5.0015 4.99671,-5.00337 2.3882,-0.001 5.5003,0.48768 5.4991,-1.25321 l -0.0191,-28.5308 c -0.001,-1.9668 -2.99109,-1.2175 -5.50082,-1.21581 -2.76148,0.002 -5.0013,-2.2352 -5.00321,-4.99671 -0.002,-2.76158 2.23513,-5.00147 4.99661,-5.00327 2.3883,-0.002 5.5003,0.48757 5.4992,-1.25331 l -0.018,-26.839617 c -0.0141,-1.966771 -1.34249,-0.909779 -5.5004,-0.907203 -2.76158,0.0018 -5.00162,-2.234883 -5.00341,-4.996498 -0.002,-2.73438 1.03261,-3.000692 -1.4453,-2.998999 z";
-                    const outsideModel = makerjs.importer.fromSVGPathData(path);
-                    const outsideModelScaled = makerjs.model.scale(outsideModel,operator);
-                    makerjs.model.addModel(models, outsideModelScaled);*/
-                    
-                }
-
-
-
-            }
-            that.props.dispatch(saveModels(models));
-
-            const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];
             try {
-                let stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                //var oval = new makerjs.models.Oval(20, 150);
-                fetch('3333.svg')
-                    .then(resp => resp.text())
-                    .then(content => {
-                        console.log(content);
-                    });
-                //makerjs.model.addModel(models, oval);
-
-                let output = makerjs.exporter.toSVG(models );
-            
-                let dims = getDimension(output);
-               
-                let mmDims = dims.map(n => n / operator);
-               
-                /*if (mmDims[0] > that.state.activeTemplate.maxWidth || mmDims[1] > that.state.activeTemplate.maxHeight) {
-                    alert("Please divide to two lines,the size of the words shouldn't be more than 28mm!!!")
-                    return;
-                }*/
-                that.setState({
-                    svgOutpout: output,
-                    svgModels: models,
-                    layout: layout,
-                    dims: mmDims
-                });
+                layout = computeLayout(font,text,layoutOptions);
+                console.log('Layout is:',layout);
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
                 );
+                if (max.width != activeTemplate.layoutWidth){
+                    fontSize = fontSize * activeTemplate.layoutWidth/max.width;
+                    scale = 1 / font.unitsPerEm * fontSize;
+                    //change font size
+                    layoutOptions = {
+                        "align": "center",
+                        lineHeight: lineHeight,
+                        width: activeTemplate.layoutWidth,//finalWidth / scale
+                        mode: 'nowrap'
+                    };
+                    layout = computeLayout(font, text, layoutOptions);
 
-                let extraMargin = [(44 - mmDims[0]) / 2, (44 - mmDims[1]) / 2];
-                const letterCount = max.end - max.start;
-                const letterWidth = mmDims[0] / letterCount;
-                let generalState = GlobalStore().getState();
-
-                console.log(
-                    'general state', generalState,
-                     "Letters:  ", dims, max, mmDims, 'letter count:',
-                 letterCount, 'letter width', letterWidth, layout);
-                //this.resolve(); resolve this means deepwork
-                let promise = new Promise( (resolve,reject) =>  { /// understand promises well with examples, async javascripting
-                    that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
-                });
-                that.loadSVGChocoTemplate([moldShifts, extraMargin, stdMargin], 0);
-
-                promise.then(
-                    ()=> console.log('test'),
-                    () => console.log('faiLUre')
-                );
-
-                that.setState({generalAllEnable:true/*,svgFile:'test.svg'*/});
-                //let output = makerjs.exporter.toSVG(models, { /*origin: [thirdMargin, -230],*/ accuracy: 0.001 });
-
-                var svgElement = document.getElementById("svgFile");
-                const insertionIndex = output.indexOf('</g>')+4;
-                var final = output.slice(0, insertionIndex) + framePath + output.slice(insertionIndex);
-                const svgDims = getDimensionStr(final);
-                
-
-                const final1 = final.replace(svgDims[0], '1009.2939');
-                const final2 = final1.replace(svgDims[0], '1009.2939');
-
-                const final3 = final2.replace(svgDims[1], '635.183');
-                const final4 = final3.replace(svgDims[1], '635.183');
-                const secondInsertion = final4.indexOf('<g') + 2;
-                var finalist = final4.slice(0, secondInsertion) + ' transform="translate(56.2611671,63.47244096)" ' + final4.slice(secondInsertion);
-
-
-                //final.replace(/dims[1]/g, '1009.2939');
-                //const final = output.splice(insertionIndex, 0, framePath);var svgElement = document.getElementById("svgFile");
-                svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(finalist));
-
-                svgElement.setAttribute('download','File.svg');
-                /*if (downloaable)
-                    svgElement.click();*/
-               
-                downloadMe();
-            }
-            catch (Exception) {
-                console.log(Exception);
-            }
-        })
-    }
-
- 
-
-    flip(){
-        const s = -1;
-        const dim = this.state.dims;
-        if ((dim[0] * s > this.state.activeTemplate.maxWidth || dim[1] * s > this.state.activeTemplate.maxHeight) && s > 1) {
-            //alert('You reached the maximum size');
-            return;
-        }
-
-        let scalingCount = this.state.scalingCount;
-
-        this.setState({ scalingCount: scalingCount });
-        let x = this.state.moldShifts[0] + (44 - this.state.dims[0]) / 2;
-        let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2;
-        let cx = (2 * x + this.state.dims[0]) / 2;
-        let cy = (2 * y + this.state.dims[1]) / 2;
-        let changes = this.state.changesScaling;
-        changes[0] *= s;
-        changes[4] += cx - s * cx;
-        if (this.props.documents.length > 0) {
-            this.setState({ changesScaling: changes, dims: [dim[0] * s, dim[1] * s] });
-            let shiftingChanges = this.state.changesXY;
-            //shiftingChanges[4] += changes[4];
-            //shiftingChanges[5] += changes[5];
-
-            this.setState({ changesXY: shiftingChanges });
-            this.props.dispatch(selectDocument(this.props.documents[0].id));
-            this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, 1, cx - s * cx, cy]));
-        }
-    }
-    scale(s){
-        const dim = this.state.dims;
-        if ((dim[0] * s > this.state.activeTemplate.maxWidth || dim[1] * s > this.state.activeTemplate.maxHeight) && s >1 )
-        {
-            //alert('You reached the maximum size');
-            return;
-        }
-            
-        let scalingCount = this.state.scalingCount;
-        
-        this.setState({scalingCount:scalingCount});
-        let x = this.state.moldShifts[0] + (44 - this.state.dims[0]) / 2;
-        let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2 ;
-        let cx = (2 * x + this.state.dims[0])  / 2;
-        let cy = (2 * y + this.state.dims[1])  / 2;
-        let changes = this.state.changesScaling;
-        changes[0] *= s;
-        changes[3] *= s;
-        changes[4] += cx - s * cx;
-        changes[5] += cy - s * cy;
-        if (this.props.documents.length > 0){
-            this.setState({ changesScaling: changes, dims: [dim[0] * s, dim[1] * s] });
-            let shiftingChanges = this.state.changesXY;
-
-            this.setState({ changesXY: shiftingChanges });
-            this.props.dispatch(selectDocument(this.props.documents[0].id));
-            this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
-        }
-
-        // or transform2dSelectedDocumentsMoving
-    }
-
-    scaleSec(s,n) {
-        let scalingCount = this.state.scalingCount;
-        let index = n == 0 ? 0 : n * 3 + this.state.activeTemplate.filePcsCount-2;
-        var stdMarginY = 0;
-        if (n > 2)
-            stdMarginY = 1;
-        let margins = [(n % 3) * this.state.stdMargin, stdMarginY * this.state.stdMargin];
-
-        this.setState({ scalingCount: scalingCount });
-        let x = this.state.moldShifts[0] + (44 - this.state.dims[0]) / 2 + margins[0];
-        let y = this.state.moldShifts[1] + (44 - this.state.dims[1]) / 2 + margins[1];
-        let cx = (2 * x + this.state.dims[0]) / 2;
-        let cy = (2 * y + this.state.dims[1]) / 2;
-
-        this.props.dispatch(selectDocument(this.props.documents[index].id));
-        this.props.dispatch(transform2dSelectedDocuments([s, 0, 0, s, cx - s * cx, cy - s * cy]));
-    }
-    loadSVGChocoTemplate(margin,n){
-        const modifiers = {};
-        const release = captureConsole();
-        const parser = new Parser({});
-        let file = {
-            name: "template.svg",
-            type: "image/svg+xml"
-        };
-
-        var stdMarginY = 0;
-        if (n > 2)
-            stdMarginY = 1;
-        this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + margin[1][0] + (n % 3) * margin[2], margin[0][1] + margin[1][1] + stdMarginY * margin[2]]));
-        let that  = this;
-        fetch('3333.svg')
-            .then(resp => resp.text())
-            .then(content => {
-                parser.parse(content).then((tags) => {
-                    let captures = release(true);
-                    let warns = captures.filter(i => i.method == 'warn')
-                    let errors = captures.filter(i => i.method == 'errors')
-                    if (warns.length)
-                        CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                    if (errors.length)
-                        CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                    imageTagPromise(tags).then((tags) => {
-                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                    }).then(() => {
-                        that.props.dispatch(selectDocument(that.props.documents[3].id));
-                        that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margin[0][0] + (n % 3) * margin[2], margin[0][1] + stdMarginY * margin[2]]));
-                        that.props.dispatch(selectDocuments(false));
-                        that.props.dispatch(selectDocument(that.props.documents[0].id));
-                    })
-                });
-            }); 
-    }
-    parseSVG(svg,that,margin,fileName,n,runJob){
-        let activeTemplate = that.state.activeTemplate;
-        const release = captureConsole();
-        const parser = new Parser({});
-        parser.parse(svg).then((tags) => {
-            let captures = release(true);
-            let warns = captures.filter(i => i.method == 'warn')
-            let errors = captures.filter(i => i.method == 'errors')
-
-            if (warns.length)
-                CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-
-            if (errors.length)
-                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-
-            let file = {
-                name: fileName,
-                type: "image/svg+xml"
-            };
-
-            const modifiers = {};
-
-            imageTagPromise(tags).then((tags) => {
-                that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-            }).then(() => {
-                file = {
-                    name: "template.svg",
-                    type: "image/svg+xml"
-                };
-                
-                let index = n == 0 ? 0 : n * 3 + that.state.activeTemplate.filePcsCount-2;
-                let doc1 = that.props.documents.map(() => that.props.documents[index].id).slice(0, 1);
-
-                that.props.dispatch(selectDocuments(false));
-                that.props.dispatch(selectDocument(doc1[0]));
-                //that.parseSVG(output, that, [moldShifts, extraMargin, stdMargin], 'file6.svg', 0);
-                var stdMarginY = 0;
-                if (n > 2)
-                    stdMarginY = 1;
-                let margins = [margin[0][0] + margin[1][0] + (n % 3) * that.state.stdMargin, margin[0][1] + margin[1][1] + stdMarginY * that.state.stdMargin];
-                console.log('marGins are ', margins);
-                that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, margins[0], margins[1]]));
-                that.props.dispatch(transform2dSelectedDocuments(that.state.changesXY));
-                //let moves = array();
-                /**/
-
-                let scaling = that.state.changesScaling;
-                //scaling[4] *= that.state.scalingCount * scaling[0];
-                //scaling[5] *= that.state.scalingCount * scaling[0];
-                that.scaleSec(that.state.changesScaling[0], n);
-                //that.props.dispatch(transform2dSelectedDocuments(scaling));
-                
-                if (n == 1) { ///  
-                    let newExtraShift = that.state.extraShift;
-                    newExtraShift[4] = that.props.documents[0].changes[4] - that.state.originalShift[0] - that.state.changesXY[4]/* - margins[0]*/;
-                    newExtraShift[5] = that.props.documents[0].changes[5] - that.state.originalShift[1] - that.state.changesXY[5]/* - margins[1]*/;
-                    that.setState({ extraShift: newExtraShift},() =>{
-                        that.props.dispatch(transform2dSelectedDocuments(newExtraShift));
-                    });
                 }
-                if(n > 1){
-                    that.props.dispatch(transform2dSelectedDocuments(that.state.extraShift));
-                }
+                that.setState({layout:layout});
+                layout.glyphs.forEach((glyph, i) => {
+                    var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                    character.origin = makerjs.point.scale(glyph.position, scale);
+                    makerjs.model.addModel(models, character, i);
+                });
+                let mmDims = getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
+                var pcsCount = activeTemplate.pcsCount;
+                console.log(models);
+                console.log('Standard Margin is: ',(activeTemplate.marginBetweenPCs[0] - mmDims[0])* operator)
+                models = makerjs.layout.cloneToGrid(models, activeTemplate.xCount, activeTemplate.yCount, [(activeTemplate.marginBetweenPCs[0] - mmDims[0]) * operator, (activeTemplate.marginBetweenPCs[1] - mmDims[1]) * operator]);
+                
+                
 
-                fetch(activeTemplate.file)
+                const svgFile = makerjs.exporter.toSVG(models); 
+                const svgDims = getDimensionStr(svgFile);
+                console.log('mmDims are', svgDims);
+
+                var svgFileModified = svgFile.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this
+                // the original value is this
+                //var svgFileModified = svgFile.replace(svgDims[0], '843.3063').replace(svgDims[1], '1192.3787');// we have to change this
+                var transformIndex = svgFileModified.indexOf('<g')+2;
+                var mainMargin = operator * (activeTemplate.initialMargin[0] - mmDims[0])/2;
+                var stringMarin = mainMargin.toString();
+                var stringMarginY = activeTemplate.initialMargin[1];
+                var finalist = svgFileModified.slice(0, transformIndex) + ' transform="translate(' + stringMarin + ',' + stringMarginY + ') scale(' + activeTemplate.textScalingPercetage+')" ' + svgFileModified.slice(transformIndex);
+                var theFinal = finalist;
+                var closeGIndex = finalist.indexOf('</svg>');
+                const rectframe ='<rect width="1122.5196" height="1587.401" style="stroke-width:0.10;stroke:rgb(0,0,0);fill:none"></rect>';
+                console.log('the Final is:',theFinal);
+                let k = 0; 
+                var contentModified;
+                var decoration;
+                var decoroartionDown;
+                fetch(that.state.shapeFile)
                     .then(resp => resp.text())
                     .then(content => {
-                        parser.parse(content).then((tags) => {
-                            
-                            let captures = release(true);
-                            let warns = captures.filter(i => i.method == 'warn')
-                            let errors = captures.filter(i => i.method == 'errors')
-
-                            if (warns.length)
-                                CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2);
-                            if (errors.length)
-                                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3);
-                            imageTagPromise(tags).then((tags) => { 
-                                //that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
-                            }).then(() => {
-                                if (n == 0) {
-                                    that.setState({ originalShift: [that.props.documents[0].changes[4], that.props.documents[0].changes[5]] })
+                        // replace the first <G in content with what we want
+                        for (let i = 0; i < activeTemplate.xCount; i++) {
+                            for (let j = 0; j < activeTemplate.yCount; j++) {        
+                                closeGIndex = theFinal.indexOf('</svg>');
+                                if(that.state.activeTemplate.hasDecoration)
+                                {
+                                    decoration = '<g transform="translate(' + activeTemplate.decorationMargin[k] + ') scale(' + activeTemplate.shapeScalingPercentage + ')"><path opacity="0.75" fill="url(#SVGID_1_)" d="M165,52.485c-0.139,0.002-0.27,0.016-0.411,0.016 c-0.539,0-1.052-0.025-1.567-0.052L165,50.472v-2.405l-3.156,3.161l-4.305-4.302l3.853-3.853H165V41.37h-3.608l-3.853-3.848 l4.305-4.309L165,36.378v-2.406l-6.134-6.133h-0.033L165,21.674v-2.406l-3.156,3.165l-4.305-4.307l3.853-3.85H165v-1.701 h-3.608l-3.853-3.854l4.305-4.301L165,7.582V5.176L159.828,0h-2.411l3.22,3.217l-4.3,4.299l-3.853-3.851V0h-1.698v3.666 l-3.855,3.851l-4.3-4.299L145.85,0h-2.406l-6.208,6.213L131.028,0h-2.411l3.223,3.217l-4.302,4.299l-3.853-3.851V0h-1.694 v3.469c0.218,0.178,0.404,0.368,0.616,0.554c-1.648-1.429-3.513-2.754-5.649-3.93L117.053,0h-10.321 c25.386,6.565,22.77,29.939,22.77,29.939h8.569c0,0,1.746,26.257,26.518,26.257c0.141,0,0.272-0.012,0.411-0.014V52.485z M159.842,42.222l-3.501,3.502l-3.505-3.502l3.502-3.499L159.842,42.222z M150.786,23.179v3.827h-4.779l-3.376-3.378 l4.3-4.302L150.786,23.179z M148.133,18.126l3.502-3.499l3.505,3.499l-3.505,3.502L148.133,18.126z M150.786,28.637v3.83 l-3.855,3.853l-4.3-4.299l3.376-3.384H150.786z M151.635,34.019l3.5,3.503l-3.5,3.499l-3.502-3.499L151.635,34.019z  M160.637,32.021l-4.3,4.299l-3.853-3.853v-3.83h4.777L160.637,32.021z M160.637,23.628l-3.377,3.378h-4.777v-3.827 l3.857-3.853L160.637,23.628z M159.842,13.423l-3.501,3.502l-3.505-3.502l3.502-3.505L159.842,13.423z M151.635,5.219 l3.5,3.502l-3.5,3.499l-3.502-3.499L151.635,5.219z M150.434,13.423l-3.503,3.502l-3.501-3.502l3.501-3.505L150.434,13.423z  M138.052,7.801l3.376-3.381l4.305,4.301l-3.854,3.854h-3.827V7.801z M138.052,14.276h3.825l3.856,3.85l-4.305,4.307 l-3.376-3.384V14.276z M133.043,4.42l3.38,3.381v4.774h-3.826l-3.854-3.854L133.043,4.42z M128.457,10.84l2.584,2.583 l-0.758,0.762C129.76,13.061,129.147,11.941,128.457,10.84z M132.801,22.19c-0.363-2.045-0.937-4.181-1.792-6.331l1.588-1.584 h3.826v4.773l-3.38,3.384L132.801,22.19z M141.76,29.688l-0.251-3.441c0,0-5.876,0-8.241,0 c-0.025-0.499-0.061-1.007-0.114-1.524l4.082-4.084l7.199,7.202h-0.027l-2.581,2.575 C141.782,30.028,141.762,29.773,141.76,29.688z M142.585,34.369l3.149,3.153l-1.549,1.547 C143.458,37.393,142.945,35.776,142.585,34.369z M144.953,40.701l1.977-1.977l3.503,3.499l-2.731,2.73 C146.595,43.587,145.686,42.141,144.953,40.701z M148.827,46.231l2.808-2.804l3.505,3.499l-2.451,2.444 C151.214,48.458,149.93,47.392,148.827,46.231z M160.38,52.165l-0.006-0.002c-2.322-0.371-4.359-1.041-6.142-1.931 l2.108-2.101l4.033,4.032c0.017,0.002,0.032,0.008,0.049,0.011C160.41,52.171,160.391,52.171,160.38,52.165z"/><linearGradient id="SVGID_2_" gradientUnits="userSpaceOnUse" x1="315.2232" y1="-6.5167" x2="128.7738" y2="162.3331" gradientTransform="matrix(-1 0 0 -1 293.373 176.5627)"><stop  offset="0" style="stop-color:#FFFFFF"/><stop  offset="1" style="stop-color:#696969"/></linearGradient></g>';
+                                    decoroartionDown = '<g transform="translate(' + activeTemplate.decorationDMargin[k] + ') scale(' + activeTemplate.shapeScalingPercentage + ')"><path opacity="0.75" fill="url(#SVGID_2_)" d="M0,112.514c0.139-0.003,0.27-0.016,0.411-0.016 c0.539,0,1.052,0.024,1.567,0.052L0,114.527v2.406l3.156-3.161l4.305,4.302l-3.853,3.854H0v1.702h3.608l3.853,3.848 l-4.305,4.309L0,128.621v2.406l6.134,6.133h0.033L0,143.326v2.406l3.156-3.165l4.305,4.305l-3.853,3.851H0v1.702h3.608 l3.853,3.853l-4.305,4.301L0,157.417v2.406l5.172,5.176h2.411l-3.22-3.216l4.3-4.299l3.853,3.849v3.666h1.698v-3.666 l3.855-3.849l4.3,4.299l-3.219,3.216h2.406l6.208-6.213l6.208,6.213h2.411l-3.223-3.216l4.302-4.299l3.853,3.849V165h1.694 v-3.471c-0.218-0.177-0.404-0.367-0.616-0.554c1.648,1.429,3.513,2.755,5.649,3.93L47.947,165h10.321 c-25.386-6.566-22.77-29.94-22.77-29.94h-8.569c0,0-1.746-26.257-26.518-26.257c-0.141,0-0.272,0.011-0.411,0.013V112.514z M5.158,122.777l3.501-3.501l3.505,3.501l-3.502,3.498L5.158,122.777z M14.214,141.819v-3.827h4.779l3.376,3.379l-4.3,4.302 L14.214,141.819z M16.867,146.873l-3.502,3.5l-3.505-3.5l3.505-3.501L16.867,146.873z M14.214,136.362v-3.83l3.855-3.853 l4.3,4.299l-3.376,3.384H14.214z M13.365,130.98l-3.5-3.503l3.5-3.5l3.502,3.5L13.365,130.98z M4.363,132.978l4.3-4.299 l3.853,3.853v3.83H7.739L4.363,132.978z M4.363,141.371l3.377-3.379h4.777v3.827l-3.857,3.854L4.363,141.371z M5.158,151.576 l3.501-3.501l3.505,3.501l-3.502,3.505L5.158,151.576z M13.365,159.781l-3.5-3.503l3.5-3.498l3.502,3.498L13.365,159.781z  M14.566,151.576l3.503-3.501l3.501,3.501l-3.501,3.505L14.566,151.576z M26.948,157.198l-3.376,3.381l-4.305-4.301 l3.854-3.853h3.827V157.198z M26.948,150.724h-3.825l-3.856-3.851l4.305-4.305l3.376,3.384V150.724z M31.957,160.578 l-3.38-3.381v-4.773h3.826l3.853,3.853L31.957,160.578z M36.543,154.159l-2.584-2.583l0.758-0.762 C35.24,151.939,35.853,153.058,36.543,154.159z M32.199,142.809c0.363,2.045,0.937,4.181,1.792,6.331l-1.588,1.584h-3.826 v-4.773l3.38-3.384L32.199,142.809z M23.24,135.311l0.251,3.442c0,0,5.876,0,8.241,0c0.025,0.5,0.061,1.007,0.114,1.524 l-4.082,4.083l-7.199-7.201h0.027l2.581-2.575C23.218,134.971,23.238,135.226,23.24,135.311z M22.415,130.63l-3.149-3.153 l1.549-1.547C21.542,127.606,22.055,129.224,22.415,130.63z M20.047,124.298l-1.977,1.977l-3.503-3.498l2.731-2.73 C18.405,121.412,19.314,122.857,20.047,124.298z M16.173,118.768l-2.808,2.805l-3.505-3.5l2.451-2.444 C13.786,116.541,15.07,117.606,16.173,118.768z M4.62,112.833l0.006,0.003c2.322,0.371,4.359,1.041,6.142,1.93l-2.108,2.101 l-4.033-4.032c-0.017-0.003-0.032-0.008-0.049-0.011C4.59,112.828,4.609,112.828,4.62,112.833z"/></g>';
                                 }
-                                if (n > 4) {
-                                    // change indexes here
-                                    that.props.dispatch(addOperation({
-                                        documents: [
-                                            that.props.documents[0].id,
-                                            that.props.documents[that.state.activeTemplate.filePcsCount + 1].id,
-                                            that.props.documents[that.state.activeTemplate.filePcsCount + 4].id,
-                                        ] }));
-                                    that.props.dispatch(addOperation({
-                                        documents: [
-                                            that.props.documents[that.state.activeTemplate.filePcsCount + 7].id,
-                                            that.props.documents[that.state.activeTemplate.filePcsCount + 10].id,
-                                            that.props.documents[that.state.activeTemplate.filePcsCount + 13].id
-                                        ] }));
-                                    /*that.props.dispatch(addOperation({
-                                        documents: [
-                                            
-                                            
-                                        ] }));*/
-                                    that.props.dispatch(selectDocument(that.props.documents[0].id));
-                                    runJob();
-                                    
-                                }
-                            })
-                        });
+                                contentModified  = content.replace('<g id="template_1_">', '<g id="template_1_" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
+                                //graduationHatStatement = activeTemplate.shapeSVGName[0] + activeTemplate.shapeMargins[k] + activeTemplate.shapeSVGName[1];
+                                theFinal = theFinal.slice(0, closeGIndex) + contentModified + decoration + decoroartionDown + theFinal.slice(closeGIndex);
+                                k++;
+                            }
+                        }
+                        closeGIndex = theFinal.indexOf('</svg>');
+                        theFinal = theFinal.slice(0, closeGIndex) + rectframe + theFinal.slice(closeGIndex);
+                        var svgElement = document.getElementById("boxTemplate");
+                        svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(theFinal));
+                        svgElement.setAttribute('download', 'File.svg');
                     });
-            })
-        });
+            }
+            catch(ex){
+                console.log(ex);
+            }
 
+        });
     }
+
+
     handleSubmission(e) {
         e.preventDefault();
         var text = e.target.content.value;
@@ -937,35 +430,27 @@ class Cam extends React.Component {
             content: text
         });
     }
+
     step1(){
         this.setState({step1: true, step2: false,step3:false});
     }
+
     step2(){
         this.setState({ step1: false, step2: true, step3: false });
     }
+
     step3(){
         this.setState({ step1: false, step2: false,step3:true });
     }
-    automatedProcess(){
-        this.textWrapping(this.downloadFile,false);
-    }
-    downloadFile(){
-        //scaling according to dims
-        const scale = 26.4 / this.state.dims[0];//or 28 instead of 32 we will see
-        var downloadMe = () => {
-            var svgElement = document.getElementById("svgFile");
-            svgElement.setAttribute('download', 'File.svg');
-            svgElement.click();
-        }
 
-        this.setState({ fontSize: this.state.fontSize * scale }, () => {
-            this.textWrapping(downloadMe, true);
-        });        
-    }
+    
 
+    chooseShape(shape){
+        console.log('test',shape);
+    }
     handleShape(shape){
         var chocoTemplates = require("../data/chocolateTemplates.json");
-        let activeTemplate = chocoTemplates.templates[2];
+        var activeTemplate;
         switch(shape){
             case 'decorated':// square in square
                 activeTemplate = chocoTemplates.templates[2];
@@ -979,87 +464,7 @@ class Cam extends React.Component {
                     scalingOperatorY:25.2//should we reduce this by 2 mm in all the shapes?? I think so
                  });
             break;
-            case 'CinS':
-                activeTemplate = chocoTemplates.templates[4];
-                this.setState({ 
-                    mold: 'mold2.png',
-                    moldWidth: '231px', moldHeight: '232px',
-                    moldName: 'Circle in Square',
-                    moldPlaceHolder: 'name\nhere',
-                    paddingTop: '65px'
-                });
-            break;
-            case 'HinS':
-                activeTemplate = chocoTemplates.templates[5];
-                this.setState({ 
-                    mold: 'mold7.png',
-                    moldWidth: '231px', moldHeight: '232px',
-                    moldName: 'Heart in Square',
-                    moldPlaceHolder: 'name\nhere',
-                    paddingTop: '75px'
-                });
-            break;
-            case 'Circle':
-                activeTemplate = chocoTemplates.templates[3];
-                this.setState({ 
-                    mold: 'mold3.png', 
-                    moldWidth: '260px', 
-                    moldHeight: '234px',
-                    moldName: 'Circle',
-                    moldPlaceHolder: 'name\nhere',
-                    paddingTop: '60px',
-                    scalingOperatorX:25.1,
-                    scalingOperatorY: 25.1
-                });
-            break;
-            case 'Oval':
-                activeTemplate = chocoTemplates.templates[0];
-                this.setState({ mold: 'mold9.png', moldWidth: '263px', moldHeight: '210px',
-                    moldName: 'Oval',
-                    moldPlaceHolder: 'name here',
-                    paddingTop: '65px',
-                    scalingOperatorX: 30.35,
-                    scalingOperatorY: 19.8
-                });
-            break;
-            case 'BabyS':
-                activeTemplate = chocoTemplates.templates[6];
-                this.setState({ mold: 'mold5.png', moldWidth: '232px', moldHeight: '245px', 
-                    moldName: 'Baby Shirt',
-                    moldPlaceHolder: 'name\nhere',
-                    paddingTop: '65px'
-                });
-            break;
-            case 'BabySt':
-                activeTemplate = chocoTemplates.templates[7];
-                this.setState({ mold: 'mold6.png', moldWidth: '263px', moldHeight: '245px', 
-                moldName: 'Stroller',
-                moldPlaceHolder: 'name here',
-                paddingTop:'110px'
-            });
-            //571420-eurO
-            break;
-            case 'Heart':
-                activeTemplate = chocoTemplates.templates[8];
-                this.setState({ mold: 'mold8.png', moldWidth: '231px', moldHeight: '232px', 
-                moldName: 'Heart',
-                moldPlaceHolder: 'name here',
-                paddingTop:'53px' ,
-                scalingOperatorX: 28,
-                scalingOperatorY: 24
-            });
-            break;
-            case 'Rect':
-                activeTemplate = chocoTemplates.templates[1];
-                this.setState({ 
-                    mold: 'mold4.png', moldWidth: '264', moldHeight: '210px', 
-                    moldName: 'Rectangle',
-                    moldPlaceHolder: 'name here',
-                    paddingTop: '63px',
-                    scalingOperatorX: 17.061,
-                    scalingOperatorY: 35.715
-             });
-                break;
+
             default:
                 activeTemplate = chocoTemplates.templates[0];
             break;
@@ -1069,49 +474,124 @@ class Cam extends React.Component {
     setPcsCount(name,count){
         switch(count){
             case 1://we have to set some settings
+                this.setState({ boxDims:shapeTemplats[0]});
             break;
             case 2://we have to
+                this.setState({ boxDims: shapeTemplats[1] });
             break;
             case 3://we have to
+                this.setState({ boxDims: shapeTemplats[2] });
             break;
             case 4://we have to
+                this.setState({ boxDims: shapeTemplats[3] });
             break;
             case 6://we have to
+                this.setState({ boxDims: shapeTemplats[4] });
             break;
             case 8://we have to
+                this.setState({ boxDims: shapeTemplats[5] });
             break;
             case 12://we have to
+                this.setState({ boxDims: shapeTemplats[6] });
             break;
             case 16://we have to
+                this.setState({ boxDims: shapeTemplats[7] });
             break;
             case 24://we have to
+                this.setState(
+                    {
+                        pcsCount: count,
+                        activeTemplate: {
+                            fontSize: 40,
+                            pcsCount: 2,
+                            layoutWidth: 6000,
+                            xCount: 1,
+                            yCount: 2,
+                            marginBetweenPCs: [118, 118],
+                            initialMargin: [260, 600],//should change based on the size of the text and shape
+                            textScalingPercetage: [1.5, 1.5],
+                            shapeMargins: [
+                                '190,135',
+                                '190,820'
+                            ],
+                            decorationMargin:[
+                                '265,135',
+                                '265,811.5'
+                            ],
+                            decorationDMargin: [
+                                '148,135',
+                                '148,811.5'
+                            ],
+                            shapePosition: 1,
+                            textPosition: 1,
+                            shapeScalingPercentage: '4.3,3.9',
+                            shapeSVGName: allShapes[1],
+                            hasDecoration:true,
+                        }
+                    }
+                );
+                this.setState({ boxDims: shapeTemplats[8] });
             break;
             case 32://we have to
+                this.setState({ boxDims: shapeTemplats[9] });
             break;
             case 50://we have to
+                this.setState({ boxDims: shapeTemplats[10] });
             break;
             default:
             break;
         }
-        this.setState({pcsCount:count});
-        this.setState({ step1: false, step2: false,step3:true});
 
+        if(count == 4 || count == 24)
+            this.setState({ step1: false, step2: false,step3:true},()=>{
+                console.log(this.state.boxDims);
+            });
     }
+
+    selectModelNo(model){
+        this.setState({
+            shapeModelNo:model
+        });
+        const modifiers = {};
+        const release = captureConsole();
+        const parser = new Parser({});
+        let file = {
+            name: "template.svg",
+            type: "image/svg+xml"
+        };
+        const that = this;
+        fetch(allSvgFileNames[model])
+            .then(resp => resp.text())
+            .then(content => {
+                parser.parse(content).then((tags) => {
+                   
+                    imageTagPromise(tags).then((tags) => {
+                        that.props.dispatch(loadDocument(file, { parser, tags }, modifiers));
+                    }).then(() => {
+                        that.props.dispatch(selectDocument(that.props.documents[3].id));
+                        that.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 77, 77]));
+                        that.props.dispatch(selectDocuments(false));
+                        //that.props.dispatch(selectDocument(that.props.documents[0].id));
+                    })
+                });
+            });
+    }
+
     mainTemplate(template){
         switch (template){
             case 'readymade':
-                this.setState({ loadImageEnabled: false, readyMade: true, textMode: false });
+                this.setState({ loadImageEnabled: false, readyMade: true, textMode: false, templateName:'readymade' });
                 $("#eeveelutions").attr("src", "");
             break;
             case 'photo':
-                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false });
+                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false, templateName: 'photo' });
             break;
             case 'text':
-                this.setState({ loadImageEnabled: false, textMode: true, readyMade: false });
+                this.setState({ loadImageEnabled: false, textMode: true, readyMade: false, templateName: 'text' });
                 $("#eeveelutions").attr("src", "");
             break;
             case 'logo':
-                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false });
+                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false, templateName: 'logo' });
             break;
             default:
             break;
@@ -1156,15 +636,12 @@ class Cam extends React.Component {
         return payload;
     }
     convert(){
-        
         var payload = this.prepareImage();// the result is a white and black image.
-        // add opencv call here
         const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
         var canvas = document.getElementById("canvas");
         var ctx = canvas.getContext("2d");
         var updatedImageData = '';
         var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
 
         const that = this;
         axios.post('http://localhost:8090/http://localhost:4000', { data: payload })
@@ -1214,28 +691,15 @@ class Cam extends React.Component {
                     cors: true, // allow cross-origin HTTP request
                     credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
                 };
-                // From Scratch, algorithms, tests, interviews code, challenge your thinking,
-                // @hometimeutilize, thnkfurcreroltmnotthnkofthemupcvrerdwrkdesc wrkonprjblg
-                //temporary I will change this to  
-                
-                //return;
+
                 fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
                 //fetch('testing2.svg').then(resp => resp.text())
                     .then((response) => {
-                        const moldShifts = that.state.moldShifts;//[105,96];//[70, 65];             
-                        const stdMargin = that.state.activeTemplate.marginChocolate[0]; // margin between two pieces of the mo
-                        const extraMargin = [0, 0];
                         const image = response;
-                        //const dims = getDimensionAPI(response);//original bu
                         const dims = getDimensionGeneral(response);
-
-                        //now let's repeat it 
-
                         that.setState({ dims: dims }, () => {
-                            //that.parseSVG(response, that, [moldShifts, extraMargin, stdMargin], 'file1.svg', 0);
                         });
                         svgContent = response;
-
                         that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
                     }).then(() => {
                         // for the heart change percentageX,percentageY
@@ -1278,7 +742,6 @@ class Cam extends React.Component {
                                 console.log(response);
                                 alert('File is ready');
                             })*/
-                        //that.scale(scale * operator);
                     });
             };
             i.src = response.data;
@@ -1288,50 +751,6 @@ class Cam extends React.Component {
             console.error(err);
         });
         var svgContent;
-        //this.setState(initialState);
-    }
-
-   
-
-    combine() {
-        const that = this;
-        fetch('bride.svg')
-            .then(resp => resp.text())
-            .then(content => {
-                const dims = getDimensionAPI(content);
-                that.setState({dims:dims});
-                fetch('sampleextrea.svg').then(resp => resp.text())
-                    .then(exampleContent => {
-                        var combinedShape = that.combineShapeCalligraphy(content,exampleContent);
-                    });
-            });
-    }
-
-
-
-    async combineShapeCalligraphy(shape,calligraphy){
-        const shapeDimensions = getDimensionAPI(shape);
-        const sampleDimension = getDimensionAPI(calligraphy);
-        var g = getG(shape);// get G from a file that contains only one G, or get the first g of a file.
-        // now to modify this G: modify translate, and modify scale to
-        // starts with translate,  
-        var tranformIndex = g.indexOf('transform');
-        var tranformStatement = 'transform="translate(470.000000,420.000000) scale(-0.1000,-0.10000)"';
-        const closingPosition = getGPosition(g,'"',2)+1;
-        var replacedString = g.substring(tranformIndex, closingPosition);
-        const insertionIndex = calligraphy.indexOf('</g>') + 4;
-        const print = (results) =>{
-            console.log(results,'results')
-        }
-
-        g = g.replace(replacedString, tranformStatement);
-        calligraphy = calligraphy.slice(0, insertionIndex) + g + calligraphy.slice(insertionIndex);
-        const viewboxIndex = findStartEndIndices(calligraphy, 'viewBox="');
-        const final2 = calligraphy.replaceAll('width="' + sampleDimension[2] + '"', 'width="'+shapeDimensions[2]+'"')
-            .replaceAll('height="' + sampleDimension[3] + '"', 'height=="' + shapeDimensions[3] + '"')
-            .replaceAll(calligraphy.substring(viewboxIndex[0], viewboxIndex[1] + 1), 'viewBox="0 0' + ' ' + shapeDimensions[0] + ' ' + shapeDimensions[1]+ '"');
-        // we need to change the height and viewbox to another values after adding the date
-        return final2;
     }
 
     // On file select (from the pop up)
@@ -1382,9 +801,6 @@ class Cam extends React.Component {
         const { selectedOption } = this.state;
         console.log('cam.js this.props: ',this.props);
         let { settings, documents, operations, currentOperation, toggleDocumentExpanded, loadDocument, bounds } = this.props;
-        let validator = ValidateSettings(false)
-        let valid = validator.passes();
-        let someSelected = documents.some((i) => (i.selected));
 
         const imageGroups = [
             { value: 'eid', label: 'Eid' },
@@ -1395,188 +811,36 @@ class Cam extends React.Component {
         ];
 
         return (
-            
             <div id="Main" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column',width: '1000px' }} >
-
                 { this.state.step1 && (
-                <div id="main3" className="panel panel-danger  well-sm" style={{ padding:'0',marginBottom: 7,color:'white' }}  >
-                    <div className="well-sm" style={{ padding:'15px',backgroundColor: "#332C26", color:"white" }}>
-                        <span style={{fontSize:'16px'}}>SELECT Box Type</span><br/>
-                        <span style={{fontSize:'12px'}}>Choose a shape of your choice to start customizing.</span>
-                    </div>
-                    <Form onSubmit={this.handleSubmission} >
-                        <div style={{ backgroundColor: '#443B34'}}>                        
-                            <Row style={{ marginLeft: '10px', fontSize: "15px", textAlign: 'center'}}>
-                                <Col>
-                                    <div style={{ width: '235px', display:'inline-block',margin:'10px',paddingBottom:'5px'}}>
-                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated') } ></img>
-                                        <span>Decorated Boxes</span>
-                                    </div>
-                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
-                                        <span>Leather Boxes</span>
-                                    </div>
-                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
-                                        <span>Wooden Boxes</span>
-                                    </div>
-                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
-                                        <span>Golden Boxes</span>
-                                    </div>
-                                    <div style={{ width: '235px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBox.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.handleShape('decorated')} ></img>
-                                        <span>Magentic Boxes</span>
-                                    </div>
-                                </Col>
-                            </Row>   
-                        </div>     
-                    </Form>
-                </div>)}
+                <MainShapes handleShape={this.handleShape} />
+                )}
                 {this.state.step2 && (
-                    <div id="main2" className="panel panel-danger  well-sm" style={{ padding: '0', marginBottom: 7, color: 'white' }}  >
-                        <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
-                            <span style={{ fontSize: '16px' }}>SELECT Box Type</span><br />
-                            <span style={{ fontSize: '12px' }}>Choose a shape of your choice to start customizing.</span>
-                        </div>
-                        <Form onSubmit={this.handleSubmission} >
-                            <div style={{ backgroundColor: '#443B34' }}>
-                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
-                                    <Col>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold1',1)} ></img>
-                                            <span >Golden 1 PC</span>
-                                        </div>
-                                   
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold2',2)} ></img>
-                                            <span >Golden 2 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold3',3)} ></img>
-                                            <span >Golden 3 PCs</span>
-                                        </div>
-
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold4',4)} ></img>
-                                            <span >Golden 4 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold6',6)} ></img>
-                                            <span >Golden 6 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold8',8)} ></img>
-                                            <span >Golden 8 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold12',12)} ></img>
-                                            <span >Golden 12 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold16',16)} ></img>
-                                            <span >Golden 16 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold24',24)} ></img>
-                                            <span >Golden 24 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold32',32)} ></img>
-                                            <span >Golden 32 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('gold50',50)} ></img>
-                                            <span >Golden 50 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver1',1)} ></img>
-                                            <span >Silver 1 PC</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver2',2)} ></img>
-                                            <span >Silver 2 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver3',3)} ></img>
-                                            <span >Silver 3 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver4',4)} ></img>
-                                            <span >Silver 4 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver6',6)} ></img>
-                                            <span >Silver 6 PCs</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.setPcsCount('silver12',12)} ></img>
-                                            <span >Silver 12 PCs</span>
-                                        </div>
-                                    </Col>
-                                </Row>
-                            </div>
-                            <div style={{ margin: '20px' }}>
-                                <Button bsSize="lg" bsStyle="warning" onClick={this.step1}> <Icon name="angle-left" /></Button>
-                                <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }}  onClick={this.step3} bsStyle="warning"> <Icon name="angle-right" /></Button>
-                            </div>
-                        </Form>
-                    </div>)}
-                {this.state.step3 && (<div id="main2" className="panel panel-danger  well-sm" style={{ padding: '0', marginBottom: 7, color: 'white' }}  >
+                    <Decorated setPcsCount={this.setPcsCount} step1 = {this.step1} step3={this.step3} ></Decorated>
+                    )}
+                {this.state.step3 && (
+                <div id="main2" className="panel panel-danger  well-sm" style={{ padding: '0', marginBottom: 7, color: 'white' }}  >
                     <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
                         <span style={{ fontSize: '16px' }}>SELECT Box Type</span><br />
                         <span style={{ fontSize: '12px' }}>Choose a shape of your choice to start customizing.</span>
                     </div>
                     <Form onSubmit={this.handleSubmission} >
-                        <div style={{ backgroundColor: '#443B34' }}>
-                            <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
-                                <Col>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="girl.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('photo')} ></img>
-                                        <span >Your Photo Here</span>
-                                    </div>
-
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="baby_clothes_boy.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('readymade')} ></img>
-                                        <span >Baby Clothes</span>
-                                    </div>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('text')} ></img>
-                                        <span >Text</span>
-                                    </div>
-
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="logo.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('logo')} ></img>
-                                        <span >Logo</span>
-                                    </div>
-
-                                </Col>
-                            </Row>
-                        </div>
+                        <MainTemplates mainTemplate={this.mainTemplate}></MainTemplates>
                         {this.state.loadImageEnabled && (
-                            <div style={{ backgroundColor: '#443B34' }}>
-                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
-                                    <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
-                                        <span style={{ fontSize: '16px' }}> Upload your Photo Here</span>                                       
-                                    </div>
-                                    <input type="file" style={{ display: 'inline-block' }} onChange={this.onFileChange} />
-                                    <button onClick={this.onFileUpload} style={{ display: 'inline-block' }} >Upload!</button>
-                                </Row>
-                            </div>
+                            <div></div>
                         )}
                         {this.state.readyMade && (
                             <div style={{ backgroundColor: '#443B34' }}>
-
                                 <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
                                     <Col>
                                         {/**/}
-                                        <Select className="success " value={this.state.readyMadeTemplate} defaultValue={this.state.readyMadeTemplate} 
-                                            placeholder='Choose Shape' onChange={this.handleShapeChange} options={imageGroups} >
+                                        <Select className="success" value={this.state.readyMadeTemplate} defaultValue={this.state.readyMadeTemplate} 
+                                            placeholder='Choose a Group' onChange={this.handleShapeChange} options={imageGroups} >
                                         </Select>
                                     </Col>
                                 </Row>
                                 {this.state.activeGroupEid && (
-                                    <Eid></Eid>
+                                        <Eid chooseShape={this.chooseShape} ></Eid>
                                 )}
                                 {this.state.activeGroupiloveyou && (
                                     <ILoveYOU></ILoveYOU>
@@ -1587,57 +851,37 @@ class Cam extends React.Component {
                                 {this.state.activeGroupBirthday && (
                                     <Birthday></Birthday>
                                 )}
+                            </div>
+                        )}
+                        {this.state.textMode && (
+                            <ShapeGroups selectModelNo={this.selectModelNo} />
+                        )}
+                        <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                            <div style={{ backgroundColor: '#443B34' }}>
+                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
+                                    <div className="well-sm" style={{ padding: '15px', backgroundColor: "#332C26", color: "white" }}>
+                                        <span style={{ fontSize: '16px' }}> Upload your Photo Here</span>
+                                    </div>
+                                    <input type="file" style={{ display: 'inline-block' }} onChange={this.onFileChange} />
+                                    <button onClick={this.onFileUpload} style={{ display: 'inline-block' }} >Upload!</button>
+                                </Row>
                                 <Row style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>
                                     <Col>
                                         <span style={{ fontSize: '16px' }}>Your Name</span>
                                     </Col>
-                                </Row>
-                                <Col>
-                                    <label style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>Text Field: &nbsp;&nbsp;&nbsp;</label>
-                                    <input type="text" placeholder="your name here"></input><br></br><br></br>
-                                </Col>
-
-                            </div>
-                        )}
-                        {this.state.textMode && (
-                            <div style={{ backgroundColor: '#443B34' }}>
-                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
-                                    <Col>
-                                        <span style={{ fontSize: '16px' }}>SELECT Shape</span>
-                                    </Col>
-                                </Row>
-                                <Row style={{ marginLeft: '10px', fontSize: "11px", textAlign: 'center' }}>
-                                    <Col>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="graduation_with_text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('photo')} ></img>
-                                            <span >Graduation Cap</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="graduation_with_textLight.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('readymade')} ></img>
-                                            <span >Graduation Cap</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('text')} ></img>
-                                            <span >Only Text</span>
-                                        </div>
-                                        <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                            <img className="shape" src="newlyweds_with_text.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.mainTemplate('logo')} ></img>
-                                            <span >Newly Weds</span>
-                                        </div>
-
-                                    </Col>
-                                    <Row style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>
-                                        <Col>
-                                            <span style={{ fontSize: '16px' }}>Your Name</span>
-                                        </Col>
-                                    </Row>
                                     <Col>
                                         <label style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>Text Field: &nbsp;&nbsp;&nbsp;</label>
-                                        <input type="text" placeholder="your name here"></input><br></br><br></br>
+                                            <input style={{ backgroundColor: '#443B34' }} type="text" placeholder="your name here" name="content" id="content"
+                                            ref={(input) => { this.nameInput = input; }} maxLength="23"
+                                            onChange={this.changeTextTemplateName} defaultValue={this.state.templateName} >
+                                        </input>
+                                            <Button bsSize="lg" bsStyle="warning" onClick={this.generateBox}> <Icon name="play" />Generate</Button>
+                                            <a href="" id="boxTemplate">OurFile</a>
+                                        <br></br><br></br>
                                     </Col>
                                 </Row>
-                            </div>
-                        )}
+                            </div>                                
+                        </Row>
                         <div style={{ margin: '20px' }}>
                             <Button bsSize="lg" bsStyle="warning" onClick={this.step2}> <Icon name="angle-left" /></Button>
                             <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} onClick={this.step4} bsStyle="warning"> <Icon name="angle-right" /></Button>
@@ -1645,243 +889,11 @@ class Cam extends React.Component {
                     </Form>
                 </div>
                 )}
-                <div className="panel panel-danger hideMe" style={{ marginBottom: 0 }}>
-                    <div className="panel-heading" style={{ padding: 2 }}>
-                        <table style={{ width: 100 + '%' }}>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <label>Workspace</label>
-                                    </td>
-                                    <td>
-                                        <ApplicationSnapshotToolbar loadButton saveButton stateKeys={['documents', 'operations', 'currentOperation', 'settings.toolFeedUnits']} saveName="Laserweb-Workspace.json" label="Workspace" className="well well-sm">
-                                            <Button bsSize="xsmall" bsStyle="warning" onClick={e => this.props.resetWorkspace(e)}>Reset <Icon name="trash" /></Button>
-                                        </ApplicationSnapshotToolbar>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {this.state.step4 && (<div>
-                    
-                    Font:
-                        <FormGroup style={{ margin: '10px' }}>
-                       
-                        <div>
-                            <div className="form-check" >
-                                <label htmlFor="Oval">
-                                    <input type="radio" name="template" value="Oval"
-                                        onChange={this.handleTemplateChange}
-                                        className="form-check-input" />
-                            Oval </label>
-                                <img src="oval.jpg" height="40" width="80" />
-                            </div>
-                            <div className="form-check">
-                                <label htmlFor="Rectangle">
-                                    <input type="radio" name="template" value="Rectangle"
-                                        onChange={this.handleTemplateChange}
-                                        className="form-check-input"
-                                    />
-                                Rectangle
-                                </label>
-                                <img src="rectangle.jpg" height="40" width="80" />
-                            </div>
-                            <div className="form-check">
-                                <label htmlFor="Square">
-                                    <input type="radio" name="template" value="Square" onChange={this.handleTemplateChange}
-                                        className="form-check-input" />
-                                Square
-                                 </label>
-                                <img src="rectangle.jpg" height="50" width="50" />
-                            </div>
-                        </div>
-                        <div>
-                        </div>
-                        <div>
-                            <Button name="textWrapping" disabled={!this.state.textEnabled} onClick={this.textWrapping} bsStyle="danger" >One Piece</Button> &nbsp;
-                            <Button name="generateAll" className='hideMe'  disabled={!this.state.generalAllEnable} onClick={this.generateAll} bsStyle="danger" >Confirm</Button>
-                            &nbsp;&nbsp;                        
-                            <div>
-                                <br />
-                                <Button title="Bigger" name="fontplus" onClick={() => { this.scale(1.02) }} bsSize="large" bsStyle="primary" className={"fa fa-plus-circle"}></Button>
-                                <br />
-                            </div>
-                        </div>
-                    </FormGroup>
-                </div>)}
-                <div className="success hideMe" >Choose Font:</div>
-                <Select className="success hideMe" value={globalState.gcode.chocolateFont.data} placeholder='Choose Font'
-                    onChange={this.handleFontChange} defaultValue={globalState.gcode.chocolateFont.data} options={imageGroups} >
-                    <option value="GreatVibes">Great Vibes</option>
-                    <option value="Arslan">ArslanFont</option>
-                    <option value="chocolatePristina">Pristina</option>
-                    <option value="ITCKRIST">ITCKRIST</option>
-                    <option value="TrajanPro-Bold">TrajanPro-B</option>
-                    <option value="Bevan">Eevan</option>
-                </Select>
-                <a href={this.state.svgFile} className="hideMe" id="svgFile">File</a>
-                <Alert bsStyle="success" className="hideMe" style={{ padding: "4px", marginBottom: 7, display: "block", backgroundColor: '#A4644C',color:'white' }}>
-                    
-
-                </Alert>
-                <div>
-                    
-                </div>
-                <div className="Resizer horizontal hideMe" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
-                <div className="panel panel-info hideMe" style={{ marginBottom: 3 }}>
-                    <div className="panel-heading" style={{ padding: 2 }}>
-                        <table style={{ width: 100 + '%' }}>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <label>Documents {Info(<small>Tip:  Hold <kbd>Ctrl</kbd> to click multiple documents</small>)}</label>
-                                    </td>
-                                    <td style={{ display: "flex", justifyContent: "flex-end" }}>
-                                        <FileField style={{ position: 'relative', cursor: 'pointer' }} onChange={loadDocument} accept={DOCUMENT_FILETYPES}>
-                                            <button title="Add a DXF/SVG/PNG/BMP/JPG document to the document tree" className="btn btn-xs btn-primary">
-                                                <i className="fa fa-fw fa-folder-open" />Add Document</button>
-                                            {(this.props.panes.visible) ? <NoDocumentsError camBounds={bounds} settings={settings} documents={documents} operations={operations} /> : undefined}
-                                        </FileField>&nbsp;
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <Splitter style={{ flexShrink: 0,display:'block' }} split="horizontal" initialSize={100} resizerStyle={{ marginTop: 2, marginBottom: 2 }} splitterId="cam-documents">
-                    <div style={{ height: "100%", display: "flex", flexDirection: "column", display:'none' }} >
-                        <div style={{ overflowY: 'auto', flexGrow: 1 }}><Documents documents={documents} filter={this.state.filter} toggleExpanded={toggleDocumentExpanded} /></div>
-                        {documents.length ? <ButtonToolbar bsSize="xsmall" bsStyle="default">
-
-                            <ButtonGroup>
-                                <Button bsStyle="info" bsSize="xsmall" onClick={() => { this.props.dispatch(selectDocuments(true)) }} title="Select all"><Icon name="cubes" /></Button>
-                                <Button bsStyle="default" bsSize="xsmall" onClick={() => { this.props.dispatch(selectDocuments(false)) }} title="Select none"><Icon name="cubes" /></Button>
-                            </ButtonGroup>
-                            <Button bsStyle="warning" bsSize="xsmall" disabled={!someSelected} onClick={() => { this.props.dispatch(cloneDocumentSelected()) }} title="Clone selected"><Icon name="copy" /></Button>
-                            <Button bsStyle="danger" bsSize="xsmall" disabled={!someSelected} onClick={() => { this.props.dispatch(removeDocumentSelected()) }} title="Remove selected"><Icon name="trash" /></Button>
-                            <ButtonGroup>
-                                <ColorPicker to="rgba" icon="pencil" bsSize="xsmall" disabled={!someSelected} onClick={v => this.props.dispatch(colorDocumentSelected({ strokeColor: v || [0, 0, 0, 1] }))} />
-                                <ColorPicker to="rgba" icon="paint-brush" bsSize="xsmall" disabled={!someSelected} onClick={v => this.props.dispatch(colorDocumentSelected({ fillColor: v || [0, 0, 0, 0] }))} />
-                            </ButtonGroup>
-                            <SearchButton  bsStyle="primary" bsSize="xsmall" search={this.state.filter} onSearch={filter => { this.setState({ filter }) }} placement="bottom"><Icon name="search" /></SearchButton>
-                        </ButtonToolbar> : undefined}
-                    </div>
-                </Splitter>
-
-                <OperationDiagram {...{ operations, currentOperation }}  style={{display:"none"}} />
-                {/* <FileUpload /> */}
-                <div className="">
-                    <div className={this.state.hideme} dangerouslySetInnerHTML={{ __html: this.state.generatedFile }} />
-                    <img src="" id="eeveelutions" width="30%" />
-                    <img src="" className="" id="testXPos" />
-                    <canvas id="canvas" height="398" width="500" />
-                    <canvas id="canvasMod"  />
-                    <canvas id="canvasMod2" />
-                </div>
-                <Operations
-                    style={{ flexGrow: 2, display: "flex", flexDirection: "column", display:"none" }}
-                /*genGCode = {this./*generateGcode*//*docuementAdded}*/
-                />
             </div>
-
             );
     }
 };
-
-Cam = connect(
-    state => ({
-        myText: state.content,
-        settings: state.settings,
-        documents: state.documents,
-        operations: state.operations,
-        currentOperation: state.currentOperation,
-        gcode: state.gcode.content,
-        gcoding: state.gcode.gcoding,
-        dirty: state.gcode.dirty,
-        panes: state.panes,
-        saveGcode: (e) => {
-            prompt('Save as', 'gcode.gcode', (file) => {
-                if (file !== null) sendAsFile(appendExt(file, '.gcode'), state.gcode.content)
-            }, !e.shiftKey)
-        },
-        viewGcode: () => openDataWindow(state.gcode.content),
-    }),
-    dispatch => ({
-        dispatch,
-        toggleDocumentExpanded: d => dispatch(setDocumentAttrs({ expanded: !d.expanded }, d.id)),
-        clearGcode: () => {
-            dispatch(setGcode(""))
-        },
-        resetWorkspace: () => {
-            confirm("Are you sure?", (data) => { if (data) dispatch(resetWorkspace()); })
-        },
-        loadDocument: (e, modifiers = {}) => {
-            // TODO: report errors
-            for (let file of e.target.files) {
-                let reader = new FileReader;
-                if (file.name.substr(-4) === '.svg') {
-                    reader.onload = () => {
-                        const release = captureConsole()
-                        let parser = new Parser({});
-                        console.log('result of loading svg file', reader.result);
-                        parser.parse(reader.result)
-                            .then((tags) => {
-                                let captures = release(true);
-                                let warns = captures.filter(i => i.method == 'warn')
-                                let errors = captures.filter(i => i.method == 'errors')
-                                if (warns.length)
-                                    CommandHistory.dir("The file has minor issues. Please check document is correctly loaded!", warns, 2)
-                                if (errors.length)
-                                    CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", errors, 3)
-                                //onsole.log('loadDocument: imageTagPromise');
-                                imageTagPromise(tags).then((tags) => {
-                                    console.log('loadDocument: dispatch');
-                                    dispatch(loadDocument(file, { parser, tags }, modifiers));
-                                })
-                            })
-                            .catch((e) => {
-                                //console.log('loadDocument: catch:', e);
-                                release(true);
-                                CommandHistory.dir("The file has serious issues. If you think is not your fault, report to LW dev team attaching the file.", String(e), 3)
-                                console.error(e)
-                            })
-
-                    }
-                    reader.readAsText(file);
-                }
-                else if (file.type.substring(0, 6) === 'image/') {
-
-                    reader.onload = () => {
-                        promisedImage(reader.result)
-                            .then((img) => {
-                                dispatch(loadDocument(file, reader.result, modifiers, img));
-                            })
-                            .catch(e => console.log('error:', e))
-                    }
-                    reader.readAsDataURL(file);
-                } else if (file.name.match(/\.(nc|gc|gcode)$/gi)) {
-                    let reader = new FileReader;
-                    reader.onload = () => dispatch(setGcode(reader.result));
-                    reader.readAsText(file);
-                }
-                else {
-                    reader.onload = () => dispatch(loadDocument(file, reader.result, modifiers));
-                    reader.readAsDataURL(file);
-                }
-            }
-        },
-        loadGcode: e => {
-            let reader = new FileReader;
-            reader.onload = () => dispatch(setGcode(reader.result));
-            reader.readAsText(e.target.files[0]);
-        },
-    }),
-)(Cam);
-
+Cam = connect()(Cam);
 Cam = withDocumentCache(withGetBounds(Cam));
-
 export default Cam;
 
