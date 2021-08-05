@@ -67,30 +67,6 @@ class Decorated extends React.Component {
                                         <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.setPcsCount('gold50', 50)} ></img>
                                         <span >Golden 50 PCs</span>
                                     </div>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.setPcsCount('silver1', 1)} ></img>
-                                        <span >Silver 1 PC</span>
-                                    </div>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.setPcsCount('silver2', 2)} ></img>
-                                        <span >Silver 2 PCs</span>
-                                    </div>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.setPcsCount('silver3', 3)} ></img>
-                                        <span >Silver 3 PCs</span>
-                                    </div>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.setPcsCount('silver4', 4)} ></img>
-                                        <span >Silver 4 PCs</span>
-                                    </div>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.setPcsCount('silver6', 6)} ></img>
-                                        <span >Silver 6 PCs</span>
-                                    </div>
-                                    <div style={{ width: '108px', display: 'inline-block', margin: '10px', paddingBottom: '5px' }}>
-                                        <img className="shape" src="mainBoxSmall.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.setPcsCount('silver12', 12)} ></img>
-                                        <span >Silver 12 PCs</span>
-                                    </div>
                                 </Col>
                             </Row>
                         </div>

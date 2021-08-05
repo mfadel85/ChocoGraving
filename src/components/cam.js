@@ -635,11 +635,38 @@ class Cam extends React.Component {
                         step1: false, step2: false, step3: true
                     }
                 );
-                this.setState({ boxDims: shapeTemplats[8] });
             break;
             case 32://we have to
-                this.setState({ boxDims: shapeTemplats[9] });
-            break;
+                this.setState(
+                    {
+                        pcsCount: count,
+                        activeTemplate: {
+                            fontSize: 50,
+                            pcsCount: 1,
+                            layoutWidth: 8000,
+                            xCount: 1,
+                            yCount: 1,
+                            marginBetweenPCs: [300, 300],
+                            initialMargin: [276, 920],//should change based on the size of the text and shape
+                            textScalingPercetage: [1.2, 1.2],
+                            shapeMargins: [
+                                '175,335'
+                            ],
+                            decorationMargin: [
+                                '265,135',
+                                '265,811.5'
+                            ],
+                            decorationDMargin: [
+                                '148,135',
+                                '148,811.5'
+                            ],
+                            shapePosition: 1,
+                            textPosition: 1,
+                            shapeScalingPercentage: '4.8,4.8',
+                        },
+                        step1: false, step2: false, step3: true
+                    }
+                );            break;
             case 50://we have to
                 this.setState({ boxDims: shapeTemplats[10] });
             break;
