@@ -11,6 +11,13 @@ export function  getG(content){
     return G;
 }
 
+export function getSVGOpenClose(content){
+    const endIndex = content.indexOf('</svg>');
+    const startIndex = content.indexOf('www.w3.org/2000/svg">') + 21;
+    
+    return [startIndex, endIndex];
+}
+
 export function getGPosition(string, subString, index) {
     return string.split(subString, index).join(subString).length;
 }

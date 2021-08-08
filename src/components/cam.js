@@ -5,7 +5,7 @@ import {  loadDocument,removeDocumentSelected, selectDocument, selectDocuments, 
 import { addOperation, clearOperations,  setFormData, setDepth, setFont } from '../actions/operation';
 import { GlobalStore } from '../index';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
-import {    getDimensionAPI, minimizeSvgFile, minimizeSvgFileRect, removeBlanks,  validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
+import { getSVGOpenClose,  getDimensionAPI, minimizeSvgFile, minimizeSvgFileRect, removeBlanks,  validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
 import { withDocumentCache } from './document-cache';
@@ -380,7 +380,7 @@ class Cam extends React.Component {
                 const svgFile = makerjs.exporter.toSVG(models); 
                 const svgDims = getDimensionStr(svgFile);
                 console.log('mmDims are', svgDims);
-                if(pcsCount != 6)
+                if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
                     var svgFileModified = svgFile.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this
                 else
                     var svgFileModified = svgFile.replace(svgDims[1], '1122.5196').replace(svgDims[1], '1122.5196').replace(svgDims[0], '1587.401').replace(svgDims[0], '1587.401');// we have to change this
@@ -418,13 +418,30 @@ class Cam extends React.Component {
                             }
                         }
                         closeGIndex = theFinal.indexOf('</svg>');
-                        if (pcsCount != 6)
+                        /*
+                        if pcsCount: 2,3,8,6,12,16 then we will add the
+                        //<g transform="rotate(-90 280 200) translate(712.18,1274.969) scale(-1,-1 )">
+                        after the SVG tag, and 
+                        //</g> before the close </svg> tag
+                        */
+                        if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
                         theFinal = theFinal.slice(0, closeGIndex) + rectFrame + theFinal.slice(closeGIndex);
                         else 
                             theFinal = theFinal.slice(0, closeGIndex) + rectFrame6 + theFinal.slice(closeGIndex);
-                        /*const transform = ' transform="rotate(-90 280 200) translate(0,0) scale(-1,-1 ) ';//-0.0215,-0.0215 those has to be dynamically
-                        const tansformIndex = that.findStartEndIndices(theFinal, 'transform="');
-                        var final5 = theFinal.replace(theFinal.substring(tansformIndex[0], tansformIndex[1]), transform);*/
+                        if([2,3,6,8,16].indexOf(pcsCount) !== -1){
+                            const rotateStatement = '<g transform="rotate(-90 280 200) translate(712.18,1274.969) scale(-1,-1 )">';
+                            const svgIndices = getSVGOpenClose(theFinal);
+                            var anotherStep = theFinal.slice(0, svgIndices[0]) + rotateStatement + theFinal.slice(svgIndices[0]);
+                            theFinal = anotherStep.slice(0, svgIndices[1] + rotateStatement.length) + '</g>' + anotherStep.slice(svgIndices[1] + rotateStatement.length);
+
+
+                            // find the last character of <svg ....>and 
+                            // the first character of </svg> and insert the rotation stuff
+                            /*const transform = ' transform="rotate(-90 280 200) translate(0,0) scale(-1,-1 ) ';//-0.0215,-0.0215 those has to be dynamically
+                            const tansformIndex = that.findStartEndIndices(theFinal, 'transform="');
+                            var final5 = theFinal.replace(theFinal.substring(tansformIndex[0], tansformIndex[1]), transform);*/
+                        }
+                        
                         var svgElement = document.getElementById("boxTemplate");
                         svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(theFinal));
                         svgElement.setAttribute('download', 'File.svg');
@@ -558,29 +575,157 @@ class Cam extends React.Component {
                 );
             break;
             case 2://we have to
-                this.setState({ boxDims: shapeTemplats[1] });
-            break;
-            case 3://we have to
-                this.setState({ boxDims: shapeTemplats[2] });
-            break;
-            case 4://we have to
-                this.setState({ 
-                    step1: false, step2: false, step3: true });
-            break;
-            case 6,8,12,16://we have to
-                // I have to change the frame!!!
                 this.setState(
                     {
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 40,
+                            pcsCount: 2,
+                            layoutWidth: 4500,
+                            xCount: 3,
+                            yCount: 4,
+                            marginBetweenPCs: [162, 88.4],
+                            initialMargin: [230, 150],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.8, 0.8],
+                            shapeMargins: [
+                                '74,54.5',
+                                '562,54.5',
+                                '1050,54.5',
+                                
+                                '74,322.5',
+                                '562,322.5',
+                                '1050,322.5',
+                            
+                                '74,590.5',
+                                '562,590.5',
+                                '1050,590.5',
+                                '74,858.5',
+                                '562,858.5',
+                                '1050,828.5',
+
+                            ],
+                            decorationMargin: [
+                                '265,135',
+                                '265,811.5'
+                            ],
+                            decorationDMargin: [
+                                '148,135',
+                                '148,811.5'
+                            ],
+                            shapePosition: 1,
+                            textPosition: 1,
+                            shapeScalingPercentage: '1.9,1.5',
+                        },
+                        step1: false, step2: false, step3: true
+                    }
+                );
+            break;
+            case 3://we have to
+                this.setState(
+                    {
+                        pcsCount: count,
+                        activeTemplate: {
+                            fontSize: 45,
+                            pcsCount: 3,
+                            layoutWidth: 5000,
+                            xCount: 2,
+                            yCount: 3,
+                            marginBetweenPCs: [200, 86.7],
+                            initialMargin: [325, 243],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.9, 0.9],
+                            shapeMargins: [
+                                '150,135',
+                                '835,135',
+                            
+                                '150,430',
+                                '835,430',
+                            
+                                '150,715',
+                                '835,715',
+                            ],
+                            decorationMargin: [
+                                '265,135',
+                                '265,811.5'
+                            ],
+                            decorationDMargin: [
+                                '148,135',
+                                '148,811.5'
+                            ],
+                            shapePosition: 1,
+                            textPosition: 1,
+                            shapeScalingPercentage: '2.3,1.8',
+                        },
+                        step1: false, step2: false, step3: true
+                    }
+                );
+                break;
+            case 4://we have to
+                this.setState(
+                    {
+                        pcsCount: count,
+                        activeTemplate: {
+                            fontSize: 35,
+                            pcsCount: 40,
+                            layoutWidth: 10000,
+                            xCount: 2,
+                            yCount: 3,
+                            marginBetweenPCs: [184, 184],
+                            initialMargin: [181.7, 335],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.7, 0.7],
+                            shapeMargins: [
+                                '100,100',
+                                '585.5,100',
+                                '100,585.5',
+                                '585.5,585.5',
+                                '100,1071',
+                                '585.5,1071',
+                            ],
+                            shapePosition: 1,
+                            textPosition: 1,
+                            shapeScalingPercentage: '0.7,0.7',
+                            shapeSVGName: allShapesSVG[0],
+                            decorationMargin: [
+                                // for the tempale 4 : it is 128.5*operator + initialMargin
+                                // is the initial y margin, x is not at the zero point
+                                '179,85',
+                                //'0,0',
+                                //485.5 is the standard margin which is compared to 
+                                '664,85',
+                                '179,570.5',
+                                '664,570.5',
+                                '179,1056',
+                                '664,1056'
+                            ],
+                            decorationDMargin: [
+                                '60,203',
+                                '545,203',
+                                '60,688',
+                                '545,688',
+                                '60,1173',
+                                '545,1173'
+                            ],
+                            shapePosition: 1,
+                            textPosition: 1,
+                            shapeScalingPercentage: '2,2',
+                        },
+                        step1: false, step2: false, step3: true
+                    }
+                );
+                break;
+            case 6: case 8: case 12: case 16://we have to
+                // I have to change the frame!!!
+                this.setState(
+                    {
+                        pcsCount: count,
+                        activeTemplate: {
+                            fontSize: 35,
                             pcsCount: 6,
-                            layoutWidth: 6000,
+                            layoutWidth: 5100,
                             xCount: 2,
                             yCount: 2,                            
-                            marginBetweenPCs: [123.7, 91],
-                            initialMargin: [202, 400],//should change based on the size of the text and shape
-                            textScalingPercetage: [1.5, 1.5],
+                            marginBetweenPCs: [200, 152],
+                            initialMargin: [240, 400],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.9, 0.9],
                             shapeMargins: [
                                 '198,30',
                                 '888,30',
@@ -650,11 +795,12 @@ class Cam extends React.Component {
                             initialMargin: [276, 920],//should change based on the size of the text and shape
                             textScalingPercetage: [1.2, 1.2],
                             shapeMargins: [
-                                '175,335'
+                                '170,335'
                             ],
                             decorationMargin: [
                                 '265,135',
                                 '265,811.5'
+
                             ],
                             decorationDMargin: [
                                 '148,135',
