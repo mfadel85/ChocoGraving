@@ -8,7 +8,7 @@
     "start-server": "node node_modules/lw.comm-server/server.js",
     "start-app": "webpack-dev-server --progress --colors --open",
     "start-prod": "webpack-dev-server -p --progress --colors --open",
-    "start": "npm-run-all -p -r start-app",
+    "start": "npm-run-all -p -r start-app start-cors",
     "bundle-dev": "webpack --progress --colors",
     "bundle-prod": "webpack -p --progress --colors",
     "build-docs": "jsdoc -c ./jsdoc.json",

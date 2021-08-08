@@ -170,6 +170,7 @@ class Cam extends React.Component {
         this.mainTemplate = this.mainTemplate.bind(this);
         this.selectModelNo = this.selectModelNo.bind(this);
         this.chooseShape = this.chooseShape.bind(this);
+        this.generateBoxCalligraphy = this.generateBoxCalligraphy.bind(this);
     }
 
     componentWillMount() {}
@@ -314,6 +315,79 @@ class Cam extends React.Component {
         return [startIndex, endIndex]
 
     }
+    generateBoxCalligraphy(){
+        this.init();
+        var payload = this.prepareImage();// the result is a white and black image.
+        const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var updatedImageData = '';
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const that = this;
+        var svgContent;
+        axios.post('http://localhost:8090/http://localhost:4000', { data: payload })
+            .then((response) => {
+                updatedImageData = response;
+                console.log('resop', response);
+                var i = new Image();
+
+                i.onload = function () {
+                    img.width = i.width;
+                    img.height = i.height;
+                    img.src = response.data;
+                    const image = document.getElementById("eeveelutions");
+                    ctx = canvas.getContext("2d");
+                    img.crossOrigin = "anonymous";
+                    var canvasMod = document.getElementById('canvasMod');
+                    var inMemCtx = canvasMod.getContext('2d');
+                    canvasMod.width = img.width;
+                    canvasMod.height = img.height;
+                    canvasMod.width = img.width;
+                    canvasMod.height = img.height;
+                    inMemCtx.drawImage(img,
+                        0, 0, img.width, img.height,
+                        0, 0, img.width, img.height);
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    var start = window.performance.now();
+
+                    ctx.drawImage(canvasMod, 0, 0);
+                    const croppedDimensions = removeBlanks(canvas, canvas.width, canvas.height);
+                    var end = window.performance.now();
+                    console.log(`Execution time1: ${end - start} ms`);
+                    imgData = ctx.getImageData(0, 0, croppedDimensions[4], croppedDimensions[5]);
+                    var pngImage = canvas.toDataURL("image/png");
+                    const payload = { data: pngImage };
+                    const options = {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                        cors: true, // allow cross-origin HTTP request
+                        credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
+                    };
+                    fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
+                        .then((response) => {
+                            const image = response;
+                            const dims = getDimensionGeneral(response);
+                            that.setState({ dims: dims }, () => {
+                            });
+                            svgContent = response;
+                            that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
+                        }).then(() => {
+                            const scale = 25 / that.state.dims[0];
+                            console.log('svg is like this:',svgContent); /// bunu de handle
+                            var updatedContent;
+                        });
+
+                };
+                i.src = response.data;
+
+            });
+
+    }
     generateBox(){
         var text = this.state.templateName;
         if ( text == '' || text == undefined ) {
@@ -412,7 +486,13 @@ class Cam extends React.Component {
                                     decoration = '';
                                     decoroartionDown = '';
                                 }
-                                contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
+                                var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2];
+                                var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3];
+
+                                var margins = marginX.toString() + ',' + marginY.toString();
+
+                                //contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
+                                contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + activeTemplate.shapeScalingPercentage + ')">');// we have to change this
                                 theFinal = theFinal.slice(0, closeGIndex) + contentModified + decoration + decoroartionDown + theFinal.slice(closeGIndex);
                                 k++;
                             }
@@ -433,13 +513,6 @@ class Cam extends React.Component {
                             const svgIndices = getSVGOpenClose(theFinal);
                             var anotherStep = theFinal.slice(0, svgIndices[0]) + rotateStatement + theFinal.slice(svgIndices[0]);
                             theFinal = anotherStep.slice(0, svgIndices[1] + rotateStatement.length) + '</g>' + anotherStep.slice(svgIndices[1] + rotateStatement.length);
-
-
-                            // find the last character of <svg ....>and 
-                            // the first character of </svg> and insert the rotation stuff
-                            /*const transform = ' transform="rotate(-90 280 200) translate(0,0) scale(-1,-1 ) ';//-0.0215,-0.0215 those has to be dynamically
-                            const tansformIndex = that.findStartEndIndices(theFinal, 'transform="');
-                            var final5 = theFinal.replace(theFinal.substring(tansformIndex[0], tansformIndex[1]), transform);*/
                         }
                         
                         var svgElement = document.getElementById("boxTemplate");
@@ -515,30 +588,33 @@ class Cam extends React.Component {
                             layoutWidth: 6000,
                             xCount: 4,
                             yCount: 5,
-                            marginBetweenPCs: [178, 190],
-                            initialMargin: [122, 260],//should change based on the size of the text and shape
-                            textScalingPercetage: [0.4, 0.4],
+                            marginBetweenPCs: [192, 206],
+                            initialMargin: [120, 280],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.37, 0.37],
+                            shapeMarginsBase:[
+                                50,115,268,278.2
+                            ],
                             shapeMargins: [  
-                                '50,95',
-                                '318,95',
-                                '586,95',
-                                '854,95',
-                                '50,382.2',
-                                '318,382.2',
-                                '586,382.2',
-                                '854,382.2',
-                                '50,669.4',
-                                '318,669.4',
-                                '586,669.4',
-                                '854,669.4',
-                                '50,956.6',
-                                '318,956.6',
-                                '586,956.6',
-                                '854,956.6',
-                                '50,1243.8',
-                                '318,1243.8',
-                                '586,1243.8',
-                                '854,1243.8'
+                                '50,125',
+                                '318,125',
+                                '586,125',
+                                '854,125',
+                                '50,412.2',
+                                '318,412.2',
+                                '586,412.2',
+                                '854,412.2',
+                                '50,699.4',
+                                '318,699.4',
+                                '586,699.4',
+                                '854,699.4',
+                                '50,986.6',
+                                '318,986.6',
+                                '586,986.6',
+                                '854,986.6',
+                                '50,1273.8',
+                                '318,1273.8',
+                                '586,1273.8',
+                                '854,1273.8'
                             ],
                             decorationMargin: [
                                 '265,135',
@@ -579,14 +655,17 @@ class Cam extends React.Component {
                     {
                         pcsCount: count,
                         activeTemplate: {
-                            fontSize: 40,
+                            fontSize: 36,
                             pcsCount: 2,
-                            layoutWidth: 4500,
+                            layoutWidth: 4200,
                             xCount: 3,
                             yCount: 4,
-                            marginBetweenPCs: [162, 88.4],
-                            initialMargin: [230, 150],//should change based on the size of the text and shape
-                            textScalingPercetage: [0.8, 0.8],
+                            marginBetweenPCs: [217, 118],
+                            initialMargin: [225, 150],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.6, 0.6],
+                            shapeMarginsBase: [
+                                74, 54.5, 488, 268
+                            ],
                             shapeMargins: [
                                 '74,54.5',
                                 '562,54.5',
@@ -633,6 +712,9 @@ class Cam extends React.Component {
                             marginBetweenPCs: [200, 86.7],
                             initialMargin: [325, 243],//should change based on the size of the text and shape
                             textScalingPercetage: [0.9, 0.9],
+                            shapeMarginsBase: [
+                                150, 135, 685, 295
+                            ],
                             shapeMargins: [
                                 '150,135',
                                 '835,135',
@@ -672,11 +754,16 @@ class Cam extends React.Component {
                             marginBetweenPCs: [184, 184],
                             initialMargin: [181.7, 335],//should change based on the size of the text and shape
                             textScalingPercetage: [0.7, 0.7],
+                            shapeMarginsBase: [
+                                100, 100, 475.5, 475.5
+                            ],
                             shapeMargins: [
                                 '100,100',
                                 '585.5,100',
+
                                 '100,585.5',
                                 '585.5,585.5',
+
                                 '100,1071',
                                 '585.5,1071',
                             ],
@@ -726,6 +813,9 @@ class Cam extends React.Component {
                             marginBetweenPCs: [200, 152],
                             initialMargin: [240, 400],//should change based on the size of the text and shape
                             textScalingPercetage: [0.9, 0.9],
+                            shapeMarginsBase: [
+                                198, 30, 690, 520
+                            ],
                             shapeMargins: [
                                 '198,30',
                                 '888,30',
@@ -754,13 +844,16 @@ class Cam extends React.Component {
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 40,
-                            pcsCount: 2,
+                            pcsCount: 24,
                             layoutWidth: 6000,
                             xCount: 1,
                             yCount: 2,
                             marginBetweenPCs: [118, 118],
                             initialMargin: [260, 600],//should change based on the size of the text and shape
                             textScalingPercetage: [1.5, 1.5],
+                            shapeMarginsBase: [
+                                190, 135, 0, 685
+                            ],
                             shapeMargins: [
                                 '190,135',
                                 '190,820'
@@ -786,16 +879,19 @@ class Cam extends React.Component {
                     {
                         pcsCount: count,
                         activeTemplate: {
-                            fontSize: 50,
+                            fontSize: 45,
                             pcsCount: 1,
-                            layoutWidth: 8000,
+                            layoutWidth: 7500,
                             xCount: 1,
                             yCount: 1,
                             marginBetweenPCs: [300, 300],
-                            initialMargin: [276, 920],//should change based on the size of the text and shape
-                            textScalingPercetage: [1.2, 1.2],
+                            initialMargin: [300, 980],//should change based on the size of the text and shape
+                            textScalingPercetage: [1, 1],
+                            shapeMarginsBase: [
+                                173, 400, 0, 0
+                            ],
                             shapeMargins: [
-                                '170,335'
+                                '173,400'
                             ],
                             decorationMargin: [
                                 '265,135',
@@ -853,18 +949,18 @@ class Cam extends React.Component {
     mainTemplate(template){
         switch (template){
             case 'readymade':
-                this.setState({ loadImageEnabled: false, readyMade: true, textMode: false, templateName:'readymade' });
+                this.setState({ loadImageEnabled: false, readyMade: true, textMode: false });
                 $("#eeveelutions").attr("src", "");
             break;
             case 'photo':
-                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false, templateName: 'photo' });
+                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false });
             break;
             case 'text':
-                this.setState({ loadImageEnabled: false, textMode: true, readyMade: false, templateName: 'text' });
+                this.setState({ loadImageEnabled: false, textMode: true, readyMade: false });
                 $("#eeveelutions").attr("src", "");
             break;
             case 'logo':
-                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false, templateName: 'logo' });
+                this.setState({ loadImageEnabled: true, readyMade: false, textMode: false });
             break;
             default:
             break;
@@ -1149,18 +1245,30 @@ class Cam extends React.Component {
                                             onChange={this.changeTextTemplateName} defaultValue={this.state.templateName} >
                                             </textarea>
                                             <Button bsSize="lg" bsStyle="warning" onClick={this.generateBox}> <Icon name="play" />Generate</Button>
+                                            <Button bsSize="lg" bsStyle="warning" onClick={this.generateBoxCalligraphy}> <Icon name="play" />GenerateR</Button>
+
                                             <a href="" id="boxTemplate">OurFile</a>
                                         <br></br><br></br>
                                     </Col>
                                 </Row>
                             </div>                                
                         </Row>
+                        
                         <div style={{ margin: '20px' }}>
                             <Button bsSize="lg" bsStyle="warning" onClick={this.step2}> <Icon name="angle-left" /></Button>
                             <Button bsSize="lg" style={{ float: 'right', marginLeft: '8px' }} onClick={this.step4} bsStyle="warning"> <Icon name="angle-right" /></Button>
                         </div>
                     </Form>
+                        <div className="">
+                            <div className={this.state.hideme} dangerouslySetInnerHTML={{ __html: this.state.generatedFile }} />
+                            <img src="" id="eeveelutions" width="30%" />
+                            <img src="" className="" id="testXPos" />
+                            <canvas id="canvas" height="398" width="500" />
+                            <canvas id="canvasMod" />
+                            <canvas id="canvasMod2" />
+                        </div>
                 </div>
+                
                 )}
             </div>
             );
