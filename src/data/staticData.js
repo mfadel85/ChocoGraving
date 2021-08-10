@@ -19,6 +19,7 @@ const shapeTemplats = [
     { boxLength: 244, boxWidth: 244, boxHeight: 55, paperLength: 238, paperWidth: 236, edges: 3 },
     { boxLength: 314, boxWidth: 314, boxHeight: 305, paperLength: 305, paperWidth: 236, edges: 3 }
 ];
+var gStatic = '<g  transform="translate(203.70873654000002,420) scale(0.008253094910591471,-0.009453781512605041)" fill = "#000000" stroke = "none" ><path d="M11494 4731 c-49 -30 -73 -73 -110 -193 -37 -121 -45 -219 -20 -25412 -16 27 -19 93 -19 69 0 83 3 120 28 65 45 89 24 153 -133 57 -142 100 -224 149 -290 48 -64 64 -75 90 -61 32 17 134 161 227 318 122 207 143 223 227 188 52 -22 91 -19 125 9 30 26 87 125 102 176 13 45 -6 96 -54 145 -40 42 -46 45 -95 45 -88 0 -106 -15 -208 -173 -51 -78 -118 -182 -148 -232 -131 -213 -177 -200 -290 85 -85 213 -131 281 -239 349 -58 36 -79 38 -122 12z"/><path d="M13236 4714 15 43 15 152 0 211 -6 25 -1099 -9 165 2 111 0 123 -217 -174 -18 -203 39 -33 65 -33 62 40 437 31>';
 const decoration1 = ['',''];
 const decoration2 = ['', ''];
 const allDecorations= [
@@ -28,8 +29,10 @@ const allDecorations= [
 // the first parameter is the svg file name, the seconde is the decoration(which will have its files)
 const allShapesSVG = [
     ['graduationHat.svg', false],
-    ['9877.svg', false, allDecorations[0]],
-    ['fancy_getwellsoon_en.svg', false],
-    ['eid5.svg', false],
+    ['9877.svg', false, allDecorations[0], [1, 1]],
+    ['fancy_getwellsoon_en.svg', allDecorations[0], false, [1, 1]],
+    ['eid5.svg', false, allDecorations[0],[1, 1]],
+    ['fancy-03-01.svg', false, allDecorations[0],[1.3,1.3]],//scaling factor
+    ['32_fancy_getwellsoon_en.svg', false, allDecorations[0],[1,1]],//scaling factor
 ];
-module.exports = { rectFrame,rectFrame6,framePath, brideMain, operator, shapeTemplats, allShapesSVG };
+module.exports = { gStatic,rectFrame,rectFrame6,framePath, brideMain, operator, shapeTemplats, allShapesSVG };

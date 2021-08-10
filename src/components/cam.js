@@ -5,7 +5,7 @@ import {  loadDocument,removeDocumentSelected, selectDocument, selectDocuments, 
 import { addOperation, clearOperations,  setFormData, setDepth, setFont } from '../actions/operation';
 import { GlobalStore } from '../index';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
-import { getSVGOpenClose,  getDimensionAPI, minimizeSvgFile, minimizeSvgFileRect, removeBlanks,  validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
+import { getSVGOpenClose,generateSVGGird,  getDimensionAPI, minimizeSvgFile, minimizeSvgFileRect, removeBlanks,  validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
 import { withDocumentCache } from './document-cache';
@@ -49,17 +49,9 @@ const initialState = {
         marginBetweenPCs:[184,184],
         initialMargin:[181.7,335],//should change based on the size of the text and shape
         textScalingPercetage:[0.7,0.7],
-        shapeMargins: [
-            '100,100',
-            '585.5,100',
-            '100,585.5',
-            '585.5,585.5',
-            '100,1071',
-            '585.5,1071',
-        ],
+
         shapePosition:1,
         textPosition:1,
-        shapeScalingPercentage:'0.7,0.7',
         shapeSVGName: allShapesSVG[0],
         decorationMargin: [
             // for the tempale 4 : it is 128.5*operator + initialMargin
@@ -83,7 +75,7 @@ const initialState = {
         ],
         shapePosition: 1,
         textPosition: 1,
-        shapeScalingPercentage: '2,2',
+        shapeScalingPercentage: [2,2],
         
     },
     marginX: 0,
@@ -309,12 +301,14 @@ class Cam extends React.Component {
         this.props.dispatch(removeDocumentSelected());
         this.props.dispatch(clearOperations());
     }
+
     findStartEndIndices(string, substring) {
         const startIndex = string.indexOf(substring);
         const endIndex = string.indexOf('"', startIndex + 11);
         return [startIndex, endIndex]
 
     }
+
     generateBoxCalligraphy(){
         this.init();
         var payload = this.prepareImage();// the result is a white and black image.
@@ -368,7 +362,8 @@ class Cam extends React.Component {
                         cors: true, // allow cross-origin HTTP request
                         credentials: 'same-origin' // This is similar to XHR’s withCredentials flag
                     };
-                    fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
+                    //fetch('http://localhost:8090/http://localhost/ChocoGraveProject/LaserWeb4/dist/convertio/script.php', options).then(response => response.json())
+                    fetch('convertio/111111.svg').then(resp => resp.text())
                         .then((response) => {
                             const image = response;
                             const dims = getDimensionGeneral(response);
@@ -378,6 +373,7 @@ class Cam extends React.Component {
                             that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
                         }).then(() => {
                             const scale = 25 / that.state.dims[0];
+                            var final = generateSVGGird(svgContent,that.state)
                             console.log('svg is like this:',svgContent); /// bunu de handle
                             var updatedContent;
                         });
@@ -418,7 +414,8 @@ class Cam extends React.Component {
                 width: activeTemplate.layoutWidth,//finalWidth / scale
                 mode: 'nowrap'
             };
-            try {
+            try 
+            {
                 layout = computeLayout(font,text,layoutOptions);
                 console.log('Layout is:',layout);
                 const max = layout.lines.reduce(
@@ -453,11 +450,13 @@ class Cam extends React.Component {
 
                 const svgFile = makerjs.exporter.toSVG(models); 
                 const svgDims = getDimensionStr(svgFile);
+                const maxDim = Math.max(...svgDims);
+                const minDim = Math.min(...svgDims);
                 console.log('mmDims are', svgDims);
                 if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
                     var svgFileModified = svgFile.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this
                 else
-                    var svgFileModified = svgFile.replace(svgDims[1], '1122.5196').replace(svgDims[1], '1122.5196').replace(svgDims[0], '1587.401').replace(svgDims[0], '1587.401');// we have to change this
+                    var svgFileModified = svgFile.replace(minDim, '1122.5196').replace(minDim, '1122.5196').replace(maxDim, '1587.401').replace(maxDim, '1587.401');// we have to change this
                 // the original value is this
                 //var svgFileModified = svgFile.replace(svgDims[0], '843.3063').replace(svgDims[1], '1192.3787');// we have to change this
                 var transformIndex = svgFileModified.indexOf('<g')+2;
@@ -475,12 +474,14 @@ class Cam extends React.Component {
                     .then(content => {
                         // replace the first <G in content with what we want
                         for (let i = 0; i < activeTemplate.xCount; i++) {
-                            for (let j = 0; j < activeTemplate.yCount; j++) {        
+                            for (let j = 0; j < activeTemplate.yCount; j++) { 
+                                var scalingStatement = (activeTemplate.shapeScalingPercentage[0] * that.state.svgShapeExtraScaling[0]).toString() + ',' + (activeTemplate.shapeScalingPercentage[1] * that.state.svgShapeExtraScaling[1]).toString();
+
                                 closeGIndex = theFinal.indexOf('</svg>');
                                 if(that.state.hasDecoration)
                                 {
-                                    decoration = '<g transform="translate(' + activeTemplate.decorationMargin[k] + ') scale(' + activeTemplate.shapeScalingPercentage + ')"><path opacity="0.75" fill="url(#SVGID_1_)" d="M165,52.485c-0.139,0.002-0.27,0.016-0.411,0.016 c-0.539,0-1.052-0.025-1.567-0.052L165,50.472v-2.405l-3.156,3.161l-4.305-4.302l3.853-3.853H165V41.37h-3.608l-3.853-3.848 l4.305-4.309L165,36.378v-2.406l-6.134-6.133h-0.033L165,21.674v-2.406l-3.156,3.165l-4.305-4.307l3.853-3.85H165v-1.701 h-3.608l-3.853-3.854l4.305-4.301L165,7.582V5.176L159.828,0h-2.411l3.22,3.217l-4.3,4.299l-3.853-3.851V0h-1.698v3.666 l-3.855,3.851l-4.3-4.299L145.85,0h-2.406l-6.208,6.213L131.028,0h-2.411l3.223,3.217l-4.302,4.299l-3.853-3.851V0h-1.694 v3.469c0.218,0.178,0.404,0.368,0.616,0.554c-1.648-1.429-3.513-2.754-5.649-3.93L117.053,0h-10.321 c25.386,6.565,22.77,29.939,22.77,29.939h8.569c0,0,1.746,26.257,26.518,26.257c0.141,0,0.272-0.012,0.411-0.014V52.485z M159.842,42.222l-3.501,3.502l-3.505-3.502l3.502-3.499L159.842,42.222z M150.786,23.179v3.827h-4.779l-3.376-3.378 l4.3-4.302L150.786,23.179z M148.133,18.126l3.502-3.499l3.505,3.499l-3.505,3.502L148.133,18.126z M150.786,28.637v3.83 l-3.855,3.853l-4.3-4.299l3.376-3.384H150.786z M151.635,34.019l3.5,3.503l-3.5,3.499l-3.502-3.499L151.635,34.019z  M160.637,32.021l-4.3,4.299l-3.853-3.853v-3.83h4.777L160.637,32.021z M160.637,23.628l-3.377,3.378h-4.777v-3.827 l3.857-3.853L160.637,23.628z M159.842,13.423l-3.501,3.502l-3.505-3.502l3.502-3.505L159.842,13.423z M151.635,5.219 l3.5,3.502l-3.5,3.499l-3.502-3.499L151.635,5.219z M150.434,13.423l-3.503,3.502l-3.501-3.502l3.501-3.505L150.434,13.423z  M138.052,7.801l3.376-3.381l4.305,4.301l-3.854,3.854h-3.827V7.801z M138.052,14.276h3.825l3.856,3.85l-4.305,4.307 l-3.376-3.384V14.276z M133.043,4.42l3.38,3.381v4.774h-3.826l-3.854-3.854L133.043,4.42z M128.457,10.84l2.584,2.583 l-0.758,0.762C129.76,13.061,129.147,11.941,128.457,10.84z M132.801,22.19c-0.363-2.045-0.937-4.181-1.792-6.331l1.588-1.584 h3.826v4.773l-3.38,3.384L132.801,22.19z M141.76,29.688l-0.251-3.441c0,0-5.876,0-8.241,0 c-0.025-0.499-0.061-1.007-0.114-1.524l4.082-4.084l7.199,7.202h-0.027l-2.581,2.575 C141.782,30.028,141.762,29.773,141.76,29.688z M142.585,34.369l3.149,3.153l-1.549,1.547 C143.458,37.393,142.945,35.776,142.585,34.369z M144.953,40.701l1.977-1.977l3.503,3.499l-2.731,2.73 C146.595,43.587,145.686,42.141,144.953,40.701z M148.827,46.231l2.808-2.804l3.505,3.499l-2.451,2.444 C151.214,48.458,149.93,47.392,148.827,46.231z M160.38,52.165l-0.006-0.002c-2.322-0.371-4.359-1.041-6.142-1.931 l2.108-2.101l4.033,4.032c0.017,0.002,0.032,0.008,0.049,0.011C160.41,52.171,160.391,52.171,160.38,52.165z"/><linearGradient id="SVGID_2_" gradientUnits="userSpaceOnUse" x1="315.2232" y1="-6.5167" x2="128.7738" y2="162.3331" gradientTransform="matrix(-1 0 0 -1 293.373 176.5627)"><stop  offset="0" style="stop-color:#FFFFFF"/><stop  offset="1" style="stop-color:#696969"/></linearGradient></g>';
-                                    decoroartionDown = '<g transform="translate(' + activeTemplate.decorationDMargin[k] + ') scale(' + activeTemplate.shapeScalingPercentage + ')"><path opacity="0.75" fill="url(#SVGID_2_)" d="M0,112.514c0.139-0.003,0.27-0.016,0.411-0.016 c0.539,0,1.052,0.024,1.567,0.052L0,114.527v2.406l3.156-3.161l4.305,4.302l-3.853,3.854H0v1.702h3.608l3.853,3.848 l-4.305,4.309L0,128.621v2.406l6.134,6.133h0.033L0,143.326v2.406l3.156-3.165l4.305,4.305l-3.853,3.851H0v1.702h3.608 l3.853,3.853l-4.305,4.301L0,157.417v2.406l5.172,5.176h2.411l-3.22-3.216l4.3-4.299l3.853,3.849v3.666h1.698v-3.666 l3.855-3.849l4.3,4.299l-3.219,3.216h2.406l6.208-6.213l6.208,6.213h2.411l-3.223-3.216l4.302-4.299l3.853,3.849V165h1.694 v-3.471c-0.218-0.177-0.404-0.367-0.616-0.554c1.648,1.429,3.513,2.755,5.649,3.93L47.947,165h10.321 c-25.386-6.566-22.77-29.94-22.77-29.94h-8.569c0,0-1.746-26.257-26.518-26.257c-0.141,0-0.272,0.011-0.411,0.013V112.514z M5.158,122.777l3.501-3.501l3.505,3.501l-3.502,3.498L5.158,122.777z M14.214,141.819v-3.827h4.779l3.376,3.379l-4.3,4.302 L14.214,141.819z M16.867,146.873l-3.502,3.5l-3.505-3.5l3.505-3.501L16.867,146.873z M14.214,136.362v-3.83l3.855-3.853 l4.3,4.299l-3.376,3.384H14.214z M13.365,130.98l-3.5-3.503l3.5-3.5l3.502,3.5L13.365,130.98z M4.363,132.978l4.3-4.299 l3.853,3.853v3.83H7.739L4.363,132.978z M4.363,141.371l3.377-3.379h4.777v3.827l-3.857,3.854L4.363,141.371z M5.158,151.576 l3.501-3.501l3.505,3.501l-3.502,3.505L5.158,151.576z M13.365,159.781l-3.5-3.503l3.5-3.498l3.502,3.498L13.365,159.781z  M14.566,151.576l3.503-3.501l3.501,3.501l-3.501,3.505L14.566,151.576z M26.948,157.198l-3.376,3.381l-4.305-4.301 l3.854-3.853h3.827V157.198z M26.948,150.724h-3.825l-3.856-3.851l4.305-4.305l3.376,3.384V150.724z M31.957,160.578 l-3.38-3.381v-4.773h3.826l3.853,3.853L31.957,160.578z M36.543,154.159l-2.584-2.583l0.758-0.762 C35.24,151.939,35.853,153.058,36.543,154.159z M32.199,142.809c0.363,2.045,0.937,4.181,1.792,6.331l-1.588,1.584h-3.826 v-4.773l3.38-3.384L32.199,142.809z M23.24,135.311l0.251,3.442c0,0,5.876,0,8.241,0c0.025,0.5,0.061,1.007,0.114,1.524 l-4.082,4.083l-7.199-7.201h0.027l2.581-2.575C23.218,134.971,23.238,135.226,23.24,135.311z M22.415,130.63l-3.149-3.153 l1.549-1.547C21.542,127.606,22.055,129.224,22.415,130.63z M20.047,124.298l-1.977,1.977l-3.503-3.498l2.731-2.73 C18.405,121.412,19.314,122.857,20.047,124.298z M16.173,118.768l-2.808,2.805l-3.505-3.5l2.451-2.444 C13.786,116.541,15.07,117.606,16.173,118.768z M4.62,112.833l0.006,0.003c2.322,0.371,4.359,1.041,6.142,1.93l-2.108,2.101 l-4.033-4.032c-0.017-0.003-0.032-0.008-0.049-0.011C4.59,112.828,4.609,112.828,4.62,112.833z"/></g>';
+                                    decoration = '<g transform="translate(' + activeTemplate.decorationMargin[k] + ') scale(' + scalingStatement + ')"><path opacity="0.75" fill="url(#SVGID_1_)" d="M165,52.485c-0.139,0.002-0.27,0.016-0.411,0.016 c-0.539,0-1.052-0.025-1.567-0.052L165,50.472v-2.405l-3.156,3.161l-4.305-4.302l3.853-3.853H165V41.37h-3.608l-3.853-3.848 l4.305-4.309L165,36.378v-2.406l-6.134-6.133h-0.033L165,21.674v-2.406l-3.156,3.165l-4.305-4.307l3.853-3.85H165v-1.701 h-3.608l-3.853-3.854l4.305-4.301L165,7.582V5.176L159.828,0h-2.411l3.22,3.217l-4.3,4.299l-3.853-3.851V0h-1.698v3.666 l-3.855,3.851l-4.3-4.299L145.85,0h-2.406l-6.208,6.213L131.028,0h-2.411l3.223,3.217l-4.302,4.299l-3.853-3.851V0h-1.694 v3.469c0.218,0.178,0.404,0.368,0.616,0.554c-1.648-1.429-3.513-2.754-5.649-3.93L117.053,0h-10.321 c25.386,6.565,22.77,29.939,22.77,29.939h8.569c0,0,1.746,26.257,26.518,26.257c0.141,0,0.272-0.012,0.411-0.014V52.485z M159.842,42.222l-3.501,3.502l-3.505-3.502l3.502-3.499L159.842,42.222z M150.786,23.179v3.827h-4.779l-3.376-3.378 l4.3-4.302L150.786,23.179z M148.133,18.126l3.502-3.499l3.505,3.499l-3.505,3.502L148.133,18.126z M150.786,28.637v3.83 l-3.855,3.853l-4.3-4.299l3.376-3.384H150.786z M151.635,34.019l3.5,3.503l-3.5,3.499l-3.502-3.499L151.635,34.019z  M160.637,32.021l-4.3,4.299l-3.853-3.853v-3.83h4.777L160.637,32.021z M160.637,23.628l-3.377,3.378h-4.777v-3.827 l3.857-3.853L160.637,23.628z M159.842,13.423l-3.501,3.502l-3.505-3.502l3.502-3.505L159.842,13.423z M151.635,5.219 l3.5,3.502l-3.5,3.499l-3.502-3.499L151.635,5.219z M150.434,13.423l-3.503,3.502l-3.501-3.502l3.501-3.505L150.434,13.423z  M138.052,7.801l3.376-3.381l4.305,4.301l-3.854,3.854h-3.827V7.801z M138.052,14.276h3.825l3.856,3.85l-4.305,4.307 l-3.376-3.384V14.276z M133.043,4.42l3.38,3.381v4.774h-3.826l-3.854-3.854L133.043,4.42z M128.457,10.84l2.584,2.583 l-0.758,0.762C129.76,13.061,129.147,11.941,128.457,10.84z M132.801,22.19c-0.363-2.045-0.937-4.181-1.792-6.331l1.588-1.584 h3.826v4.773l-3.38,3.384L132.801,22.19z M141.76,29.688l-0.251-3.441c0,0-5.876,0-8.241,0 c-0.025-0.499-0.061-1.007-0.114-1.524l4.082-4.084l7.199,7.202h-0.027l-2.581,2.575 C141.782,30.028,141.762,29.773,141.76,29.688z M142.585,34.369l3.149,3.153l-1.549,1.547 C143.458,37.393,142.945,35.776,142.585,34.369z M144.953,40.701l1.977-1.977l3.503,3.499l-2.731,2.73 C146.595,43.587,145.686,42.141,144.953,40.701z M148.827,46.231l2.808-2.804l3.505,3.499l-2.451,2.444 C151.214,48.458,149.93,47.392,148.827,46.231z M160.38,52.165l-0.006-0.002c-2.322-0.371-4.359-1.041-6.142-1.931 l2.108-2.101l4.033,4.032c0.017,0.002,0.032,0.008,0.049,0.011C160.41,52.171,160.391,52.171,160.38,52.165z"/><linearGradient id="SVGID_2_" gradientUnits="userSpaceOnUse" x1="315.2232" y1="-6.5167" x2="128.7738" y2="162.3331" gradientTransform="matrix(-1 0 0 -1 293.373 176.5627)"><stop  offset="0" style="stop-color:#FFFFFF"/><stop  offset="1" style="stop-color:#696969"/></linearGradient></g>';
+                                    decoroartionDown = '<g transform="translate(' + activeTemplate.decorationDMargin[k] + ') scale(' + scalingStatement + ')"><path opacity="0.75" fill="url(#SVGID_2_)" d="M0,112.514c0.139-0.003,0.27-0.016,0.411-0.016 c0.539,0,1.052,0.024,1.567,0.052L0,114.527v2.406l3.156-3.161l4.305,4.302l-3.853,3.854H0v1.702h3.608l3.853,3.848 l-4.305,4.309L0,128.621v2.406l6.134,6.133h0.033L0,143.326v2.406l3.156-3.165l4.305,4.305l-3.853,3.851H0v1.702h3.608 l3.853,3.853l-4.305,4.301L0,157.417v2.406l5.172,5.176h2.411l-3.22-3.216l4.3-4.299l3.853,3.849v3.666h1.698v-3.666 l3.855-3.849l4.3,4.299l-3.219,3.216h2.406l6.208-6.213l6.208,6.213h2.411l-3.223-3.216l4.302-4.299l3.853,3.849V165h1.694 v-3.471c-0.218-0.177-0.404-0.367-0.616-0.554c1.648,1.429,3.513,2.755,5.649,3.93L47.947,165h10.321 c-25.386-6.566-22.77-29.94-22.77-29.94h-8.569c0,0-1.746-26.257-26.518-26.257c-0.141,0-0.272,0.011-0.411,0.013V112.514z M5.158,122.777l3.501-3.501l3.505,3.501l-3.502,3.498L5.158,122.777z M14.214,141.819v-3.827h4.779l3.376,3.379l-4.3,4.302 L14.214,141.819z M16.867,146.873l-3.502,3.5l-3.505-3.5l3.505-3.501L16.867,146.873z M14.214,136.362v-3.83l3.855-3.853 l4.3,4.299l-3.376,3.384H14.214z M13.365,130.98l-3.5-3.503l3.5-3.5l3.502,3.5L13.365,130.98z M4.363,132.978l4.3-4.299 l3.853,3.853v3.83H7.739L4.363,132.978z M4.363,141.371l3.377-3.379h4.777v3.827l-3.857,3.854L4.363,141.371z M5.158,151.576 l3.501-3.501l3.505,3.501l-3.502,3.505L5.158,151.576z M13.365,159.781l-3.5-3.503l3.5-3.498l3.502,3.498L13.365,159.781z  M14.566,151.576l3.503-3.501l3.501,3.501l-3.501,3.505L14.566,151.576z M26.948,157.198l-3.376,3.381l-4.305-4.301 l3.854-3.853h3.827V157.198z M26.948,150.724h-3.825l-3.856-3.851l4.305-4.305l3.376,3.384V150.724z M31.957,160.578 l-3.38-3.381v-4.773h3.826l3.853,3.853L31.957,160.578z M36.543,154.159l-2.584-2.583l0.758-0.762 C35.24,151.939,35.853,153.058,36.543,154.159z M32.199,142.809c0.363,2.045,0.937,4.181,1.792,6.331l-1.588,1.584h-3.826 v-4.773l3.38-3.384L32.199,142.809z M23.24,135.311l0.251,3.442c0,0,5.876,0,8.241,0c0.025,0.5,0.061,1.007,0.114,1.524 l-4.082,4.083l-7.199-7.201h0.027l2.581-2.575C23.218,134.971,23.238,135.226,23.24,135.311z M22.415,130.63l-3.149-3.153 l1.549-1.547C21.542,127.606,22.055,129.224,22.415,130.63z M20.047,124.298l-1.977,1.977l-3.503-3.498l2.731-2.73 C18.405,121.412,19.314,122.857,20.047,124.298z M16.173,118.768l-2.808,2.805l-3.505-3.5l2.451-2.444 C13.786,116.541,15.07,117.606,16.173,118.768z M4.62,112.833l0.006,0.003c2.322,0.371,4.359,1.041,6.142,1.93l-2.108,2.101 l-4.033-4.032c-0.017-0.003-0.032-0.008-0.049-0.011C4.59,112.828,4.609,112.828,4.62,112.833z"/></g>';
                                 }
                                 else {
                                     decoration = '';
@@ -490,9 +491,8 @@ class Cam extends React.Component {
                                 var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3];
 
                                 var margins = marginX.toString() + ',' + marginY.toString();
-
                                 //contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
-                                contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + activeTemplate.shapeScalingPercentage + ')">');// we have to change this
+                                contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + scalingStatement + ')">');// we have to change this
                                 theFinal = theFinal.slice(0, closeGIndex) + contentModified + decoration + decoroartionDown + theFinal.slice(closeGIndex);
                                 k++;
                             }
@@ -510,6 +510,7 @@ class Cam extends React.Component {
                             theFinal = theFinal.slice(0, closeGIndex) + rectFrame6 + theFinal.slice(closeGIndex);
                         if([2,3,6,8,16].indexOf(pcsCount) !== -1){
                             const rotateStatement = '<g transform="rotate(-90 280 200) translate(712.18,1274.969) scale(-1,-1 )">';
+                            //const rotateStatement = '<g transform="rotate(-90 280 200) translate(479.8,1042.549) scale(-1,-1 )">';
                             const svgIndices = getSVGOpenClose(theFinal);
                             var anotherStep = theFinal.slice(0, svgIndices[0]) + rotateStatement + theFinal.slice(svgIndices[0]);
                             theFinal = anotherStep.slice(0, svgIndices[1] + rotateStatement.length) + '</g>' + anotherStep.slice(svgIndices[1] + rotateStatement.length);
@@ -551,7 +552,11 @@ class Cam extends React.Component {
     
 
     chooseShape(shapeNo){
-        this.setState({ shapeFile: allShapesSVG[shapeNo][0], hasDecoration: allShapesSVG[shapeNo][1]});
+        this.setState({ 
+            shapeFile: allShapesSVG[shapeNo][0],
+            hasDecoration: allShapesSVG[shapeNo][1], 
+            svgShapeExtraScaling:allShapesSVG[shapeNo][3]
+            });
     }
     handleShape(shape){
         var chocoTemplates = require("../data/chocolateTemplates.json");
@@ -592,30 +597,12 @@ class Cam extends React.Component {
                             initialMargin: [120, 280],//should change based on the size of the text and shape
                             textScalingPercetage: [0.37, 0.37],
                             shapeMarginsBase:[
-                                50,115,268,278.2
+                                50,115,268,287
                             ],
-                            shapeMargins: [  
-                                '50,125',
-                                '318,125',
-                                '586,125',
-                                '854,125',
-                                '50,412.2',
-                                '318,412.2',
-                                '586,412.2',
-                                '854,412.2',
-                                '50,699.4',
-                                '318,699.4',
-                                '586,699.4',
-                                '854,699.4',
-                                '50,986.6',
-                                '318,986.6',
-                                '586,986.6',
-                                '854,986.6',
-                                '50,1273.8',
-                                '318,1273.8',
-                                '586,1273.8',
-                                '854,1273.8'
-                            ],
+                            calligraphyMargins:[
+                                64,200
+                            ],             
+                            calligraphyFactor:9,              
                             decorationMargin: [
                                 '265,135',
                                 '265,135',
@@ -644,7 +631,7 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '1.3,1.3',
+                            shapeScalingPercentage: [1.3, 1.3],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -661,28 +648,17 @@ class Cam extends React.Component {
                             xCount: 3,
                             yCount: 4,
                             marginBetweenPCs: [217, 118],
-                            initialMargin: [225, 150],//should change based on the size of the text and shape
+                            initialMargin: [233, 155],//should change based on the size of the text and shape
                             textScalingPercetage: [0.6, 0.6],
                             shapeMarginsBase: [
-                                74, 54.5, 488, 268
+                                84, 54.5, 488, 268
                             ],
-                            shapeMargins: [
-                                '74,54.5',
-                                '562,54.5',
-                                '1050,54.5',
-                                
-                                '74,322.5',
-                                '562,322.5',
-                                '1050,322.5',
-                            
-                                '74,590.5',
-                                '562,590.5',
-                                '1050,590.5',
-                                '74,858.5',
-                                '562,858.5',
-                                '1050,828.5',
+                            calligraphyFactor: 11,
 
+                            calligraphyMargins: [
+                                270, 120
                             ],
+
                             decorationMargin: [
                                 '265,135',
                                 '265,811.5'
@@ -693,7 +669,7 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '1.9,1.5',
+                            shapeScalingPercentage: [1.9, 1.5],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -704,27 +680,23 @@ class Cam extends React.Component {
                     {
                         pcsCount: count,
                         activeTemplate: {
-                            fontSize: 45,
+                            fontSize: 40,
                             pcsCount: 3,
                             layoutWidth: 5000,
                             xCount: 2,
                             yCount: 3,
-                            marginBetweenPCs: [200, 86.7],
-                            initialMargin: [325, 243],//should change based on the size of the text and shape
-                            textScalingPercetage: [0.9, 0.9],
+                            marginBetweenPCs: [227.7, 97],
+                            initialMargin: [318, 250],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.8, 0.8],
                             shapeMarginsBase: [
                                 150, 135, 685, 295
                             ],
-                            shapeMargins: [
-                                '150,135',
-                                '835,135',
-                            
-                                '150,430',
-                                '835,430',
-                            
-                                '150,715',
-                                '835,715',
+                            calligraphyFactor: 14,
+
+                            calligraphyMargins: [
+                                360, 160
                             ],
+
                             decorationMargin: [
                                 '265,135',
                                 '265,811.5'
@@ -735,41 +707,37 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '2.3,1.8',
+                            shapeScalingPercentage: [2.3, 1.8]
                         },
                         step1: false, step2: false, step3: true
-                    }
-                );
+                    
+                    });
                 break;
             case 4://we have to
                 this.setState(
                     {
                         pcsCount: count,
                         activeTemplate: {
-                            fontSize: 35,
-                            pcsCount: 40,
-                            layoutWidth: 10000,
+                            fontSize: 32,
+                            pcsCount: 4,
+                            layoutWidth: 7000,
                             xCount: 2,
                             yCount: 3,
-                            marginBetweenPCs: [184, 184],
-                            initialMargin: [181.7, 335],//should change based on the size of the text and shape
-                            textScalingPercetage: [0.7, 0.7],
+                            marginBetweenPCs: [214, 214],
+                            initialMargin: [185, 420],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.6, 0.6],
+                            calligraphyScalingPercetage: [0.02, -0.02],
                             shapeMarginsBase: [
-                                100, 100, 475.5, 475.5
+                                119, 165, 485.25, 485.25
                             ],
-                            shapeMargins: [
-                                '100,100',
-                                '585.5,100',
+                            calligraphyFactor: 14,
 
-                                '100,585.5',
-                                '585.5,585.5',
-
-                                '100,1071',
-                                '585.5,1071',
+                            calligraphyMargins: [
+                                96, 330
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '0.7,0.7',
+                            shapeScalingPercentage: [2, 2],
                             shapeSVGName: allShapesSVG[0],
                             decorationMargin: [
                                 // for the tempale 4 : it is 128.5*operator + initialMargin
@@ -793,7 +761,8 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '2,2',
+                            shapeScalingPercentage: [2, 2],
+                            
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -814,14 +783,14 @@ class Cam extends React.Component {
                             initialMargin: [240, 400],//should change based on the size of the text and shape
                             textScalingPercetage: [0.9, 0.9],
                             shapeMarginsBase: [
-                                198, 30, 690, 520
+                                198, 65, 690, 519
                             ],
-                            shapeMargins: [
-                                '198,30',
-                                '888,30',
-                                '198,550',
-                                '888,550',
+                            calligraphyFactor: 17,
+
+                            calligraphyMargins: [
+                                158.4, 430
                             ],
+
                             decorationMargin: [
                                 '265,135',
                                 '265,811.5'
@@ -832,7 +801,7 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '3,3',
+                            shapeScalingPercentage: [3, 3],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -852,12 +821,14 @@ class Cam extends React.Component {
                             initialMargin: [260, 600],//should change based on the size of the text and shape
                             textScalingPercetage: [1.5, 1.5],
                             shapeMarginsBase: [
-                                190, 135, 0, 685
+                                207, 145, 0, 675
                             ],
-                            shapeMargins: [
-                                '190,135',
-                                '190,820'
+                            calligraphyFactor: 24,
+
+                            calligraphyMargins: [
+                                235, 550
                             ],
+
                             decorationMargin:[
                                 '265,135',
                                 '265,811.5'
@@ -868,7 +839,7 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '4.3,3.9',
+                            shapeScalingPercentage: [4.3, 3.9],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -885,14 +856,16 @@ class Cam extends React.Component {
                             xCount: 1,
                             yCount: 1,
                             marginBetweenPCs: [300, 300],
-                            initialMargin: [300, 980],//should change based on the size of the text and shape
-                            textScalingPercetage: [1, 1],
+                            initialMargin: [300, 1050],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.95, 0.95],
                             shapeMarginsBase: [
-                                173, 400, 0, 0
+                                164, 450, 0, 0
                             ],
-                            shapeMargins: [
-                                '173,400'
+                            calligraphyMargins: [
+                                257, 700
                             ],
+                            calligraphyFactor: 28,
+
                             decorationMargin: [
                                 '265,135',
                                 '265,811.5'
@@ -904,7 +877,7 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: '4.8,4.8',
+                            shapeScalingPercentage: [4.8, 4.8],
                         },
                         step1: false, step2: false, step3: true
                     }
