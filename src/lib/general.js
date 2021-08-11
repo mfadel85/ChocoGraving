@@ -184,7 +184,10 @@ export function generateSVGGird(svgObject,cState){
     var gIndices = findStartEndIndicesTranslate(mainG, 'transform="translate');
     theFinal = theFinal.replace(mainG,' ');
     var newG ;
-    fetch(cState.shapeFile)
+    var shapeFile = cState.shapeFile;
+    if ([2, 3, 24].indexOf(pcsCount) !== -1)
+        shapeFile = cState.extension + cState.shapeFile;
+    fetch(shapeFile)
         .then(resp => resp.text())
         .then(content => {
             // replace the first <G in content with what we want
@@ -217,7 +220,7 @@ export function generateSVGGird(svgObject,cState){
             else
                 theFinal = theFinal.slice(0, closeGIndex) + rectFrame6 + theFinal.slice(closeGIndex);
             if ([2, 3, 6, 8, 16].indexOf(pcsCount) !== -1) {
-                const rotateStatement = '<g transform="rotate(-90 280 200)  translate(479.8,1042.549) scale(-1,-1 )">';
+                const rotateStatement = '<g transform="rotate(-90 280 200)  translate(479.3,1041.949) scale(-1,-1 )">';
                 const svgIndices = getSVGOpenCloseAPI(theFinal);
                 var anotherStep = theFinal.slice(0, svgIndices[0]) + rotateStatement + theFinal.slice(svgIndices[0]);
                 theFinal = anotherStep.slice(0, svgIndices[1] + rotateStatement.length) + '</g>' + anotherStep.slice(svgIndices[1] + rotateStatement.length);

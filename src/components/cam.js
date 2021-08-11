@@ -456,20 +456,24 @@ class Cam extends React.Component {
                 if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
                     var svgFileModified = svgFile.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this
                 else
-                    var svgFileModified = svgFile.replace(minDim, '1122.5196').replace(minDim, '1122.5196').replace(maxDim, '1587.401').replace(maxDim, '1587.401');// we have to change this
+                    var svgFileModified = svgFile.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this var transformIndex = svgFileModified.indexOf('<g')+2;
                 // the original value is this
                 //var svgFileModified = svgFile.replace(svgDims[0], '843.3063').replace(svgDims[1], '1192.3787');// we have to change this
                 var transformIndex = svgFileModified.indexOf('<g')+2;
-                var mainMargin = operator * (activeTemplate.initialMargin[0] - mmDims[0])/2;
-                var stringMarin = mainMargin.toString();
+
+                var mainMargin = activeTemplate.initialMargin[0];
+                var stringMarginX = mainMargin.toString();
                 var stringMarginY = activeTemplate.initialMargin[1];
-                var finalist = svgFileModified.slice(0, transformIndex) + ' transform="translate(' + stringMarin + ',' + stringMarginY + ') scale(' + activeTemplate.textScalingPercetage+')" ' + svgFileModified.slice(transformIndex);
+                var finalist = svgFileModified.slice(0, transformIndex) + ' transform="translate(' + stringMarginX + ',' + stringMarginY + ') scale(' + activeTemplate.textScalingPercetage+')" ' + svgFileModified.slice(transformIndex);
                 var theFinal = finalist;
                 var closeGIndex = finalist.indexOf('</svg>');
                 let k = 0; 
                 var contentModified;
                 var decoration,decoroartionDown;
-                fetch(that.state.shapeFile)
+                var shapeFile = that.state.shapeFile;
+                if ([2, 3, 24].indexOf(pcsCount) !== -1)
+                    shapeFile = that.state.extension + that.state.shapeFile;
+                fetch(shapeFile)
                     .then(resp => resp.text())
                     .then(content => {
                         // replace the first <G in content with what we want
@@ -509,8 +513,10 @@ class Cam extends React.Component {
                         else 
                             theFinal = theFinal.slice(0, closeGIndex) + rectFrame6 + theFinal.slice(closeGIndex);
                         if([2,3,6,8,16].indexOf(pcsCount) !== -1){
-                            const rotateStatement = '<g transform="rotate(-90 280 200) translate(712.18,1274.969) scale(-1,-1 )">';
-                            //const rotateStatement = '<g transform="rotate(-90 280 200) translate(479.8,1042.549) scale(-1,-1 )">';
+                            //const rotateStatement = '<g transform="rotate(-90 280 200) translate(712.18,1274.969) scale(-1,-1 )">';
+                            //const rotateStatement = '<g transform="rotate(-90 280 200) translate(479.8,1042.549) scale(-1,-1 )">';                
+                            const rotateStatement = '<g transform="rotate(-90 280 200)  translate(479.3,1041.949) scale(-1,-1 )">';
+
                             const svgIndices = getSVGOpenClose(theFinal);
                             var anotherStep = theFinal.slice(0, svgIndices[0]) + rotateStatement + theFinal.slice(svgIndices[0]);
                             theFinal = anotherStep.slice(0, svgIndices[1] + rotateStatement.length) + '</g>' + anotherStep.slice(svgIndices[1] + rotateStatement.length);
@@ -584,6 +590,10 @@ class Cam extends React.Component {
     setPcsCount(name,count){
         switch(count){
             case 1://we have to set some settings
+                var boxDims = [66, 66];
+                var svgDim = 165 / operator;//165px in the svg file imported
+                var marginX = (boxDims[0] - 1.52 * svgDim) * operator / 2 + 9.148 * operator;
+                var marginY = (boxDims[1] - 1.52 * svgDim) * operator / 2 + 25 * operator;
                 this.setState(
                     {
                         pcsCount: count,
@@ -593,14 +603,15 @@ class Cam extends React.Component {
                             layoutWidth: 6000,
                             xCount: 4,
                             yCount: 5,
-                            marginBetweenPCs: [192, 206],
-                            initialMargin: [120, 280],//should change based on the size of the text and shape
+                            marginBetweenPCs: [192, 205.51],
+                            initialMargin: [120, 288],//should change based on the size of the text and shape
                             textScalingPercetage: [0.37, 0.37],
                             shapeMarginsBase:[
-                                50,115,268,287
+                                //50,115,268,287
+                                marginX, marginY, 71*operator, 76*operator,
                             ],
                             calligraphyMargins:[
-                                64,200
+                                85,220
                             ],             
                             calligraphyFactor:9,              
                             decorationMargin: [
@@ -631,15 +642,21 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [1.3, 1.3],
+                            shapeScalingPercentage: [1.52, 1.52],
                         },
                         step1: false, step2: false, step3: true
                     }
                 );
             break;
             case 2://we have to
+                boxDims = [119,66.5];
+                svgDim = 165/operator;//165px in the svg file imported
+                marginX = (boxDims[0] - 1.54 * svgDim) * operator / 2 + 21.5*operator;
+                marginY = (boxDims[1] - 1.54 * svgDim) * operator / 2 + 7.5*operator;
                 this.setState(
                     {
+                        
+                        extension:'Sec',
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 36,
@@ -647,17 +664,17 @@ class Cam extends React.Component {
                             layoutWidth: 4200,
                             xCount: 3,
                             yCount: 4,
-                            marginBetweenPCs: [217, 118],
-                            initialMargin: [233, 155],//should change based on the size of the text and shape
+                            marginBetweenPCs: [215, 215*(boxDims[1]/boxDims[0])],
                             textScalingPercetage: [0.6, 0.6],
                             shapeMarginsBase: [
-                                84, 54.5, 488, 268
+                                marginX, marginY, 129 * operator, 71.5 * operator,
                             ],
-                            calligraphyFactor: 11,
+                            calligraphyFactor: 9,
 
                             calligraphyMargins: [
-                                270, 120
+                                210, 140
                             ],
+                            initialMargin: [marginX + 48 * 1.3, marginY + 1.3 * 43.565153 / 2 + 137],//should change based on the size of the text and shape
 
                             decorationMargin: [
                                 '265,135',
@@ -669,15 +686,21 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [1.9, 1.5],
+                            shapeScalingPercentage: [1.54, 1.54],
                         },
                         step1: false, step2: false, step3: true
                     }
                 );
             break;
-            case 3://we have to
+            case 3:
+                
+                boxDims = [173, 73];
+                svgDim = 165 / operator;//165px in the svg file imported
+                var marginX = (boxDims[0] - 1.68 * svgDim) * operator / 2 + 32 * operator;
+                var marginY = (boxDims[1] - 1.68 * svgDim) * operator / 2 + 33.75 * operator;
                 this.setState(
                     {
+                        extension: 'Thr',
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 40,
@@ -685,16 +708,16 @@ class Cam extends React.Component {
                             layoutWidth: 5000,
                             xCount: 2,
                             yCount: 3,
-                            marginBetweenPCs: [227.7, 97],
-                            initialMargin: [318, 250],//should change based on the size of the text and shape
-                            textScalingPercetage: [0.8, 0.8],
+                            marginBetweenPCs: [303.5, 128.0664],
+                            textScalingPercetage: [0.57, 0.57],
                             shapeMarginsBase: [
-                                150, 135, 685, 295
+                                marginX, marginY, 183 * operator, 78 * operator,
                             ],
-                            calligraphyFactor: 14,
+                            calligraphyFactor: 10.6,
+                            initialMargin: [marginX + 48 * 1.3, marginY + 1.3 * 43.565153 / 2 + 137],//should change based on the size of the text and shape
 
                             calligraphyMargins: [
-                                360, 160
+                                250, 150
                             ],
 
                             decorationMargin: [
@@ -707,13 +730,17 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [2.3, 1.8]
+                            shapeScalingPercentage: [1.68, 1.68]
                         },
                         step1: false, step2: false, step3: true
                     
                     });
                 break;
             case 4://we have to
+                boxDims = [118.5, 118.5];
+                svgDim = 165 / operator;//165px in the svg file imported
+                var marginX = (boxDims[0] - 2.7143 * svgDim) * operator / 2 + 16 * operator;
+                var marginY = (boxDims[1] - 2.7143 * svgDim) * operator / 2 + 22.5 * operator;
                 this.setState(
                     {
                         pcsCount: count,
@@ -723,17 +750,17 @@ class Cam extends React.Component {
                             layoutWidth: 7000,
                             xCount: 2,
                             yCount: 3,
-                            marginBetweenPCs: [214, 214],
-                            initialMargin: [185, 420],//should change based on the size of the text and shape
-                            textScalingPercetage: [0.6, 0.6],
+                            marginBetweenPCs: [183.7397, 183.7397],
+                            initialMargin: [202, 435],//should change based on the size of the text and shape
+                            textScalingPercetage: [0.7, 0.7],
                             calligraphyScalingPercetage: [0.02, -0.02],
                             shapeMarginsBase: [
-                                119, 165, 485.25, 485.25
+                                marginX, marginY, 128.5 * operator, 128.5 * operator,
                             ],
-                            calligraphyFactor: 14,
+                            calligraphyFactor: 18,
 
                             calligraphyMargins: [
-                                96, 330
+                                130, 400
                             ],
                             shapePosition: 1,
                             textPosition: 1,
@@ -761,15 +788,18 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [2, 2],
+                            shapeScalingPercentage: [2.7143, 2.7143],
                             
                         },
                         step1: false, step2: false, step3: true
                     }
                 );
                 break;
-            case 6: case 8: case 12: case 16://we have to
-                // I have to change the frame!!!
+            case 6: case 8: case 12: case 16:
+                boxDims = [172, 127];
+                svgDim = 165 / operator;//165px in the svg file imported
+                var marginX = (boxDims[0] - 2.909 * svgDim) * operator / 2 + 31 * operator;
+                var marginY = (boxDims[1] - 2.909 * svgDim) * operator / 2 + 16.75 * operator;
                 this.setState(
                     {
                         pcsCount: count,
@@ -780,15 +810,17 @@ class Cam extends React.Component {
                             xCount: 2,
                             yCount: 2,                            
                             marginBetweenPCs: [200, 152],
-                            initialMargin: [240, 400],//should change based on the size of the text and shape
+                            initialMargin: [(marginX + 165 * 2.909 * 0.35) , (marginY + 165 * 2.909 * 0.80) ],//should change based on the size of the text and shape
+
+                            //initialMargin: [240, 400],//should change based on the size of the text and shape
                             textScalingPercetage: [0.9, 0.9],
                             shapeMarginsBase: [
-                                198, 65, 690, 519
+                                marginX, marginY, 182 * operator, 137 * operator,
                             ],
-                            calligraphyFactor: 17,
+                            calligraphyFactor: 20,
 
                             calligraphyMargins: [
-                                158.4, 430
+                                155, 430
                             ],
 
                             decorationMargin: [
@@ -801,15 +833,18 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [3, 3],
+                            shapeScalingPercentage: [2.909, 2.909],
                         },
                         step1: false, step2: false, step3: true
                     }
                 );
             break;
             case 24://we have to
+                var marginX = (219 - 3.9* 43.565153) * operator / 2 + 39*operator ;
+                var marginY = (169 - 3.9 * 43.565153) * operator / 2 + 36*operator ;
                 this.setState(
                     {
+                        extension: 'Twi',
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 40,
@@ -817,16 +852,16 @@ class Cam extends React.Component {
                             layoutWidth: 6000,
                             xCount: 1,
                             yCount: 2,
-                            marginBetweenPCs: [118, 118],
-                            initialMargin: [260, 600],//should change based on the size of the text and shape
-                            textScalingPercetage: [1.5, 1.5],
+                            marginBetweenPCs: [148, 148],
+                            initialMargin: [111*operator, 171*operator],//should change based on the size of the text and shape
+                            textScalingPercetage: [1.2, 1.2],
                             shapeMarginsBase: [
-                                207, 145, 0, 675
+                                marginX, marginY, 0, operator*179
                             ],
-                            calligraphyFactor: 24,
+                            calligraphyFactor: 25,
 
                             calligraphyMargins: [
-                                235, 550
+                                215, 565
                             ],
 
                             decorationMargin:[
@@ -839,32 +874,34 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [4.3, 3.9],
+                            shapeScalingPercentage: [3.9,3.9],
                         },
                         step1: false, step2: false, step3: true
                     }
                 );
             break;
             case 32://we have to
+                var marginX = (236.5 - 5.477 * 43.565153) * operator / 2 + 30 * operator;
+                var marginY = (236.5 - 5.477 * 43.565153) * operator / 2 + 91.5 * operator;
                 this.setState(
                     {
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 45,
                             pcsCount: 1,
-                            layoutWidth: 7500,
+                            layoutWidth: 8200,
                             xCount: 1,
                             yCount: 1,
                             marginBetweenPCs: [300, 300],
-                            initialMargin: [300, 1050],//should change based on the size of the text and shape
+                            initialMargin: [390, 1050],//should change based on the size of the text and shape
                             textScalingPercetage: [0.95, 0.95],
                             shapeMarginsBase: [
-                                164, 450, 0, 0
+                                marginX, marginY, 0, 0
                             ],
                             calligraphyMargins: [
-                                257, 700
+                                280, 812
                             ],
-                            calligraphyFactor: 28,
+                            calligraphyFactor: 33.5,
 
                             decorationMargin: [
                                 '265,135',
@@ -877,7 +914,7 @@ class Cam extends React.Component {
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [4.8, 4.8],
+                            shapeScalingPercentage: [5.477, 5.477],
                         },
                         step1: false, step2: false, step3: true
                     }
