@@ -35,6 +35,34 @@ class Eid extends React.Component {
                                 <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(5)} ></img>
                                 <span>Eid 6</span>
                             </div>
+                            <div className="form-group col-md-2">
+                                <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(6)} ></img>
+                                <span>Fancy 7</span>
+                            </div>
+                            <div className="form-group col-md-2">
+                                <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(7)} ></img>
+                                <span>MotherDay</span>
+                            </div>
+                            <div className="form-group col-md-2">
+                                <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(8)} ></img>
+                                <span>Adha Fancy 7</span>
+                            </div>
+                            <div className="form-group col-md-2">
+                                <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(9)} ></img>
+                                <span>Baby Fancy</span>
+                            </div>
+                            <div className="form-group col-md-2">
+                                <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(10)} ></img>
+                                <span>Baby Fancy2 </span>
+                            </div>
+                            <div className="form-group col-md-2">
+                                <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(11)} ></img>
+                                <span>Baby Fancy3 </span>
+                            </div>
+                            <div className="form-group col-md-2">
+                                <img className="shape" width="120px" src="eidgroup1.jpg" style={{ paddingBottom: '5px' }} onClick={() => this.props.chooseShape(12)} ></img>
+                                <span>Baby Fancy4 </span>
+                            </div>
                         </div>
                     </div>
                     
