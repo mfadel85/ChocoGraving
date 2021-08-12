@@ -185,7 +185,7 @@ export function generateSVGGird(svgObject,cState){
     theFinal = theFinal.replace(mainG,' ');
     var newG ;
     var shapeFile = cState.shapeFile;
-    if ([2, 3, 24].indexOf(pcsCount) !== -1)
+    if ([2, 3, 24].indexOf(pcsCount) !== -1 && cState.hasDecoration)
         shapeFile = cState.extension + cState.shapeFile;
     fetch(shapeFile)
         .then(resp => resp.text())

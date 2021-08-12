@@ -471,7 +471,7 @@ class Cam extends React.Component {
                 var contentModified;
                 var decoration,decoroartionDown;
                 var shapeFile = that.state.shapeFile;
-                if ([2, 3, 24].indexOf(pcsCount) !== -1)
+                if ([2, 3, 24].indexOf(pcsCount) !== -1 && that.state.hasDecoration)
                     shapeFile = that.state.extension + that.state.shapeFile;
                 fetch(shapeFile)
                     .then(resp => resp.text())

@@ -29,8 +29,8 @@ const allDecorations= [
 // the first parameter is the svg file name, the seconde is the decoration(which will have its files)
 const allShapesSVG = [
     ['graduationHat.svg', false],
-    ['9877d-eid-2021-fancy-02-01.svg', false, allDecorations[0], [1, 1]],
-    ['fancy_getwellsoon_en.svg', allDecorations[0], false, [1, 1]],
+    ['9877d-eid-2021-fancy-02-01.svg', true, allDecorations[0], [1, 1]],
+    ['fancy_getwellsoon_en.svg', false, allDecorations[0],  [1, 1]],
     ['eid5.svg', false, allDecorations[0],[1, 1]],
     ['fancy-03-01.svg', false, allDecorations[0],[1,1]],//scaling factor
     ['32_fancy_getwellsoon_en.svg', false, allDecorations[0],[1,1]],//scaling factor
