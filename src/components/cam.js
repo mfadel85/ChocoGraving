@@ -163,6 +163,7 @@ class Cam extends React.Component {
         this.selectModelNo = this.selectModelNo.bind(this);
         this.chooseShape = this.chooseShape.bind(this);
         this.generateBoxCalligraphy = this.generateBoxCalligraphy.bind(this);
+        this.generateBoxAll = this.generateBoxAll.bind(this);
     }
 
     componentWillMount() {}
@@ -308,8 +309,13 @@ class Cam extends React.Component {
         return [startIndex, endIndex]
 
     }
-
-    generateBoxCalligraphy(){
+    generateBoxAll(){
+        this.setPcsCount('mm', 4, this.generateBoxCalligraphy("boxTemplate4"));
+        this.setPcsCount('mm', 6, this.generateBoxCalligraphy("boxTemplate6"));
+        this.setPcsCount('mm', 24, this.generateBoxCalligraphy("boxTemplate24"));
+        this.setPcsCount('mm', 32, this.generateBoxCalligraphy("boxTemplate32"));
+    }
+    generateBoxCalligraphy(elementId){
         this.init();
         var payload = this.prepareImage();// the result is a white and black image.
         const img = document.getElementById("eeveelutions");//eeveelutions  //eeveelutions
@@ -373,7 +379,7 @@ class Cam extends React.Component {
                             that.setState({ fileLoaded: true, generatedFile: image, hideme: 'hideMe' });
                         }).then(() => {
                             const scale = 25 / that.state.dims[0];
-                            var final = generateSVGGird(svgContent,that.state)
+                            var final = generateSVGGird(svgContent,that.state,elementId)
                             console.log('svg is like this:',svgContent); /// bunu de handle
                             var updatedContent;
                         });
@@ -382,8 +388,8 @@ class Cam extends React.Component {
                 i.src = response.data;
 
             });
-
     }
+
     generateBox(){
         var text = this.state.templateName;
         if ( text == '' || text == undefined ) {
@@ -402,16 +408,18 @@ class Cam extends React.Component {
         var layout;
         opentype.load(font, function (err, font) {
             var activeTemplate = that.state.activeTemplate;
-            var lineHeight = 1.3*font.unitsPerEm;
+            var lineHeight = activeTemplate.lineHeight;
             fontSize = activeTemplate.fontSize;
             var scale = 1 / font.unitsPerEm * fontSize;
             const finalWidth = 20;
             console.log('width should be', finalWidth / scale);
+            console.log('lineHeight', lineHeight);
+
             // let width to be constant value: 3000 should not change
             let layoutOptions = {
                 "align": "center",
-                lineHeight: lineHeight,
-                width: activeTemplate.layoutWidth,//finalWidth / scale
+                lineHeight: that.state.specialMargin[5],
+                width: that.state.specialMargin[4],//finalWidth / scale
                 mode: 'nowrap'
             };
             try 
@@ -421,18 +429,17 @@ class Cam extends React.Component {
                 const max = layout.lines.reduce(
                     (prev, current) => (prev.width > current.width) ? prev : current
                 );
-                if (max.width != activeTemplate.layoutWidth){
-                    fontSize = fontSize * activeTemplate.layoutWidth/max.width;
+                if (max.width != that.state.specialMargin[4]){
+                    fontSize = fontSize * that.state.specialMargin[4]/max.width;
                     scale = 1 / font.unitsPerEm * fontSize;
                     //change font size
                     layoutOptions = {
                         "align": "center",
-                        lineHeight: lineHeight,
-                        width: activeTemplate.layoutWidth,//finalWidth / scale
+                        lineHeight: that.state.specialMargin[5],
+                        width: that.state.specialMargin[4],//fin
                         mode: 'nowrap'
                     };
                     layout = computeLayout(font, text, layoutOptions);
-
                 }
                 that.setState({layout:layout});
                 layout.glyphs.forEach((glyph, i) => {
@@ -444,10 +451,16 @@ class Cam extends React.Component {
                 var pcsCount = activeTemplate.pcsCount;
                 console.log(models);
                 console.log('Standard Margin is: ',(activeTemplate.marginBetweenPCs[0] - mmDims[0])* operator)
-                models = makerjs.layout.cloneToGrid(models, activeTemplate.xCount, activeTemplate.yCount, [(activeTemplate.marginBetweenPCs[0] - mmDims[0]) * operator, (activeTemplate.marginBetweenPCs[1] - mmDims[1]) * operator]);
+                models = makerjs.layout.cloneToGrid(
+                    models,
+                    activeTemplate.xCount,
+                    activeTemplate.yCount,
+                    [
+                        (that.state.specialMargin[6] - mmDims[0]) * operator,
+                        (that.state.specialMargin[7] - mmDims[1]) * operator
+                    ]
+                );
                 
-                
-
                 const svgFile = makerjs.exporter.toSVG(models); 
                 const svgDims = getDimensionStr(svgFile);
                 const maxDim = Math.max(...svgDims);
@@ -461,9 +474,9 @@ class Cam extends React.Component {
                 //var svgFileModified = svgFile.replace(svgDims[0], '843.3063').replace(svgDims[1], '1192.3787');// we have to change this
                 var transformIndex = svgFileModified.indexOf('<g')+2;
 
-                var mainMargin = activeTemplate.initialMargin[0];
+                var mainMargin = that.state.specialMargin[8]* operator;
                 var stringMarginX = mainMargin.toString();
-                var stringMarginY = activeTemplate.initialMargin[1];
+                var stringMarginY = that.state.specialMargin[9] * operator;
                 var finalist = svgFileModified.slice(0, transformIndex) + ' transform="translate(' + stringMarginX + ',' + stringMarginY + ') scale(' + activeTemplate.textScalingPercetage+')" ' + svgFileModified.slice(transformIndex);
                 var theFinal = finalist;
                 var closeGIndex = finalist.indexOf('</svg>');
@@ -480,11 +493,8 @@ class Cam extends React.Component {
                         for (let i = 0; i < activeTemplate.xCount; i++) {
                             for (let j = 0; j < activeTemplate.yCount; j++) { 
                                 var scalingStatement = (activeTemplate.shapeScalingPercentage[0] * that.state.svgShapeExtraScaling[0]).toString() + ',' + (activeTemplate.shapeScalingPercentage[1] * that.state.svgShapeExtraScaling[1]).toString();
-
                                 closeGIndex = theFinal.indexOf('</svg>');
-                               
-                                decoration = '';
-                                decoroartionDown = '';
+             
                                
                                 var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2];
                                 var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3];
@@ -492,7 +502,7 @@ class Cam extends React.Component {
                                 var margins = marginX.toString() + ',' + marginY.toString();
                                 //contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
                                 contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + scalingStatement + ')">');// we have to change this
-                                theFinal = theFinal.slice(0, closeGIndex) + contentModified + decoration + decoroartionDown + theFinal.slice(closeGIndex);
+                                theFinal = theFinal.slice(0, closeGIndex) + contentModified +  theFinal.slice(closeGIndex);
                                 k++;
                             }
                         }
@@ -529,7 +539,6 @@ class Cam extends React.Component {
         });
     }
 
-
     handleSubmission(e) {
         e.preventDefault();
         var text = e.target.content.value;
@@ -553,10 +562,59 @@ class Cam extends React.Component {
     
 
     chooseShape(shapeNo){
+        switch(this.state.pcsCount){
+            case 1:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].one
+                });
+                break;
+            case 2:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].two
+                });
+                break;
+            case 3:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].three
+                });
+                break;
+            case 4:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].four
+                });
+                break;
+            case 6:case 8: case 12: case 16:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].six
+                });
+                break;
+            case 24:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].twentyfour
+                });
+                break;
+            case 32:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].thirtytwo
+                });
+                break;
+            case 32:
+                this.setState({
+                    specialMargin: allShapesSVG[shapeNo][4].fifty
+                });
+                break;
+            default:
+                this.setState({
+                    specialMargin: [0,0]
+                });
+                break;
+        }
+        
         this.setState({ 
             shapeFile: allShapesSVG[shapeNo][0],
             hasDecoration: allShapesSVG[shapeNo][1], 
-            svgShapeExtraScaling:allShapesSVG[shapeNo][3]
+            svgShapeExtraScaling:allShapesSVG[shapeNo][3], 
+            extraMargin:allShapesSVG[shapeNo][4]
             });
     }
     handleShape(shape){
@@ -595,11 +653,12 @@ class Cam extends React.Component {
                         activeTemplate: {
                             fontSize: 40,
                             pcsCount: 20,
-                            layoutWidth: 6000,
+                            layoutWidth: 3000,
+                            lineHeight:866.66,
                             xCount: 4,
                             yCount: 5,
                             marginBetweenPCs: [192, 205.51],
-                            initialMargin: [120, 288],//should change based on the size of the text and shape
+                            initialMargin: [110, 288],//should change based on the size of the text and shape
                             textScalingPercetage: [0.37, 0.37],
                             shapeMarginsBase:[
                                 //50,115,268,287
@@ -608,36 +667,9 @@ class Cam extends React.Component {
                             calligraphyMargins:[
                                 85,220
                             ],             
-                            calligraphyFactor:9,              
-                            decorationMargin: [
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,135',
-                                '265,811.5'
-                            ],
-                            decorationDMargin: [
-                                '148,135',
-                                '148,811.5'
-                            ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [1.52, 1.52],
+                            shapeScalingPercentage: [1.52 * 0.85213986, 1.52 * 0.85213986],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -656,7 +688,8 @@ class Cam extends React.Component {
                         activeTemplate: {
                             fontSize: 36,
                             pcsCount: 2,
-                            layoutWidth: 4200,
+                            layoutWidth: 3354,
+                            lineHeight: 866.66,
                             xCount: 3,
                             yCount: 4,
                             marginBetweenPCs: [215, 215*(boxDims[1]/boxDims[0])],
@@ -664,24 +697,15 @@ class Cam extends React.Component {
                             shapeMarginsBase: [
                                 marginX, marginY, 129 * operator, 71.5 * operator,
                             ],
-                            calligraphyFactor: 9,
 
                             calligraphyMargins: [
                                 173, 140
                             ],
                             initialMargin: [marginX + 48 * 1.3, marginY + 1.3 * 43.565153 / 2 + 137],//should change based on the size of the text and shape
 
-                            decorationMargin: [
-                                '265,135',
-                                '265,811.5'
-                            ],
-                            decorationDMargin: [
-                                '148,135',
-                                '148,811.5'
-                            ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [1.54, 1.54],
+                            shapeScalingPercentage: [1.54 * 0.85213986, 1.54 * 0.85213986],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -700,7 +724,8 @@ class Cam extends React.Component {
                         activeTemplate: {
                             fontSize: 40,
                             pcsCount: 3,
-                            layoutWidth: 5000,
+                            layoutWidth: 3354,
+                            lineHeight: 866.66,
                             xCount: 2,
                             yCount: 3,
                             marginBetweenPCs: [303.5, 128.0664],
@@ -708,24 +733,13 @@ class Cam extends React.Component {
                             shapeMarginsBase: [
                                 marginX, marginY, 183 * operator, 78 * operator,
                             ],
-                            calligraphyFactor: 10.6,
                             initialMargin: [marginX + 48 * 1.3, marginY + 1.3 * 43.565153 / 2 + 137],//should change based on the size of the text and shape
-
                             calligraphyMargins: [
                                 250, 150
                             ],
-
-                            decorationMargin: [
-                                '265,135',
-                                '265,811.5'
-                            ],
-                            decorationDMargin: [
-                                '148,135',
-                                '148,811.5'
-                            ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [1.68, 1.68]
+                            shapeScalingPercentage: [1.68 * 0.85213986, 1.68 * 0.85213986]
                         },
                         step1: false, step2: false, step3: true
                     
@@ -742,7 +756,8 @@ class Cam extends React.Component {
                         activeTemplate: {
                             fontSize: 32,
                             pcsCount: 4,
-                            layoutWidth: 7000,
+                            layoutWidth: 3354,
+                            lineHeight: 866.66,
                             xCount: 2,
                             yCount: 3,
                             marginBetweenPCs: [183.7397, 183.7397],
@@ -761,29 +776,10 @@ class Cam extends React.Component {
                             textPosition: 1,
                             shapeScalingPercentage: [2, 2],
                             shapeSVGName: allShapesSVG[0],
-                            decorationMargin: [
-                                // for the tempale 4 : it is 128.5*operator + initialMargin
-                                // is the initial y margin, x is not at the zero point
-                                '179,85',
-                                //'0,0',
-                                //485.5 is the standard margin which is compared to 
-                                '664,85',
-                                '179,570.5',
-                                '664,570.5',
-                                '179,1056',
-                                '664,1056'
-                            ],
-                            decorationDMargin: [
-                                '60,203',
-                                '545,203',
-                                '60,688',
-                                '545,688',
-                                '60,1173',
-                                '545,1173'
-                            ],
+
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [2.7143, 2.7143],
+                            shapeScalingPercentage: [2.7143 * 0.85213986, 2.7143 * 0.85213986],
                             
                         },
                         step1: false, step2: false, step3: true
@@ -801,7 +797,8 @@ class Cam extends React.Component {
                         activeTemplate: {
                             fontSize: 35,
                             pcsCount: 6,
-                            layoutWidth: 5100,
+                            layoutWidth: 3354,
+                            lineHeight: 866.66,
                             xCount: 2,
                             yCount: 2,                            
                             marginBetweenPCs: [200, 152],
@@ -818,17 +815,9 @@ class Cam extends React.Component {
                                 155, 430
                             ],
 
-                            decorationMargin: [
-                                '265,135',
-                                '265,811.5'
-                            ],
-                            decorationDMargin: [
-                                '148,135',
-                                '148,811.5'
-                            ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [2.909, 2.909],
+                            shapeScalingPercentage: [2.909 * 0.85213986, 2.909 * 0.85213986],// to be multiplied by 0.85213986
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -844,7 +833,8 @@ class Cam extends React.Component {
                         activeTemplate: {
                             fontSize: 40,
                             pcsCount: 24,
-                            layoutWidth: 6000,
+                            layoutWidth: 3354,
+                            lineHeight: 866.66,
                             xCount: 1,
                             yCount: 2,
                             marginBetweenPCs: [148, 148],
@@ -856,20 +846,11 @@ class Cam extends React.Component {
                             calligraphyFactor: 25,
 
                             calligraphyMargins: [
-                                200, 580
-                            ],
-
-                            decorationMargin:[
-                                '265,135',
-                                '265,811.5'
-                            ],
-                            decorationDMargin: [
-                                '148,135',
-                                '148,811.5'
+                                200-6.6*operator, 580-16*operator
                             ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [3.9,3.9],
+                            shapeScalingPercentage: [3.3233, 3.3233],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -884,7 +865,8 @@ class Cam extends React.Component {
                         activeTemplate: {
                             fontSize: 45,
                             pcsCount: 1,
-                            layoutWidth: 8200,
+                            layoutWidth: 3354,
+                            lineHeight: 866.66,
                             xCount: 1,
                             yCount: 1,
                             marginBetweenPCs: [300, 300],
@@ -894,22 +876,12 @@ class Cam extends React.Component {
                                 marginX, marginY, 0, 0
                             ],
                             calligraphyMargins: [
-                                280, 812
+                                255.3, 705
                             ],
                             calligraphyFactor: 33.5,
-
-                            decorationMargin: [
-                                '265,135',
-                                '265,811.5'
-
-                            ],
-                            decorationDMargin: [
-                                '148,135',
-                                '148,811.5'
-                            ],
                             shapePosition: 1,
                             textPosition: 1,
-                            shapeScalingPercentage: [5.477, 5.477],
+                            shapeScalingPercentage: [4.66717, 4.66717],
                         },
                         step1: false, step2: false, step3: true
                     }
@@ -1250,9 +1222,16 @@ class Cam extends React.Component {
                                             onChange={this.changeTextTemplateName} defaultValue={this.state.templateName} >
                                             </textarea>
                                             <Button bsSize="lg" bsStyle="warning" onClick={this.generateBox}> <Icon name="play" />Generate</Button>
-                                            <Button bsSize="lg" bsStyle="warning" onClick={this.generateBoxCalligraphy}> <Icon name="play" />GenerateR</Button>
+                                            <Button bsSize="lg" bsStyle="warning" onClick={()=>{this.generateBoxCalligraphy("boxTemplate")}}> <Icon name="play" />GenerateR</Button>
+                                            <Button bsSize="lg" bsStyle="warning" onClick={this.generateBoxAll}> <Icon name="play" />Generate All</Button>
 
-                                            <a href="" id="boxTemplate">OurFile</a>
+                                            <a href="" id="boxTemplate">OurFile1</a>
+                                            <span className="hideMe">
+                                                <a href="" id="boxTemplate4">OurFile4</a>
+                                                <a href="" id="boxTemplate6">OurFile6</a>
+                                                <a href="" id="boxTemplate24">OurFile24</a>
+                                                <a href="" id="boxTemplate32">OurFile32</a>
+                                            </span>
                                         <br></br><br></br>
                                     </Col>
                                 </Row>

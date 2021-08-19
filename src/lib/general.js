@@ -136,7 +136,7 @@ export function rotateRect(svgFile) {
     console.log(result);
     return final5;
 }
-export function generateSVGGird(svgObject,cState){
+export function generateSVGGird(svgObject,cState,elementID){
 
     
     const svgDims = getDimensionGeneral(svgObject);
@@ -149,7 +149,9 @@ export function generateSVGGird(svgObject,cState){
         svgFileModified = svgObject.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this
     else
         svgFileModified = svgObject.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this var transformIndex = svgFileModified.indexOf('<g')+2;
-    const mmDims = svgDims.map(n => n / operator);
+    const mmDims = svgDims.map(n => n / operator);//*10 will in mm
+    // we have to percentage it according to the specialMargin
+
     var transformIndex = svgFileModified.indexOf('<g') + 2;
     var transformIndices = findStartEndIndicesTranslate(svgFileModified,'transform="translate');
     var mainMargin = 600+operator * (activeTemplate.initialMargin[0] - mmDims[0]) / 2;
@@ -157,9 +159,8 @@ export function generateSVGGird(svgObject,cState){
     var stringMarginY = activeTemplate.initialMargin[1];//to be changed according to the shape
     //svgDims[1]*scaling[1]=21.80
     console.log('svgDims',svgDims,'percentage 0/1',svgDims[0]/svgDims[1]);
-    var factor = activeTemplate.calligraphyFactor*(svgDims[1]/svgDims[0])
-    var scalingX = activeTemplate.calligraphyFactor  / svgDims[0];
-    var scalingY = factor / svgDims[1];// 4.5,12 should be taken from the state,
+    var scalingX = cState.specialMargin[2] / (mmDims[0] * 10);
+    var scalingY = cState.specialMargin[3] / (mmDims[1] * 10);// 4.5,12 should be taken from the state,
 
     // one line or two line? or how many lines????
     //calligraphyScalingPercetage: [0.02, -0.02],
@@ -169,7 +170,7 @@ export function generateSVGGird(svgObject,cState){
 
     // we have to fix this
     //calligraphyScalingPercetage has to be dynamic according to dimensions
-
+    // I will make scaling Y to 1
     var finalist = svgFileModified.replace(
         svgFileModified.substring(transformIndices[0], transformIndices[1]+2),
          ' transform="translate(' + stringMarin + ',' + stringMarginY + ') scale(' + 
@@ -180,10 +181,10 @@ export function generateSVGGird(svgObject,cState){
     let k = 0;
     var contentModified;
     var decoration, decoroartionDown;
-    var mainG = getG(finalist);
+    var mainG = getG(finalist);// calligraphy svg
     var gIndices = findStartEndIndicesTranslate(mainG, 'transform="translate');
     theFinal = theFinal.replace(mainG,' ');
-    var newG ;
+    var newG ;// will be calligraphy svg with margins
     var shapeFile = cState.shapeFile;
     if ([2, 3, 24].indexOf(pcsCount) !== -1 && cState.hasDecoration)
         shapeFile = cState.extension + cState.shapeFile;
@@ -194,15 +195,14 @@ export function generateSVGGird(svgObject,cState){
             for (let i = 0; i < activeTemplate.xCount; i++) {
                 for (let j = 0; j < activeTemplate.yCount; j++) {
                     closeGIndex = theFinal.indexOf('</svg>');
-                   
-                        decoration = '';
-                        decoroartionDown = '';
-                    
-                    var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2];
-                    var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3];
-                    var margins = marginX.toString() + ',' + marginY.toString();
-                    var marginsC = (marginX + activeTemplate.calligraphyMargins[0]).toString() + ',' + (marginY + activeTemplate.calligraphyMargins[1]).toString();// 100 and 300 should be dynamic
-                    newG = mainG.replace(mainG.substring(gIndices[0], gIndices[1] + 2), 'transform="translate(' + marginsC + ') scale(' + scalingX + ',-' + scalingY + ')" ');
+                    decoration = '';
+                    decoroartionDown = '';
+                    var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2] + cState.specialMargin[0]*operator;
+                    var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3] + cState.specialMargin[1] * operator;;
+                    var margins = marginX.toString() + ',' + marginY.toString();// this is for the shape
+                    // this is for the calligraphy or logo.
+                    var marginsC = (marginX + activeTemplate.calligraphyMargins[0] ).toString() + ',' + (marginY + activeTemplate.calligraphyMargins[1] + cState.specialMargin[1]).toString();// 100 and 300 should be dynamic
+                    newG = mainG.replace(mainG.substring(gIndices[0], gIndices[1] + 2), 'transform="translate(' + marginsC + ') scale(' + scalingX + ',-' + scalingY + ')" '); // scalingY to 1 for testing
                     //contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
                     contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + activeTemplate.shapeScalingPercentage + ')">');// we have to change this
                     theFinal = theFinal.slice(0, closeGIndex) + contentModified + decoration + newG + decoroartionDown + theFinal.slice(closeGIndex);
@@ -222,7 +222,7 @@ export function generateSVGGird(svgObject,cState){
                 theFinal = anotherStep.slice(0, svgIndices[1] + rotateStatement.length) + '</g>' + anotherStep.slice(svgIndices[1] + rotateStatement.length);
             }
 
-            var svgElement = document.getElementById("boxTemplate");
+            var svgElement = document.getElementById(elementID);
             svgElement.setAttribute('href', 'data:text/plain;chartset=utf-8,' + encodeURIComponent(theFinal));
             alert('File is ready');
             svgElement.setAttribute('download', 'File.svg');
