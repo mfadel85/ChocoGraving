@@ -1,7 +1,7 @@
 'use strict';
 
 import { alert } from '../components/laserweb.js';
-import { gStatic,rectFrame, rectFrame6, framePath, operator, shapeTemplats, allShapesSVG } from '../data/staticData.js'
+import { gStatic,rectFrame, rectFrame6, rectFrame50, framePath, operator, shapeTemplats, allShapesSVG } from '../data/staticData.js'
 
 
 
@@ -22,7 +22,7 @@ export function getGIndex(content) {
 export function getSVGOpenClose(content){
     const endIndex = content.indexOf('</svg>');
     //what if content.indexOf returs -1
-
+//http://www.w3.org/1999/xlink
     var startIndex = content.indexOf('www.w3.org/2000/svg">');
     if(startIndex != -1)
         startIndex = startIndex + 21;
@@ -33,9 +33,9 @@ export function getSVGOpenCloseAPI(content) {
     const endIndex = content.indexOf('</svg>');
     //what if content.indexOf returs -1
 
-    var startIndex = content.indexOf('preserveAspectRatio="xMidYMid meet"');
+    var startIndex = content.indexOf('xmlns:xlink="http://www.w3.org/1999/xlink"');
     if (startIndex != -1)
-        startIndex = startIndex + 37;
+        startIndex = startIndex + 45;
     return [startIndex, endIndex];
 }
 
@@ -137,7 +137,8 @@ export function rotateRect(svgFile) {
     return final5;
 }
 export function generateSVGGird(svgObject,cState,elementID){
-
+    // have to make this algorithm cleaner, reunderstands the whole processNode
+    // rebuild it so that it is shorter and faster to add any file,
     
     const svgDims = getDimensionGeneral(svgObject);
     const activeTemplate = cState.activeTemplate;
@@ -145,10 +146,13 @@ export function generateSVGGird(svgObject,cState,elementID){
     var svgFileModified;
     const maxDim = Math.max(...svgDims);
     const minDim = Math.min(...svgDims);
-    if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
-        svgFileModified = svgObject.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this
+    if ([2, 3, 6, 8, 16].indexOf(pcsCount) > 0)
+        svgFileModified = svgObject.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401').replace('preserveAspectRatio="xMidYMid meet"', ' preserveAspectRatio="xMidYMid meet" xmlns:xlink="http://www.w3.org/1999/xlink" ');// we have to change this
+    else if(pcsCount === 50)
+        svgFileModified = svgObject.replace(svgDims[0], '1208.37').replace(svgDims[0], '1208.37').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401').replace('preserveAspectRatio="xMidYMid meet"', ' preserveAspectRatio="xMidYMid meet" xmlns:xlink="http://www.w3.org/1999/xlink" ');// we have to change this
     else
-        svgFileModified = svgObject.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401');// we have to change this var transformIndex = svgFileModified.indexOf('<g')+2;
+        svgFileModified = svgObject.replace(svgDims[0], '1122.5196').replace(svgDims[0], '1122.5196').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401').replace('preserveAspectRatio="xMidYMid meet"', ' preserveAspectRatio="xMidYMid meet" xmlns:xlink="http://www.w3.org/1999/xlink" ');// we have to change this var transformIndex = svgFileModified.indexOf('<g')+2;
+        // to add xmlns:xlink="http://www.w3.org/1999/xlink" to the main xml
     const mmDims = svgDims.map(n => n / operator);//*10 will in mm
     // we have to percentage it according to the specialMargin
 
@@ -161,16 +165,11 @@ export function generateSVGGird(svgObject,cState,elementID){
     console.log('svgDims',svgDims,'percentage 0/1',svgDims[0]/svgDims[1]);
     var scalingX = cState.specialMargin[2] / (mmDims[0] * 10);
     var scalingY = cState.specialMargin[3] / (mmDims[1] * 10);// 4.5,12 should be taken from the state,
+    if(pcsCount == 50){
+        stringMarin = "18";
+        stringMarginY = "210";
+    }
 
-    // one line or two line? or how many lines????
-    //calligraphyScalingPercetage: [0.02, -0.02],
-    //30
-    // not adding : replacing 
-    //var finalist = svgFileModified.slice(0, transformIndex) + ' transform="translate(' + stringMarin + ',' + stringMarginY + ') scale(' + activeTemplate.textScalingPercetage + ')" ' + svgFileModified.slice(transformIndex);
-
-    // we have to fix this
-    //calligraphyScalingPercetage has to be dynamic according to dimensions
-    // I will make scaling Y to 1
     var finalist = svgFileModified.replace(
         svgFileModified.substring(transformIndices[0], transformIndices[1]+2),
          ' transform="translate(' + stringMarin + ',' + stringMarginY + ') scale(' + 
@@ -186,7 +185,7 @@ export function generateSVGGird(svgObject,cState,elementID){
     theFinal = theFinal.replace(mainG,' ');
     var newG ;// will be calligraphy svg with margins
     var shapeFile = cState.shapeFile;
-    if ([2, 3, 24].indexOf(pcsCount) !== -1 && cState.hasDecoration)
+    if ([2, 3,6, 24].indexOf(pcsCount) !== -1 && cState.hasDecoration)
         shapeFile = cState.extension + cState.shapeFile;
     fetch(shapeFile)
         .then(resp => resp.text())
@@ -197,24 +196,37 @@ export function generateSVGGird(svgObject,cState,elementID){
                     closeGIndex = theFinal.indexOf('</svg>');
                     decoration = '';
                     decoroartionDown = '';
-                    var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2] + cState.specialMargin[0]*operator;
-                    var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3] + cState.specialMargin[1] * operator;;
+                    var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2] ;
+                    var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3];
                     var margins = marginX.toString() + ',' + marginY.toString();// this is for the shape
                     // this is for the calligraphy or logo.
-                    var marginsC = (marginX + activeTemplate.calligraphyMargins[0] ).toString() + ',' + (marginY + activeTemplate.calligraphyMargins[1] + cState.specialMargin[1]).toString();// 100 and 300 should be dynamic
+                    var marginsC = (marginX + activeTemplate.calligraphyMargins[0] + cState.specialMargin[0]).toString() + ',' + (marginY + activeTemplate.calligraphyMargins[1] + cState.specialMargin[1]).toString();// 100 and 300 should be dynamic
                     newG = mainG.replace(mainG.substring(gIndices[0], gIndices[1] + 2), 'transform="translate(' + marginsC + ') scale(' + scalingX + ',-' + scalingY + ')" '); // scalingY to 1 for testing
                     //contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
-                    contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + activeTemplate.shapeScalingPercentage + ')">');// we have to change this
+                    //activeTemplate.shapeMarginsBase[9]
+                    var shapeScalingPercentage = (activeTemplate.shapeScalingPercentage[0] * cState.specialMargin[9]).toString() + ',' + (activeTemplate.shapeScalingPercentage[1] * cState.specialMargin[9]).toString();
+                    //activeTemplate.shapeScalingPercentage.reduce((element) => element * activeTemplate.shapeMarginsBase[9]);
+                    if (pcsCount == 50) {
+                        stringMarin = "18";
+                        stringMarginY = "210";
+                        margins = "18,210";
+
+                    }
+                    contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + shapeScalingPercentage + ')">');// we have to change this
                     theFinal = theFinal.slice(0, closeGIndex) + contentModified + decoration + newG + decoroartionDown + theFinal.slice(closeGIndex);
                     k++;
                 }
             }
             closeGIndex = theFinal.indexOf('</svg>');
 
-            if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
-                theFinal = theFinal.slice(0, closeGIndex) + rectFrame + theFinal.slice(closeGIndex);
-            else
+            if ([2, 3, 6, 8, 16].indexOf(pcsCount) > -1)
                 theFinal = theFinal.slice(0, closeGIndex) + rectFrame6 + theFinal.slice(closeGIndex);
+            else if (pcsCount === 50)
+                theFinal = theFinal.slice(0, closeGIndex) + rectFrame50 + theFinal.slice(closeGIndex);
+
+            else
+                theFinal = theFinal.slice(0, closeGIndex) + rectFrame + theFinal.slice(closeGIndex);
+
             if ([2, 3, 6, 8, 16].indexOf(pcsCount) !== -1) {
                 const rotateStatement = '<g transform="rotate(-90 280 200)  translate(479.3,1041.949) scale(-1,-1 )">';
                 const svgIndices = getSVGOpenCloseAPI(theFinal);
