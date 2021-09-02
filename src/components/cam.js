@@ -24,7 +24,7 @@ import MainTemplates from './mainTemplates';
 import MainShapes from './mainShapes'
 import ShapeGroups from './shapeGroups'
 import axios from 'axios';
-import { rectFrame, rectFrame6,framePath,  operator, shapeTemplats, allShapesSVG} from '../data/staticData.js'
+import { rectFrame, rectFrame6, framePath, rectFrame50, operator, shapeTemplats, allShapesSVG} from '../data/staticData.js'
 const opentype = require('opentype.js');
 export const DOCUMENT_FILETYPES = '.png,.jpg,.jpeg,.bmp,.gcode,.g,.svg,.dxf,.tap,.gc,.nc'
 
@@ -468,14 +468,14 @@ class Cam extends React.Component {
                 const maxDim = Math.max(...svgDims);
                 const minDim = Math.min(...svgDims);
                 console.log('mmDims are', svgDims);
-                if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
+                if ([2, 3, 6, 8, 16,50].indexOf(pcsCount) === -1)
                     var svgFileModified = svgFile.replace(svgDims[0], '1122.5196')
                         .replace(svgDims[0], '1122.5196')
                         .replace(svgDims[1], '1587.401')
                         .replace(svgDims[1], '1587.401')
                         .replace('xmlns="http://www.w3.org/2000/svg"', ' xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ');// we have to change this
                 else if (pcsCount === 50)
-                    svgFileModified = svgObject.replace(svgDims[0], '1208.37').replace(svgDims[0], '1208.37').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401')
+                    svgFileModified = svgFile.replace(svgDims[0], '1208.37').replace(svgDims[0], '1208.37').replace(svgDims[1], '1587.401').replace(svgDims[1], '1587.401')
                         .replace('xmlns="http://www.w3.org/2000/svg"', ' xmlns="http://www.w3.org/2000/svg"  xmlns:xlink="http://www.w3.org/1999/xlink" ');// we have to change this
                 else
                     var svgFileModified = svgFile.replace(svgDims[0], '1122.5196')
@@ -491,13 +491,13 @@ class Cam extends React.Component {
                 var stringMarginX = mainMargin.toString();
                 var stringMarginY = (that.state.specialMargin[10] * operator).toString();
                 var margins;
-                if (pcsCount == 50) {
+                /*if (pcsCount == 50) {
                     stringMarginX = "18";
                     stringMarginY = "210";
                     margins = "18,210";
 
                 }
-                else 
+                else */
                     margins = stringMarginX+', '+stringMarginY;
                 var finalist = svgFileModified.slice(0, transformIndex) + ' transform="translate(' + margins + ') scale(' + activeTemplate.textScalingPercetage+')" ' + svgFileModified.slice(transformIndex);
                 var theFinal = finalist;
@@ -532,9 +532,11 @@ class Cam extends React.Component {
                         after the SVG tag, and 
                         //</g> before the close </svg> tag
                         */
-                        if ([2, 3, 6, 8, 16].indexOf(pcsCount) === -1)
-                        theFinal = theFinal.slice(0, closeGIndex) + rectFrame + theFinal.slice(closeGIndex);
-                        else 
+                        if ([2, 3, 6, 8, 16,50].indexOf(pcsCount) === -1)
+                            theFinal = theFinal.slice(0, closeGIndex) + rectFrame + theFinal.slice(closeGIndex);
+                        else if(pcsCount == 50)
+                            theFinal = theFinal.slice(0, closeGIndex) + rectFrame50 + theFinal.slice(closeGIndex);
+                        else
                             theFinal = theFinal.slice(0, closeGIndex) + rectFrame6 + theFinal.slice(closeGIndex);
                         if([2,3,6,8,16].indexOf(pcsCount) !== -1){
                             //const rotateStatement = '<g transform="rotate(-90 280 200) translate(712.18,1274.969) scale(-1,-1 )">';
