@@ -5,7 +5,7 @@ import {  loadDocument,removeDocumentSelected, selectDocument, selectDocuments, 
 import { addOperation, clearOperations,  setFormData, setDepth, setFont } from '../actions/operation';
 import { GlobalStore } from '../index';
 import { appendExt, captureConsole, openDataWindow, sendAsFile } from '../lib/helpers';
-import { getSVGOpenClose,getSVGOpenCloseAPI,generateSVGGird,  getDimensionAPI, minimizeSvgFile, minimizeSvgFileRect, removeBlanks,  validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
+import { getSVGOpenClose, getSVGOpenCloseAPI, generateSVGGird, generateTextGrid,  getDimensionAPI, minimizeSvgFile, minimizeSvgFileRect, removeBlanks,  validateLayout, calcMargins, getDimensionStr, getDimension, getDimensionGeneral} from '../lib/general'
 import Parser from '../lib/lw.svg-parser/parser';
 import { ValidateSettings } from '../reducers/settings';
 import { withDocumentCache } from './document-cache';
@@ -49,7 +49,11 @@ const initialState = {
         marginBetweenPCs:[184,184],
         initialMargin:[181.7,335],//should change based on the size of the text and shape
         textScalingPercetage:[0.7,0.7],
-
+        "maxLines": 3,
+        "maxWordsAr": 4,
+        "maxWordsEn": 3,
+        "shiftX": 10,
+        "shiftY": 10,
         shapePosition:1,
         textPosition:1,
         shapeSVGName: allShapesSVG[0],
@@ -315,6 +319,7 @@ class Cam extends React.Component {
         this.setPcsCount('mm', 24, this.generateBoxCalligraphy("boxTemplate24"));
         this.setPcsCount('mm', 32, this.generateBoxCalligraphy("boxTemplate32"));
     }
+
     generateBoxCalligraphy(elementId){
         this.init();
         var payload = this.prepareImage();// the result is a white and black image.
@@ -396,6 +401,8 @@ class Cam extends React.Component {
             alert('no text???');
             return;
         }
+        var lines = text.split("\n");
+
         var models = {};
 
         const that = this;
@@ -420,48 +427,111 @@ class Cam extends React.Component {
                 "align": "center",
                 lineHeight: that.state.specialMargin[5]/lineCount,
                 width: that.state.specialMargin[4],//finalWidth / scale
-                mode: 'nowrap'
+                mode: 'pre'
             };
             try 
             {
-                layout = computeLayout(font,text,layoutOptions);
-                console.log('Layout is:',layout);
-                const max = layout.lines.reduce(
-                    (prev, current) => (prev.width > current.width) ? prev : current
-                );
-                if (max.width != that.state.specialMargin[4]){
-                    fontSize = fontSize * that.state.specialMargin[4]/max.width;
-                    scale = 1 / font.unitsPerEm * fontSize;
-                    //change font size
-                    layoutOptions = {
-                        "align": "center",
-                        lineHeight: that.state.specialMargin[5]/lineCount,
-                        width: that.state.specialMargin[4],//fin
-                        mode: 'nowrap'
-                    };
+                
+                // how to resize the models automatically in a good way
+                if (that.state.direction == 'RTL') {
                     layout = computeLayout(font, text, layoutOptions);
-                }
-                //            'two': [70, 60, 45, 14, 4275, 1176, 183.74, 110, 20, 1, 10],
+                    const max = layout.lines.reduce(
+                        (prev, current) => (prev.width > current.width) ? prev : current
+                    );
+                    if (max.width != that.state.specialMargin[4]) {
+                        fontSize = fontSize * that.state.specialMargin[4] / max.width;
+                        scale = 1 / font.unitsPerEm * fontSize;
+                        //change font size
+                        layoutOptions = {
+                            "align": "center",
+                            lineHeight: that.state.specialMargin[5] / layout.lines.length,
+                            width: that.state.specialMargin[4],//fin
+                            mode: 'pre'
+                        };
+                        layout = computeLayout(font, text, layoutOptions);
+                    }
+                    console.log('started RTL');
+                    let wordModel = '';
 
-                that.setState({layout:layout});
-                layout.glyphs.forEach((glyph, i) => {
-                    var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
-                    character.origin = makerjs.point.scale(glyph.position, scale);
-                    makerjs.model.addModel(models, character, i);
-                });
+                    let wordWidths = [];// line widths
+                    let wordHeigths = [];
+                    let svgWords = [];
+
+                    let shiftX = 0;
+                    let shiftY = 0;
+                    let shifts = [shiftX, shiftY];
+                    models = {};
+                    console.log('lines are : ', layout.lines);
+                    lines.forEach((line, i) => {
+                        wordModel = new makerjs.models.Text(font, line, fontSize);
+                        makerjs.model.addModel(models, wordModel);
+                        svgWords[i] = makerjs.exporter.toSVG(models/*,{origin:[-70.95,0]}*/);
+                        models = {};
+                        let parts = svgWords[i].split("\"");
+                        wordWidths[i] = parseFloat(parts[1]);
+                        wordHeigths[i] = parseFloat(parts[3]);
+                    });
+                    let maxWHeight = Math.max(...wordHeigths);
+                    console.log('widths', wordWidths, 'heights', wordHeigths);//  
+
+                    models = {};
+                    lines.forEach((line, i) => {
+                        wordModel = new makerjs.models.Text(font, line, fontSize, true);
+                        shiftY = shiftY + maxWHeight*0.80 ;
+                        shiftX = that.state.activeTemplate.shiftX * 9 - (wordWidths[i] / (2 * operator));/// what is this equation?
+
+                        let shiftingFactor = 0;
+                        if (i > 0) {
+                            shiftingFactor = wordWidths[0] / 2.8 - wordWidths[i] / 2.8;
+                        }
+                        for (let index = 0; index < Object.keys(wordModel.models).length; index++) {
+                            shifts = [wordModel.models[index].origin[0] + shiftX + shiftingFactor, wordModel.models[index].origin[1] - shiftY];
+                            wordModel.models[index].origin = [shifts[0], shifts[1]];
+                        }
+                        makerjs.model.addModel(models, wordModel);
+                    });
+                }
+                else {
+                    layout = computeLayout(font, text, layoutOptions);
+                    console.log('Layout is:', layout);
+                    const max = layout.lines.reduce(
+                        (prev, current) => (prev.width > current.width) ? prev : current
+                    );
+                    if (max.width != that.state.specialMargin[4]) {
+                        fontSize = fontSize * that.state.specialMargin[4] / max.width;
+                        scale = 1 / font.unitsPerEm * fontSize;
+                        //change font size
+                        layoutOptions = {
+                            "align": "center",
+                            lineHeight: that.state.specialMargin[5] / layout.lines.length,
+                            width: that.state.specialMargin[4],//fin
+                            mode: 'pre'
+                        };
+                        layout = computeLayout(font, text, layoutOptions);
+                    }
+                    //            'two': [70, 60, 45, 14, 4275, 1176, 183.74, 110, 20, 1, 10],
+
+                    that.setState({ layout: layout });
+                    layout.glyphs.forEach((glyph, i) => {
+                        var character = makerjs.models.Text.glyphToModel(glyph.data, fontSize);
+                        character.origin = makerjs.point.scale(glyph.position, scale);
+                        makerjs.model.addModel(models, character, i);
+                    });
+                }
+                
                 let mmDims = getDimension(makerjs.exporter.toSVG(models)).map(n => n / operator);
                 var pcsCount = activeTemplate.pcsCount;
-                console.log(models);
+                console.log('Models',models,'Layout is',layout);
                 console.log('Standard Margin is: ',(activeTemplate.marginBetweenPCs[0] - mmDims[0])* operator)
-                models = makerjs.layout.cloneToGrid(
+                /*models = makerjs.layout.cloneToGrid(
                     models,
                     activeTemplate.xCount,
                     activeTemplate.yCount,
                     [
-                        (that.state.specialMargin[6] /*- mmDims[0]*/) * operator,
-                        (that.state.specialMargin[7] /*- mmDims[1]*/) * operator
+                        (that.state.specialMargin[6] - mmDims[0]) * operator,
+                        (that.state.specialMargin[7] - mmDims[1]) * operator
                     ]
-                );
+                );*/
                 
                 const svgFile = makerjs.exporter.toSVG(models); 
                 const svgDims = getDimensionStr(svgFile);
@@ -500,13 +570,16 @@ class Cam extends React.Component {
                 else */
                     margins = stringMarginX+', '+stringMarginY;
                 var finalist = svgFileModified.slice(0, transformIndex) + ' transform="translate(' + margins + ') scale(' + activeTemplate.textScalingPercetage+')" ' + svgFileModified.slice(transformIndex);
-                var theFinal = finalist;
-                var closeGIndex = finalist.indexOf('</svg>');
+                console.log('Text SVG explore:', finalist);
+
+                var theFinal = generateTextGrid(finalist, that.state, "boxTemplate")
+        
+                var closeGIndex = theFinal.indexOf('</svg>');
                 let k = 0; 
                 var contentModified;
                 var decoration,decoroartionDown;
                 var shapeFile = that.state.shapeFile;
-                if ([2, 3,6, 24].indexOf(pcsCount) !== -1 && that.state.hasDecoration)
+                if ([2, 3, 6, 24,32, 50].indexOf(pcsCount) !== -1 && that.state.hasDecoration)
                     shapeFile = that.state.extension + that.state.shapeFile;
                 fetch(shapeFile)
                     .then(resp => resp.text())
@@ -515,10 +588,17 @@ class Cam extends React.Component {
                         for (let i = 0; i < activeTemplate.xCount; i++) {
                             for (let j = 0; j < activeTemplate.yCount; j++) { 
                                 var scalingStatement = (activeTemplate.shapeScalingPercentage[0] * that.state.specialMargin[9]).toString() + ',' + (activeTemplate.shapeScalingPercentage[1] * that.state.specialMargin[9]).toString();
-                                closeGIndex = theFinal.indexOf('</svg>');
+                                closeGIndex = theFinal.indexOf('k" >') +4;
+                               // closeGIndex = theFinal.indexOf('</svg>') ;
+
                                 var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2];
                                 var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3];
                                 var margins = marginX.toString() + ',' + marginY.toString();
+                                if (pcsCount == 50) {
+                                    marginX = "18";
+                                    marginY = "210";
+                                    margins = "18,210";
+                                }
                                 //contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
                                 contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + scalingStatement + ')">');// we have to change this
                                 theFinal = theFinal.slice(0, closeGIndex) + contentModified +  theFinal.slice(closeGIndex);
@@ -662,6 +742,7 @@ class Cam extends React.Component {
         this.setState({ step1: false, step2: true, activeTemplate: activeTemplate});
     }
     setPcsCount(name,count){
+
         switch(count){
             case 1://we have to set some settings
                 var boxDims = [66, 66];
@@ -680,6 +761,11 @@ class Cam extends React.Component {
                             lineHeight:866.66,
                             xCount: 4,
                             yCount: 5,
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [192, 205.51],
                             initialMargin: [0, 0],//should change based on the size of the text and shape
                             textScalingPercetage: [0.37, 0.37],
@@ -717,6 +803,11 @@ class Cam extends React.Component {
                             lineHeight: 866.66,
                             xCount: 3,
                             yCount: 4,
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [215, 215*(boxDims[1]/boxDims[0])],
                             textScalingPercetage: [0.6, 0.6],
                             shapeMarginsBase: [
@@ -755,6 +846,11 @@ class Cam extends React.Component {
                             lineHeight: 866.66,
                             xCount: 2,
                             yCount: 3,
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [303.5, 128.0664],
                             textScalingPercetage: [0.57, 0.57],
                             shapeMarginsBase: [
@@ -789,6 +885,11 @@ class Cam extends React.Component {
                             lineHeight: 866.66,
                             xCount: 2,
                             yCount: 3,
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [183.7397, 183.7397],
                             initialMargin: [202, 435],//should change based on the size of the text and shape
                             textScalingPercetage: [0.7, 0.7],
@@ -833,7 +934,12 @@ class Cam extends React.Component {
                             layoutWidth: 3354,
                             lineHeight: 866.66,
                             xCount: 2,
-                            yCount: 2,                            
+                            yCount: 2,     
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [200, 152],
                             initialMargin: [(marginX + 165 * 2.909 * 0.35) , (marginY + 165 * 2.909 * 0.80) ],//should change based on the size of the text and shape
 
@@ -872,6 +978,11 @@ class Cam extends React.Component {
                             lineHeight: 866.66,
                             xCount: 1,
                             yCount: 2,
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [148, 148],
                             initialMargin: [111*operator, 171*operator],//should change based on the size of the text and shape
                             textScalingPercetage: [1.2, 1.2],
@@ -891,21 +1002,32 @@ class Cam extends React.Component {
                     }
                 );
             break;
+            /*
+              
+              
+            */
             case 32://we have to
+
                 var marginX = (236.5 - 5.477 * 43.565153) * operator / 2 + 30 * operator;
                 marginX = 112;
                 var marginY = (236.5 - 5.477 * 43.565153) * operator / 2 + 91.5 * operator;
                 marginY = 346.5;
                 this.setState(
                     {
+                        extension: 'Th2',
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 45,
-                            pcsCount: 1,
+                            pcsCount: 32,
                             layoutWidth: 3354,
                             lineHeight: 866.66,
                             xCount: 1,
                             yCount: 1,
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [300, 300],
                             initialMargin: [390, 1050],//should change based on the size of the text and shape
                             textScalingPercetage: [0.95, 0.95],
@@ -931,6 +1053,7 @@ class Cam extends React.Component {
                 marginY = 346.5;
                 this.setState(
                     {
+                        extension: 'Fif',
                         pcsCount: count,
                         activeTemplate: {
                             fontSize: 45,
@@ -939,6 +1062,11 @@ class Cam extends React.Component {
                             lineHeight: 866.66,
                             xCount: 1,
                             yCount: 1,
+                            "maxLines": 3,
+                            "maxWordsAr": 4,
+                            "maxWordsEn": 3,
+                            "shiftX": 10,
+                            "shiftY": 10,
                             marginBetweenPCs: [300, 300],
                             initialMargin: [390, 1050],//should change based on the size of the text and shape
                             textScalingPercetage: [0.95, 0.95],
@@ -956,7 +1084,7 @@ class Cam extends React.Component {
                         step1: false, step2: false, step3: true
                     }
                 );
-                break;            break;
+                break;            
             default:
             break;
         }   
@@ -1287,7 +1415,7 @@ class Cam extends React.Component {
                                         <label style={{ marginLeft: '10px', fontSize: "16px", textAlign: 'center' }}>Text Field: &nbsp;&nbsp;&nbsp;</label>
                                             <textarea style={{ backgroundColor: '#443B34' }} type="text" placeholder="your name here" name="content" id="content"
                                             ref={(input) => { this.nameInput = input; }} maxLength="23"
-                                            onChange={this.changeTextTemplateName} defaultValue={this.state.templateName} >
+                                                onChange={this.changeTextTemplateName} onKeyPress={this.checkRTL} defaultValue={this.state.templateName} >
                                             </textarea>
                                             <Button bsSize="lg" bsStyle="warning" onClick={this.generateBox}> <Icon name="play" />Generate</Button>
                                             <Button bsSize="lg" bsStyle="warning" onClick={()=>{this.generateBoxCalligraphy("boxTemplate")}}> <Icon name="play" />GenerateR</Button>

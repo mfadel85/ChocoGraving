@@ -136,6 +136,45 @@ export function rotateRect(svgFile) {
     console.log(result);
     return final5;
 }
+export function generateTextGrid(svgFile, cState, elementID) {
+
+    var mainG = getG(svgFile);
+    const activeTemplate = cState.activeTemplate;
+    var pcsCount = activeTemplate.pcsCount;
+
+    svgFile = svgFile.replace(mainG, ' ');
+    var theFinal = svgFile;
+    var gIndices = findStartEndIndicesTranslate(mainG, 'transform="translate');
+
+    const svgDims = getDimensionGeneral(svgFile);
+    const mmDims = svgDims.map(n => n / operator);
+    var scalingX = 100*cState.specialMargin[6] / mmDims[0];
+    var scalingY = 100*cState.specialMargin[7] / mmDims[1];// depending on the dimensions of mmDims
+    var transformIndices = findStartEndIndicesTranslate(mainG, 'transform="translate');
+
+    for (let i = 0; i < activeTemplate.xCount; i++) {
+        for (let j = 0; j < activeTemplate.yCount; j++) {
+            var closeGIndex = theFinal.indexOf('</svg>');
+            var marginX = cState.specialMargin[8]* operator+ i * activeTemplate.shapeMarginsBase[2];
+            var marginY = cState.specialMargin[10]*operator + j * activeTemplate.shapeMarginsBase[3];
+            var margins = marginX.toString() + ',' + marginY.toString();// this is for the shape
+            /*if (pcsCount == 50) 
+                margins = "18,210";*/
+            var contentModified = mainG.replace(
+                mainG.substring(transformIndices[0], transformIndices[1] + 2),
+                ' transform="translate(' + margins + ') scale(' +
+                scalingX + ',' + scalingY + ')" '
+            );// we have to change this
+            theFinal = theFinal.slice(0, closeGIndex) + contentModified +    theFinal.slice(closeGIndex);
+
+        }
+    }
+    console.log('maing', theFinal);
+    // get g
+    // replicate g 
+    // add margin and scale to g
+    return theFinal;
+}
 export function generateSVGGird(svgObject,cState,elementID){
     // have to make this algorithm cleaner, reunderstands the whole processNode
     // rebuild it so that it is shorter and faster to add any file,
@@ -179,13 +218,12 @@ export function generateSVGGird(svgObject,cState,elementID){
     var closeGIndex = finalist.indexOf('</svg>');
     let k = 0;
     var contentModified;
-    var decoration, decoroartionDown;
     var mainG = getG(finalist);// calligraphy svg
     var gIndices = findStartEndIndicesTranslate(mainG, 'transform="translate');
     theFinal = theFinal.replace(mainG,' ');
     var newG ;// will be calligraphy svg with margins
     var shapeFile = cState.shapeFile;
-    if ([2, 3,6, 24].indexOf(pcsCount) !== -1 && cState.hasDecoration)
+    if ([2, 3,6, 24, 32,50].indexOf(pcsCount) !== -1 && cState.hasDecoration)
         shapeFile = cState.extension + cState.shapeFile;
     fetch(shapeFile)
         .then(resp => resp.text())
@@ -194,26 +232,19 @@ export function generateSVGGird(svgObject,cState,elementID){
             for (let i = 0; i < activeTemplate.xCount; i++) {
                 for (let j = 0; j < activeTemplate.yCount; j++) {
                     closeGIndex = theFinal.indexOf('</svg>');
-                    decoration = '';
-                    decoroartionDown = '';
-                    var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2] ;
+                    var marginX = activeTemplate.shapeMarginsBase[0] + i * activeTemplate.shapeMarginsBase[2];
                     var marginY = activeTemplate.shapeMarginsBase[1] + j * activeTemplate.shapeMarginsBase[3];
                     var margins = marginX.toString() + ',' + marginY.toString();// this is for the shape
-                    // this is for the calligraphy or logo.
                     var marginsC = (marginX + activeTemplate.calligraphyMargins[0] + cState.specialMargin[0]).toString() + ',' + (marginY + activeTemplate.calligraphyMargins[1] + cState.specialMargin[1]).toString();// 100 and 300 should be dynamic
                     newG = mainG.replace(mainG.substring(gIndices[0], gIndices[1] + 2), 'transform="translate(' + marginsC + ') scale(' + scalingX + ',-' + scalingY + ')" '); // scalingY to 1 for testing
-                    //contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + activeTemplate.shapeMargins[k] + ') scale('+activeTemplate.shapeScalingPercentage+')">');// we have to change this
-                    //activeTemplate.shapeMarginsBase[9]
                     var shapeScalingPercentage = (activeTemplate.shapeScalingPercentage[0] * cState.specialMargin[9]).toString() + ',' + (activeTemplate.shapeScalingPercentage[1] * cState.specialMargin[9]).toString();
-                    //activeTemplate.shapeScalingPercentage.reduce((element) => element * activeTemplate.shapeMarginsBase[9]);
                     if (pcsCount == 50) {
                         stringMarin = "18";
                         stringMarginY = "210";
                         margins = "18,210";
-
                     }
                     contentModified = content.replace('<g id="bostani">', '<g id="bostani" transform="translate(' + margins + ') scale(' + shapeScalingPercentage + ')">');// we have to change this
-                    theFinal = theFinal.slice(0, closeGIndex) + contentModified + decoration + newG + decoroartionDown + theFinal.slice(closeGIndex);
+                    theFinal = theFinal.slice(0, closeGIndex) + contentModified +  newG + theFinal.slice(closeGIndex);
                     k++;
                 }
             }
